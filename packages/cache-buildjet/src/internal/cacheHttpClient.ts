@@ -379,3 +379,19 @@ export async function saveCache(
 
   core.info('Cache saved successfully')
 }
+
+export async function deleteCache(keys: string[]) {
+  const httpClient = createHttpClient()
+  const resource = `cache?keys=${encodeURIComponent(
+    keys.join(',')
+  )}`
+
+  const response = await retryHttpClientResponse('deleteCache', async () =>
+    httpClient.del(getCacheApiUrl(resource))
+  )
+
+  if (!isSuccessStatusCode(response.message.statusCode)) {
+    throw new Error(`Cache service responded with ${response.message.statusCode}`)
+  }
+
+}

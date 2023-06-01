@@ -287,3 +287,18 @@ export async function saveCache(
   //Return a 0 for competibility
   return 0
 }
+
+/**
+ * Delete a list of caches with the specified keys
+ * @param keys a list of keys for deleting the cache
+ */
+export async function deleteCache(keys: string[]) {
+  core.debug('Deleting Cache')
+  core.debug(`Cache Keys: ${keys}`)
+  try {
+    await cacheHttpClient.deleteCache(keys)
+  }
+  catch (error) {
+    core.warning(`Failed to delete: ${(error as Error).message}`)
+  }
+}
