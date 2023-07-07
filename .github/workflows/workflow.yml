@@ -5,10 +5,10 @@ on:
     branches:
       - main
       - releases/**
-  push:
-    branches:
-      - main
-      - releases/**
+  # push:
+  #   branches:
+  #     - main
+      # - releases/**
 
 jobs:
   # Build and unit test
