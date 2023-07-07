@@ -24,6 +24,12 @@ jobs:
       - name: Run command
         run: nix run nixpkgs#hello
 
+      - name: Build command
+        run: nix build nixpkgs#hello
+
+      - name: Collect garbage
+        run: nix-collect-garbage --delete-older-than 20d
+      
     strategy:
       matrix:
         os:
