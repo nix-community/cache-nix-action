@@ -15,6 +15,7 @@ See [discussion](https://github.com/DeterminateSystems/magic-nix-cache-action/is
 * This action must be used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
 * This action caches accessed `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1198392522) and [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/11#issuecomment-1610001962).
   * That's why, `path` may be empty.
+* Use [nix-collect-garbage](https://nixos.org/manual/nix/unstable/command-ref/nix-collect-garbage.html) or [nix store gc](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-store-gc.html) to remove old Nix store paths before saving a cache.
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v25
