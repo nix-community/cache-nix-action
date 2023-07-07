@@ -1,3 +1,47 @@
+# Cache Nix Too
+
+A GitHub Action to cache Nix store paths using GitHub Actions cache.
+
+This action is based on [actions/cache](https://github.com/actions/cache) (See [Cache action](#cache-action)).
+
+## Other approaches
+
+See [discussion](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16).
+
+## Usage
+
+### Steps
+
+* This action must be used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
+* This action caches accessed `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1198392522) and [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/11#issuecomment-1610001962).
+  * That's why, `path` may be empty.
+
+```yaml
+- uses: nixbuild/nix-quick-install-action@v25
+  with:
+    nix_conf: |
+      substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+      trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+      keep-outputs = true
+      keep-derivations = true
+
+- name: Restore and cache Nix store
+  uses: ./.
+  with:
+    path: ""
+    key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
+    restore-keys: |
+      cache-${{ matrix.os }}
+```
+
+### Example workflow
+
+See [ci.yaml](.github/workflows/ci.yaml)
+
+## Troubleshooting
+
+* Use [action-tmate](https://github.com/mxschmitt/action-tmate) to debug on a runner via SSH.
+
 # Cache action
 
 This action allows caching dependencies and build outputs to improve workflow execution time.
