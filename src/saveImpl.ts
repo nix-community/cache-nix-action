@@ -2,8 +2,9 @@ import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 
 import { Events, Inputs, State } from "./constants";
-import { IStateProvider } from "./stateProvider";
+import { type IStateProvider } from "./stateProvider";
 import * as utils from "./utils/actionUtils";
+import { exec } from "@actions/exec";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
@@ -49,12 +50,16 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         }
 
         const cachePaths = utils.getInputAsArray(Inputs.Path, {
-            required: true
+            required: false
         });
+
+        cachePaths.push(...utils.paths);
 
         const enableCrossOsArchive = utils.getInputAsBool(
             Inputs.EnableCrossOsArchive
         );
+
+        await exec("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
 
         cacheId = await cache.saveCache(
             cachePaths,

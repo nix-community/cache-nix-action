@@ -29,8 +29,9 @@ async function restoreImpl(
 
         const restoreKeys = utils.getInputAsArray(Inputs.RestoreKeys);
         const cachePaths = utils.getInputAsArray(Inputs.Path, {
-            required: true
+            required: false
         });
+        cachePaths.push(...utils.paths);
         const enableCrossOsArchive = utils.getInputAsBool(
             Inputs.EnableCrossOsArchive
         );
