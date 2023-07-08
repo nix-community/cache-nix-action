@@ -79,4 +79,4 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
     return false;
 }
 
-export const paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"]
+export const paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
