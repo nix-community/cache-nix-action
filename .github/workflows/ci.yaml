@@ -19,7 +19,10 @@ jobs:
           key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
           restore-keys: |
             cache-${{ matrix.os }}
-
+      
+      - name: Lock nixpkgs
+        run: nix registry add nixpkgs github:NixOS/nixpkgs/5daaa32204e9c46b05cd709218b7ba733d07e80c
+      
       - name: Run command
         run: nix run nixpkgs#hello
 
