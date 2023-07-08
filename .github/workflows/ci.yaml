@@ -19,19 +19,16 @@ jobs:
           key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
           restore-keys: |
             cache-${{ matrix.os }}
-      
-      - name: Lock nixpkgs
-        run: nix registry add nixpkgs github:NixOS/nixpkgs/5daaa32204e9c46b05cd709218b7ba733d07e80c
-      
+
       - name: Run command
         run: nix run nixpkgs#hello
 
-      - name: Build command
-        run: nix build nixpkgs#hello
-
       - name: Collect garbage
-        run: nix-collect-garbage --delete-older-than 20d
-      
+        run: |
+          nix profile install nixpkgs#hello
+          nix store gc
+          rm -rf /nix/var/nix/profiles
+
     strategy:
       matrix:
         os:
