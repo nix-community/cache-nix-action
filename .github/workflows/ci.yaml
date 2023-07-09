@@ -1,5 +1,5 @@
 jobs:
-  nixCI:
+  do-collect-garbage:
     name: Nix CI
     runs-on: ${{ matrix.os }}
     steps:
@@ -19,21 +19,29 @@ jobs:
           key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
           restore-keys: |
             cache-${{ matrix.os }}
-      
+
+      # Uncomment to debug this job
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+      - name: Show profile
+        run: nix profile list
+
       - name: Lock nixpkgs
         run: |
           nix registry add nixpkgs github:NixOS/nixpkgs/5daaa32204e9c46b05cd709218b7ba733d07e80c
           nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
-      
+
+      - name: Show profile
+        run: nix profile list
+
       - name: Run command
         run: |
-          nix profile install nixpkgs#hello
           nix run nixpkgs#hello
+          nix profile install nixpkgs#hello
 
-      - name: Collect garbage
-        run: |
-          nix store gc
-          rm -rf /nix/var/nix/profiles
+      - name: Show profile
+        run: nix profile list
 
     strategy:
       matrix:
@@ -42,6 +50,7 @@ jobs:
           - macos-12
           - ubuntu-20.04
           - ubuntu-22.04
+
 name: Nix CI
 "on":
   push: {}
