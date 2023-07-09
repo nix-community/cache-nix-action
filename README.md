@@ -2,20 +2,47 @@
 
 A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
-This action is based on [actions/cache](https://github.com/actions/cache) (See [Cache action](#cache-action)).
+This action is based on [actions/cache](https://github.com/actions/cache) and has all its inputs and outputs (see [Cache action](#cache-action)).
 
 ## Other approaches
 
-See [discussion](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16).
+Discussed [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
+
+## Approach of this action
+
+The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) action makes `/nix/store` owned by an unpriviliged user.
+That's why, `actions/cache` can restore and save `/nix/`.
+
+When restoring, `actions/cache` writes cached Nix store paths into `/nix/store` of a runner.
+Some of these paths may already be present in `/nix/store`, so reports about unarchivation errors are fine.
+
+## Inputs of this action
+
+### Inherited inputs
+
+This action inherits [inputs](#inputs) and [outputs](#outputs) of `actions/cache`.
+
+### Modified/new inputs
+
+This action caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
+That's why, the `path` input is optional and may be empty.
+
+On `macOS` runners, when `macos-gc-enabled` is `true`, when a cache size is greater than `macos-max-cache-size`, this action will run `nix store gc --max R` before saving a cache.
+Here, `R` is `max(0, S - macos-max-store-size)`, where `S` is a current store size.
+Respective conditions hold for `Linux` runners.
+
+| `name`                 | `description`                                                                               | `required` | `default` |
+| ---------------------- | ------------------------------------------------------------------------------------------- | ---------- | --------- |
+| `path`                 | A list of files, directories, and wildcard patterns to cache and restore.                   | `false`    | `""`      |
+| `macos-gc-enabled`     | When `true`, enables conditional garbage collection before saving a cache on macOS runners. | `false`    | `false`   |
+| `macos-max-cache-size` | Maximum Nix store size in bytes on macOS runners. Requires `macos-gc-enabled: true`.        | `false`    |           |
+| `linux-gc-enabled`     | When `true`, enables conditional garbage collection before saving a cache on Linux runners. | `false`    | `false`   |
+| `linux-max-cache-size` | Maximum Nix store size in bytes on Linux runners. Requires `linux-gc-enabled: true`.        | `false`    |           |
 
 ## Usage
 
-### Steps
-
-* This action must be used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
-* This action caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1198392522) and [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/11#issuecomment-1610001962).
-  * That's why, the `with.path` input (see [inputs](#inputs)) is optional and may be empty.
-* Use [nix-collect-garbage](https://nixos.org/manual/nix/unstable/command-ref/nix-collect-garbage.html) or [nix store gc](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-store-gc.html) to remove old Nix store paths before saving a cache.
+* This action **must** be used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
+* Maximum Nix store size on `Linux` runners will be `512MB` due to `linux-max-store-size: 536870912`.
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v25
@@ -29,15 +56,20 @@ See [discussion](https://github.com/DeterminateSystems/magic-nix-cache-action/is
 - name: Restore and cache Nix store
   uses: deemp/cache-nix-too@v1
   with:
-    path: ""
+    linux-gc-enabled: true
+    linux-max-store-size: 536870912
     key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
     restore-keys: |
       cache-${{ matrix.os }}
 ```
 
-### Example workflow
+## Example workflow
 
-See [ci.yaml](.github/workflows/ci.yaml)
+See [ci.yaml](.github/workflo<ws/ci.yaml)
+
+## Garbage collection
+
+Discussed [here](https://github.com/deemp/cache-nix-too/issues/4).
 
 ## Troubleshooting
 
