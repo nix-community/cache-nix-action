@@ -16,6 +16,10 @@ jobs:
       - name: Restore and cache Nix store
         uses: ./.
         with:
+          linux-gc-enabled: true
+          linux-max-store-size: 104857600
+          macos-gc-enabled: true
+          macos-max-store-size: 104857600
           key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
           restore-keys: |
             cache-${{ matrix.os }}
