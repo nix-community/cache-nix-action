@@ -37880,9 +37880,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
+const exec_1 = __webpack_require__(986);
 const constants_1 = __webpack_require__(694);
 const utils = __importStar(__webpack_require__(443));
-const exec_1 = __webpack_require__(986);
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
 // throw an uncaught exception.  Instead of failing this action, just warn.
@@ -37919,7 +37919,32 @@ function saveImpl(stateProvider) {
             cachePaths.push(...utils.paths);
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
             yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
-            cacheId = yield cache.saveCache(cachePaths, primaryKey, { uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize) }, enableCrossOsArchive);
+            const gcEnabled = utils.getInputAsBool(process.platform == "darwin"
+                ? constants_1.Inputs.MacosGCEnabled
+                : constants_1.Inputs.LinuxGCEnabled, { required: false });
+            if (gcEnabled) {
+                const maxStoreSize = utils.getInputAsInt(process.platform == "darwin"
+                    ? constants_1.Inputs.MacosMaxStoreSize
+                    : constants_1.Inputs.LinuxMaxStoreSize, { required: true });
+                yield (0, exec_1.exec)("bash", [
+                    "-c",
+                    `
+                STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"
+                printf "$STORE_SIZE"
+
+                MAX_STORE_SIZE=${maxStoreSize}
+                
+                if (( STORE_SIZE > MAX_STORE_SIZE )); then
+                    (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
+                    (( R2 = R1 > 0 ? R1 : 0 ))
+                    nix store gc --max "$R2"
+                fi
+                `
+                ]);
+            }
+            cacheId = yield cache.saveCache(cachePaths, primaryKey, {
+                uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize)
+            }, enableCrossOsArchive);
             if (cacheId != -1) {
                 core.info(`Cache saved with key: ${primaryKey}`);
             }
@@ -44842,6 +44867,10 @@ var Inputs;
     Inputs["RestoreKeys"] = "restore-keys";
     Inputs["UploadChunkSize"] = "upload-chunk-size";
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
+    Inputs["MacosGCEnabled"] = "macos-gc-enabled";
+    Inputs["MacosMaxStoreSize"] = "macos-max-store-size";
+    Inputs["LinuxGCEnabled"] = "linux-gc-enabled";
+    Inputs["LinuxMaxStoreSize"] = "linux-max-store-size";
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
     Inputs["LookupOnly"] = "lookup-only"; // Input for cache, restore action
 })(Inputs = exports.Inputs || (exports.Inputs = {}));

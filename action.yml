@@ -27,6 +27,20 @@ inputs:
     description: 'Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache'
     default: 'false'
     required: false
+  macos-gc-enabled:
+    description: 'When `true`, enables conditional garbage collection before saving a cache on macOS runners.'
+    required: false
+    default: "false"
+  macos-max-store-size:
+    description: 'Maximum Nix store size in bytes on macOS runners. Requires `macos-gc-enabled: true`.'
+    required: false
+  linux-gc-enabled:
+    description: 'When `true`, enables conditional garbage collection before saving a cache on Linux runners.'
+    required: false
+    default: "false"
+  linux-max-store-size:
+    description: 'Maximum Nix store size in bytes on Linux runners. Requires `linux-gc-enabled: true`.'
+    required: false
 outputs:
   cache-hit:
     description: 'A boolean value to indicate an exact match was found for the primary key'

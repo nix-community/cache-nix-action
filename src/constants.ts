@@ -4,6 +4,10 @@ export enum Inputs {
     RestoreKeys = "restore-keys", // Input for cache, restore action
     UploadChunkSize = "upload-chunk-size", // Input for cache, save action
     EnableCrossOsArchive = "enableCrossOsArchive", // Input for cache, restore, save action
+    MacosGCEnabled = "macos-gc-enabled",
+    MacosMaxStoreSize = "macos-max-store-size",
+    LinuxGCEnabled = "linux-gc-enabled",
+    LinuxMaxStoreSize = "linux-max-store-size",
     FailOnCacheMiss = "fail-on-cache-miss", // Input for cache, restore action
     LookupOnly = "lookup-only" // Input for cache, restore action
 }

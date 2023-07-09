@@ -61,10 +61,44 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
         await exec("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
 
+        const gcEnabled = utils.getInputAsBool(
+            process.platform == "darwin"
+                ? Inputs.MacosGCEnabled
+                : Inputs.LinuxGCEnabled,
+            { required: false }
+        );
+
+        if (gcEnabled) {
+            const maxStoreSize = utils.getInputAsInt(
+                process.platform == "darwin"
+                    ? Inputs.MacosMaxStoreSize
+                    : Inputs.LinuxMaxStoreSize,
+                { required: true }
+            );
+
+            await exec("bash", [
+                "-c",
+                `
+                STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"
+                printf "$STORE_SIZE"
+
+                MAX_STORE_SIZE=${maxStoreSize}
+                
+                if (( STORE_SIZE > MAX_STORE_SIZE )); then
+                    (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
+                    (( R2 = R1 > 0 ? R1 : 0 ))
+                    nix store gc --max "$R2"
+                fi
+                `
+            ]);
+        }
+
         cacheId = await cache.saveCache(
             cachePaths,
             primaryKey,
-            { uploadChunkSize: utils.getInputAsInt(Inputs.UploadChunkSize) },
+            {
+                uploadChunkSize: utils.getInputAsInt(Inputs.UploadChunkSize)
+            },
             enableCrossOsArchive
         );
 
