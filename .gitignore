@@ -94,3 +94,5 @@ typings/
 
 # Text editor files
 .vscode/
+
+.direnv
