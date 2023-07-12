@@ -17,10 +17,12 @@ jobs:
         uses: ./.
         with:
           linux-gc-enabled: true
-          linux-max-store-size: 104857600
+          # more than necessary
+          linux-max-store-size: 8000000000
           macos-gc-enabled: true
-          macos-max-store-size: 104857600
-          key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
+          # less than necessary
+          macos-max-store-size: 8000000
+          key: cache-${{ matrix.os }}-${{ hashFiles('src/**/*', 'flake.*', '.github/workflows/ci.yaml') }}
           restore-keys: |
             cache-${{ matrix.os }}
 
