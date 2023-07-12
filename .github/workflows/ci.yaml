@@ -23,7 +23,7 @@ jobs:
           macos-gc-enabled: true
           # less than necessary
           macos-max-store-size: 8000000
-          key: cache-${{ matrix.os }}-${{ hashFiles('src/**/*', 'flake.*', '.github/workflows/ci.yaml') }}
+          key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-keys: |
             cache-${{ matrix.os }}
 
@@ -47,19 +47,19 @@ jobs:
           nix run nixpkgs#hello
           nix profile install nixpkgs#hello
           
-          nix profile install nixpkgs#cachix
+          # nix profile install nixpkgs#cachix
           
-          nix profile install nixpkgs#nixpkgs-fmt
-          nix profile install nixpkgs#alejandra
+          # nix profile install nixpkgs#nixpkgs-fmt
+          # nix profile install nixpkgs#alejandra
           
-          nix profile install nixpkgs#nixd
+          # nix profile install nixpkgs#nixd
           
-          nix profile install nixpkgs#ghc
-          nix profile install nixpkgs#haskell-language-server
+          # nix profile install nixpkgs#ghc
+          # nix profile install nixpkgs#haskell-language-server
           
-          nix profile install nixpkgs#purescript
+          # nix profile install nixpkgs#purescript
           
-          nix profile install nixpkgs#nodejs_18
+          # nix profile install nixpkgs#nodejs_18
 
       - name: Show profile
         run: nix profile list
@@ -67,13 +67,13 @@ jobs:
     strategy:
       matrix:
         os:
-          - macos-11
-          - macos-12
+          # - macos-11
+          # - macos-12
           - ubuntu-20.04
           - ubuntu-22.04
         do-cache:
           - true
-          - false
+        #   - false
 
   remove-old-data:
     name: Remove old data

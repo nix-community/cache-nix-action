@@ -37962,18 +37962,22 @@ function saveImpl(stateProvider) {
                 utils.logWarning(`Key is not specified.`);
                 return;
             }
-            // If matched restore key is same as primary key, then do not save cache
-            // NO-OP in case of SaveOnly action
-            const restoredKey = stateProvider.getCacheState();
-            if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
-                core.info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
-                return;
-            }
             const cachePaths = utils.getInputAsArray(constants_1.Inputs.Path, {
                 required: false
             });
             cachePaths.push(...utils.paths);
+            const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
+            // If matched restore key is same as primary key, then do not save cache
+            // NO-OP in case of SaveOnly action
+            const cacheKey = yield cache.restoreCache(cachePaths, primaryKey, restoreKeys, { lookupOnly: true }, enableCrossOsArchive);
+            core.info(`Primary key: ${primaryKey}`);
+            core.info(`Existing cache key: ${cacheKey}`);
+            const restoredKey = cacheKey;
+            if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
+                core.info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
+                return;
+            }
             yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
             const gcEnabled = utils.getInputAsBool(process.platform == "darwin"
                 ? constants_1.Inputs.MacosGCEnabled
