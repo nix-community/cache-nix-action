@@ -39,10 +39,24 @@ jobs:
       - name: Show profile
         run: nix profile list
 
-      - name: Run command
+      - name: Run commands
         run: |
           nix run nixpkgs#hello
           nix profile install nixpkgs#hello
+          
+          nix profile install nixpkgs#cachix
+          
+          nix profile install nixpkgs#nixpkgs-fmt
+          nix profile install nixpkgs#alejandra
+          
+          nix profile install nixpkgs#nixd
+          
+          nix profile install nixpkgs#ghc
+          nix profile install nixpkgs#haskell-language-server
+          
+          nix profile install nixpkgs#purescript
+          
+          nix profile install nixpkgs#nodejs_18
 
       - name: Show profile
         run: nix profile list
