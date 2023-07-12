@@ -54,7 +54,25 @@ jobs:
           - macos-12
           - ubuntu-20.04
           - ubuntu-22.04
-
+  
+  remove-old-data:
+    name: Remove old data
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2.0.4
+        with:
+          retain_days: 7
+          keep_minimum_runs: 7
+      - uses: deemp/purge-cache@v1
+        with:
+          # 3 days
+          debug: true
+          max-age: 259200
+        
 name: Nix CI
 "on":
   push: {}
