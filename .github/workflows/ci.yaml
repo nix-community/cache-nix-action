@@ -1,5 +1,5 @@
 jobs:
-  do-collect-garbage:
+  test:
     name: Nix CI
     runs-on: ${{ matrix.os }}
     steps:
@@ -14,6 +14,7 @@ jobs:
             keep-outputs = true
 
       - name: Restore and cache Nix store
+        if: ${{ matrix.do-cache }}
         uses: ./.
         with:
           linux-gc-enabled: true
@@ -70,7 +71,10 @@ jobs:
           - macos-12
           - ubuntu-20.04
           - ubuntu-22.04
-  
+        do-cache:
+          - true
+          - false
+
   remove-old-data:
     name: Remove old data
     runs-on: ubuntu-22.04
