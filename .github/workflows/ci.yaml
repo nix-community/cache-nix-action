@@ -17,12 +17,12 @@ jobs:
         if: ${{ matrix.do-cache }}
         uses: ./.
         with:
+          # That's approximately
+          # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
           linux-gc-enabled: true
-          # more than necessary
           linux-max-store-size: 8000000000
           macos-gc-enabled: true
-          # less than necessary
-          macos-max-store-size: 8000000
+          macos-max-store-size: 8000000000
           key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-keys: |
             cache-${{ matrix.os }}
