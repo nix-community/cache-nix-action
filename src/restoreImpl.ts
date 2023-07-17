@@ -39,7 +39,8 @@ async function restoreImpl(
         const lookupOnly = utils.getInputAsBool(Inputs.LookupOnly);
 
         const cacheKey = await cache.restoreCache(
-            cachePaths,
+            // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
+            cachePaths.slice(),
             primaryKey,
             restoreKeys,
             { lookupOnly: lookupOnly },

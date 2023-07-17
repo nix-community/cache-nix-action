@@ -38,7 +38,6 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             return;
         }
 
-
         const cachePaths = utils.getInputAsArray(Inputs.Path, {
             required: false
         });
@@ -53,16 +52,16 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         // If matched restore key is same as primary key, then do not save cache
         // NO-OP in case of SaveOnly action
         const cacheKey = await cache.restoreCache(
-            cachePaths,
+            cachePaths.slice(),
             primaryKey,
             restoreKeys,
             { lookupOnly: true },
             enableCrossOsArchive
         );
 
-        core.info(`Primary key: ${primaryKey}`)
-        core.info(`Existing cache key: ${cacheKey}`)
-        
+        core.info(`Primary key: ${primaryKey}`);
+        core.info(`Existing cache key: ${cacheKey}`);
+
         const restoredKey = cacheKey;
 
         if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
@@ -71,7 +70,6 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             );
             return;
         }
-
 
         await exec("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
 
