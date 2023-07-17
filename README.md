@@ -25,9 +25,9 @@ The [Approaches](#approaches) section compares this approach with other caching 
 
 See [action.yaml](action.yaml).
 
-This action inherits [inputs](#inputs) and [outputs](#outputs) of `actions/cache` and modifies some of them.
+This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/cache`.
 
-### Modified/New inputs
+### New inputs
 
 | `name`                 | `description`                                                                               | `required` | `default` |
 | ---------------------- | ------------------------------------------------------------------------------------------- | ---------- | --------- |
@@ -38,8 +38,8 @@ This action inherits [inputs](#inputs) and [outputs](#outputs) of `actions/cache
 
 ### Default cached directories
 
-The `cache-nix-action` doesn't provide the `path` input from the original [actions/cache](#cache-action) due to [limitations](#limitations).
-Instead, this action caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
+The `cache-nix-action` doesn't provide the `path` input from the original [inputs](#inputs) of `actions/cache` due to [limitations](#limitations).
+Instead, the `cache-nix-action` caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
 
 ### Garbage collection parameters
 
