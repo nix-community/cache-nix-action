@@ -11,15 +11,15 @@ That's why, the `cache-nix-too` action can restore and save `/nix`.
 
 When there is a cache hit, restoring `/nix/store` from a cache is faster than downloading multiple paths from binary caches (see [ci.yaml](.github/workflows/ci.yaml) and related [Actions](https://github.com/deemp/cache-nix-too/actions/workflows/ci.yaml)).
 
+The [Approaches](#approaches) section compares this approach with other caching approaches.
+
 ## Limitations
 
 * Restores and saves a full `/nix` directory.
 * Requires `nix-quick-install-action` (see [Approach](#approach)).
 * Store size is limited by a runner storage size ([lnk](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
 * Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
-* When restoring, this action writes cached Nix store paths into a read-only `/nix/store` of a runner. Some of these paths may already be present,so this action will show `File exists` errors and a warning that it failed to restore.
-
-The [Approaches](#approaches) section compares this approach with other caching approaches.
+* When restoring, this action writes cached Nix store paths into a read-only `/nix/store` of a runner. Some of these paths may already be present, so this action will show `File exists` errors and a warning that it failed to restore. It's OK.
 
 ## Configuration
 
@@ -55,7 +55,9 @@ There are alternative approaches to garbage collection (see [Garbage collection]
 
 * This action **must** be used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
 * Maximum Nix store size on `Linux` runners will be `512MB` due to `linux-max-store-size: 536870912`.
+  * If the store has a larger size, it will be garbage collected to reach this limit (See [Garbage collection parameters](#garbage-collection-parameters)).
 * Maximum Nix store size on `macOS` runners will be limited by the runner storage size.
+  * Stores won't be garbage collected since `macos-gc-enabled: true` isn't set.
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v25
@@ -77,7 +79,7 @@ There are alternative approaches to garbage collection (see [Garbage collection]
 
 ## Example workflow
 
-See [ci.yaml](.github/workflows/ci.yaml)
+See [ci.yaml](.github/workflows/ci.yaml).
 
 ## Troubleshooting
 
