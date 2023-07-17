@@ -17,8 +17,6 @@ jobs:
         if: ${{ matrix.do-cache }}
         uses: ./.
         with:
-          # That's approximately
-          # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
           linux-gc-enabled: true
           linux-max-store-size: 8000000000
           macos-gc-enabled: true
