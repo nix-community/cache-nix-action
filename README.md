@@ -4,6 +4,8 @@ A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache) and has all its inputs and outputs (see [Cache action](#cache-action)).
 
+When there is a cache hit, restoring it is faster than downloading multiple paths from binary caches (see [ci.yaml](.github/workflows/ci.yaml) and related [Actions](https://github.com/deemp/cache-nix-too/actions/workflows/ci.yaml)).
+
 ## Other approaches
 
 Discussed [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
@@ -11,7 +13,7 @@ Discussed [here](https://github.com/DeterminateSystems/magic-nix-cache-action/is
 ## Approach of this action
 
 The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) action makes `/nix/store` owned by an unpriviliged user.
-That's why, `actions/cache` can restore and save `/nix/`.
+That's why, `actions/cache` can restore and save `/nix`.
 
 When restoring, `actions/cache` writes cached Nix store paths into `/nix/store` of a runner.
 Some of these paths may already be present in `/nix/store`, so reports about unarchivation errors are fine.
@@ -21,6 +23,8 @@ Some of these paths may already be present in `/nix/store`, so reports about una
 ### Inherited inputs
 
 This action inherits [inputs](#inputs) and [outputs](#outputs) of `actions/cache`.
+
+These inputs are also described in [action.yml](action.yml).
 
 ### Modified/new inputs
 
@@ -79,6 +83,7 @@ Discussed [here](https://github.com/deemp/cache-nix-too/issues/4).
 This action allows caching dependencies and build outputs to improve workflow execution time.
 
 >Two other actions are available in addition to the primary `cache` action:
+>
 >* [Restore action](./restore/README.md)
 >* [Save action](./save/README.md)
 
