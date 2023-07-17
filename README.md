@@ -2,26 +2,22 @@
 
 A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
-This action is based on [actions/cache](https://github.com/actions/cache) and has almost all its inputs (see [Cache action](#cache-action)).
+This action is based on [actions/cache](https://github.com/actions/cache).
 
-When there is a cache hit, restoring it is faster than downloading multiple paths from binary caches (see [ci.yaml](.github/workflows/ci.yaml) and related [Actions](https://github.com/deemp/cache-nix-too/actions/workflows/ci.yaml)).
-
-## Other approaches
-
-Discussed [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
-
-## Approach of this action
+## Approach
 
 The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) action makes `/nix/store` owned by an unpriviliged user.
-That's why, `actions/cache` can restore and save `/nix`.
+That's why, the `cache-nix-too` action can restore and save `/nix`.
 
-When restoring, `actions/cache` writes cached Nix store paths into `/nix/store` of a runner.
-Some of these paths may already be present in `/nix/store`, so reports about unarchivation errors are fine.
+When there is a cache hit, restoring `/nix/store` from a cache is faster than downloading multiple paths from binary caches (see [ci.yaml](.github/workflows/ci.yaml) and related [Actions](https://github.com/deemp/cache-nix-too/actions/workflows/ci.yaml)).
+
+The [Approaches](#approaches) section compares this approach with other approaches to working with Nix caches.
 
 ## Limitations
 
-- Store size is limited by a runner storage size - [docs](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources).
-- Caches are isolated between branches - [docs](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache).
+* Store size is limited by a runner storage size ([lnk](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
+* Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
+* When restoring, this action writes cached Nix store paths into a read-only `/nix/store` of a runner. Some of these paths may already be present,so this action will show `File exists` errors and a warning that it failed to restore.
 
 ## Inputs of this action
 
@@ -31,13 +27,13 @@ This action inherits [inputs](#inputs) and [outputs](#outputs) of `actions/cache
 
 These inputs are also described in [action.yml](action.yml).
 
-### Modified/new inputs
+### Modified/New inputs
 
 This action caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
-That's why, the `path` input is optional and may be empty.
+Due to [limitations](#limitations), it doesn't provide the `path` input from the original [actions/cache](#cache-action).
 
 On `macOS` runners, when `macos-gc-enabled` is `true`, when a cache size is greater than `macos-max-cache-size`, this action will run `nix store gc --max R` before saving a cache.
-Here, `R` is `max(0, S - macos-max-store-size)`, where `S` is a current store size.
+Here, `R` is `max(0, S - macos-max-store-size)`, where `S` is the current store size.
 Respective conditions hold for `Linux` runners.
 
 | `name`                 | `description`                                                                               | `required` | `default` |
@@ -72,15 +68,18 @@ Respective conditions hold for `Linux` runners.
 
 ## Example workflow
 
-See [ci.yaml](.github/workflo<ws/ci.yaml)
-
-## Garbage collection
-
-Discussed [here](https://github.com/deemp/cache-nix-too/issues/4).
+See [ci.yaml](.github/workflows/ci.yaml)
 
 ## Troubleshooting
 
 * Use [action-tmate](https://github.com/mxschmitt/action-tmate) to debug on a runner via SSH.
+
+## Approaches
+
+
+## Garbage collection
+
+Discussed [here](https://github.com/deemp/cache-nix-too/issues/4).
 
 # Cache action
 
