@@ -18,6 +18,11 @@ That's why, `actions/cache` can restore and save `/nix`.
 When restoring, `actions/cache` writes cached Nix store paths into `/nix/store` of a runner.
 Some of these paths may already be present in `/nix/store`, so reports about unarchivation errors are fine.
 
+## Limitations
+
+- Store size is limited by a runner storage size - [docs](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources).
+- Caches are isolated between branches - [docs](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache).
+
 ## Inputs of this action
 
 ### Inherited inputs
