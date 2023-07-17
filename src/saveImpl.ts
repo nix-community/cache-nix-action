@@ -51,16 +51,13 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
         // If matched restore key is same as primary key, then do not save cache
         // NO-OP in case of SaveOnly action
-        const cacheKey = await cache.restoreCache(
-            cachePaths.slice(),
+        const cacheKey = await utils.getCacheKey(
+            cachePaths,
             primaryKey,
             restoreKeys,
-            { lookupOnly: true },
+            true,
             enableCrossOsArchive
         );
-
-        core.info(`Primary key: ${primaryKey}`);
-        core.info(`Existing cache key: ${cacheKey}`);
 
         const restoredKey = cacheKey;
 

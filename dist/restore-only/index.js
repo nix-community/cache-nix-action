@@ -43067,8 +43067,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const constants_1 = __webpack_require__(694);
@@ -43130,6 +43139,14 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
 }
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 exports.paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
+function getCacheKey(paths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield cache.restoreCache(
+        // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
+        paths.slice(), primaryKey, restoreKeys, { lookupOnly: lookupOnly }, enableCrossOsArchive);
+    });
+}
+exports.getCacheKey = getCacheKey;
 
 
 /***/ }),
@@ -47778,7 +47795,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const constants_1 = __webpack_require__(694);
 const utils = __importStar(__webpack_require__(649));
@@ -47804,9 +47820,7 @@ function restoreImpl(stateProvider) {
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
             const failOnCacheMiss = utils.getInputAsBool(constants_1.Inputs.FailOnCacheMiss);
             const lookupOnly = utils.getInputAsBool(constants_1.Inputs.LookupOnly);
-            const cacheKey = yield cache.restoreCache(
-            // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-            cachePaths.slice(), primaryKey, restoreKeys, { lookupOnly: lookupOnly }, enableCrossOsArchive);
+            const cacheKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive);
             if (!cacheKey) {
                 if (failOnCacheMiss) {
                     throw new Error(`Failed to restore cache entry. Exiting as fail-on-cache-miss is set. Input key: ${primaryKey}`);

@@ -38,12 +38,11 @@ async function restoreImpl(
         const failOnCacheMiss = utils.getInputAsBool(Inputs.FailOnCacheMiss);
         const lookupOnly = utils.getInputAsBool(Inputs.LookupOnly);
 
-        const cacheKey = await cache.restoreCache(
-            // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-            cachePaths.slice(),
+        const cacheKey = await utils.getCacheKey(
+            cachePaths,
             primaryKey,
             restoreKeys,
-            { lookupOnly: lookupOnly },
+            lookupOnly,
             enableCrossOsArchive
         );
 

@@ -80,3 +80,20 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
 }
 
 export const paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
+
+export async function getCacheKey(
+    paths: string[],
+    primaryKey: string,
+    restoreKeys: string[],
+    lookupOnly: boolean,
+    enableCrossOsArchive: boolean
+) {
+    return await cache.restoreCache(
+        // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
+        paths.slice(),
+        primaryKey,
+        restoreKeys,
+        { lookupOnly: lookupOnly },
+        enableCrossOsArchive
+    );
+}

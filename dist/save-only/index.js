@@ -35343,8 +35343,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const constants_1 = __webpack_require__(694);
@@ -35406,6 +35415,14 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
 }
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 exports.paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
+function getCacheKey(paths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield cache.restoreCache(
+        // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
+        paths.slice(), primaryKey, restoreKeys, { lookupOnly: lookupOnly }, enableCrossOsArchive);
+    });
+}
+exports.getCacheKey = getCacheKey;
 
 
 /***/ }),
@@ -37970,9 +37987,7 @@ function saveImpl(stateProvider) {
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
             // If matched restore key is same as primary key, then do not save cache
             // NO-OP in case of SaveOnly action
-            const cacheKey = yield cache.restoreCache(cachePaths.slice(), primaryKey, restoreKeys, { lookupOnly: true }, enableCrossOsArchive);
-            core.info(`Primary key: ${primaryKey}`);
-            core.info(`Existing cache key: ${cacheKey}`);
+            const cacheKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, true, enableCrossOsArchive);
             const restoredKey = cacheKey;
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
