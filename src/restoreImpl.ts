@@ -1,4 +1,3 @@
-import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 
 import { Events, Inputs, Outputs, State } from "./constants";
@@ -28,10 +27,7 @@ async function restoreImpl(
         stateProvider.setState(State.CachePrimaryKey, primaryKey);
 
         const restoreKeys = utils.getInputAsArray(Inputs.RestoreKeys);
-        const cachePaths = utils.getInputAsArray(Inputs.Path, {
-            required: false
-        });
-        cachePaths.push(...utils.paths);
+        const cachePaths = utils.paths;
         const enableCrossOsArchive = utils.getInputAsBool(
             Inputs.EnableCrossOsArchive
         );

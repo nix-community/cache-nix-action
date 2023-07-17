@@ -2,7 +2,7 @@
 
 A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
-This action is based on [actions/cache](https://github.com/actions/cache) and has all its inputs and outputs (see [Cache action](#cache-action)).
+This action is based on [actions/cache](https://github.com/actions/cache) and has almost all its inputs (see [Cache action](#cache-action)).
 
 When there is a cache hit, restoring it is faster than downloading multiple paths from binary caches (see [ci.yaml](.github/workflows/ci.yaml) and related [Actions](https://github.com/deemp/cache-nix-too/actions/workflows/ci.yaml)).
 
@@ -42,7 +42,6 @@ Respective conditions hold for `Linux` runners.
 
 | `name`                 | `description`                                                                               | `required` | `default` |
 | ---------------------- | ------------------------------------------------------------------------------------------- | ---------- | --------- |
-| `path`                 | A list of files, directories, and wildcard patterns to cache and restore.                   | `false`    | `""`      |
 | `macos-gc-enabled`     | When `true`, enables conditional garbage collection before saving a cache on macOS runners. | `false`    | `false`   |
 | `macos-max-cache-size` | Maximum Nix store size in bytes on macOS runners. Requires `macos-gc-enabled: true`.        | `false`    |           |
 | `linux-gc-enabled`     | When `true`, enables conditional garbage collection before saving a cache on Linux runners. | `false`    | `false`   |

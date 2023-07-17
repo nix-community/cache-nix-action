@@ -1,11 +1,7 @@
-name: 'Cache nix too'
+name: 'Cache nix'
 description: 'Cache artifacts like dependencies and build outputs to improve workflow execution time'
 author: 'GitHub'
 inputs:
-  path:
-    description: 'A list of files, directories, and wildcard patterns to cache and restore'
-    required: false
-    default: ""
   key:
     description: 'An explicit key for restoring and saving the cache'
     required: true

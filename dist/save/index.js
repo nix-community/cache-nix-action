@@ -37923,10 +37923,7 @@ function saveImpl(stateProvider) {
                 utils.logWarning(`Key is not specified.`);
                 return;
             }
-            const cachePaths = utils.getInputAsArray(constants_1.Inputs.Path, {
-                required: false
-            });
-            cachePaths.push(...utils.paths);
+            const cachePaths = utils.paths;
             const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
             // If matched restore key is same as primary key, then do not save cache

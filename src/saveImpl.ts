@@ -38,11 +38,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             return;
         }
 
-        const cachePaths = utils.getInputAsArray(Inputs.Path, {
-            required: false
-        });
-
-        cachePaths.push(...utils.paths);
+        const cachePaths = utils.paths;
         const restoreKeys = utils.getInputAsArray(Inputs.RestoreKeys);
 
         const enableCrossOsArchive = utils.getInputAsBool(
