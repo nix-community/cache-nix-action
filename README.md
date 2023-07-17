@@ -11,30 +11,23 @@ That's why, the `cache-nix-too` action can restore and save `/nix`.
 
 When there is a cache hit, restoring `/nix/store` from a cache is faster than downloading multiple paths from binary caches (see [ci.yaml](.github/workflows/ci.yaml) and related [Actions](https://github.com/deemp/cache-nix-too/actions/workflows/ci.yaml)).
 
-The [Approaches](#approaches) section compares this approach with other approaches to working with Nix caches.
-
 ## Limitations
 
+* Restores and saves a full `/nix` directory.
+* Requires `nix-quick-install-action` (see [Approach](#approach)).
 * Store size is limited by a runner storage size ([lnk](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
 * Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
 * When restoring, this action writes cached Nix store paths into a read-only `/nix/store` of a runner. Some of these paths may already be present,so this action will show `File exists` errors and a warning that it failed to restore.
 
-## Inputs of this action
+The [Approaches](#approaches) section compares this approach with other caching approaches.
 
-### Inherited inputs
+## Configuration
 
-This action inherits [inputs](#inputs) and [outputs](#outputs) of `actions/cache`.
+See [action.yaml](action.yaml).
 
-These inputs are also described in [action.yml](action.yml).
+This action inherits [inputs](#inputs) and [outputs](#outputs) of `actions/cache` and modifies some of them.
 
 ### Modified/New inputs
-
-This action caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
-Due to [limitations](#limitations), it doesn't provide the `path` input from the original [actions/cache](#cache-action).
-
-On `macOS` runners, when `macos-gc-enabled` is `true`, when a cache size is greater than `macos-max-cache-size`, this action will run `nix store gc --max R` before saving a cache.
-Here, `R` is `max(0, S - macos-max-store-size)`, where `S` is the current store size.
-Respective conditions hold for `Linux` runners.
 
 | `name`                 | `description`                                                                               | `required` | `default` |
 | ---------------------- | ------------------------------------------------------------------------------------------- | ---------- | --------- |
@@ -43,10 +36,26 @@ Respective conditions hold for `Linux` runners.
 | `linux-gc-enabled`     | When `true`, enables conditional garbage collection before saving a cache on Linux runners. | `false`    | `false`   |
 | `linux-max-cache-size` | Maximum Nix store size in bytes on Linux runners. Requires `linux-gc-enabled: true`.        | `false`    |           |
 
+### Default cached directories
+
+The `cache-nix-action` doesn't provide the `path` input from the original [actions/cache](#cache-action) due to [limitations](#limitations).
+Instead, this action caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
+
+### Garbage collection parameters
+
+On `macOS` runners, when `macos-gc-enabled` is `true`, when a cache size is greater than `macos-max-cache-size`, this action will run `nix store gc --max R` before saving a cache.
+Here, `R` is `max(0, S - macos-max-store-size)`, where `S` is the current store size.
+Respective conditions hold for `Linux` runners.
+
+Tip: if you need to save a path from caching, `nix profile install` it (see [Example workflow](#example-workflow))
+
+There are alternative approaches to garbage collection (see [Garbage collection](#garbage-collection)).
+
 ## Usage
 
 * This action **must** be used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
 * Maximum Nix store size on `Linux` runners will be `512MB` due to `linux-max-store-size: 536870912`.
+* Maximum Nix store size on `macOS` runners will be limited by the runner storage size.
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v25
@@ -74,14 +83,90 @@ See [ci.yaml](.github/workflows/ci.yaml)
 
 * Use [action-tmate](https://github.com/mxschmitt/action-tmate) to debug on a runner via SSH.
 
-## Approaches
-
-
 ## Garbage collection
 
 Discussed [here](https://github.com/deemp/cache-nix-too/issues/4).
 
+## Approaches
+
+Discussed in more details [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
+
+Caching approaches work at different "distances" from `/nix/store` of GitHub Actions runner.
+These distances affect the restore and save speed.
+
+### GitHub Actions
+
+* [DeterminateSystems/magic-nix-cache-action](https://github.com/DeterminateSystems/magic-nix-cache-action)
+* [nix-community/cache-nix-action](https://github.com/nix-community/cache-nix-action)
+
+#### cache-nix-action
+
+Pros:
+
+* Free.
+* Uses `GitHub Actions Cache` and works fast.
+* Easy to set up.
+* Allows to save a store of at most a given size (see [Garbage collection](#garbage-collection-parameters)).
+* Allows to save output from garbage collection (see [Garbage collection](#garbage-collection)).
+
+Cons: see [Limitations](#limitations)
+
+#### magic-nix-cache-action
+
+Pros ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
+
+* Free.
+* Uses `GitHub Actions Cache` and works fast.
+* Easy to set up.
+* Restores and saves paths selectively.
+
+Cons:
+
+* Collects telemetry ([link](https://github.com/DeterminateSystems/magic-nix-cache))
+* May trigger rate limit errors ([link](https://github.com/DeterminateSystems/magic-nix-cache#usage-notes)).
+* Follows the GitHub Actions Cache semantics ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
+  * Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
+* Saves a cache for each path in a store and quickly litters `Caches`.
+
+#### actions/cache
+
+If used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action), it's similar to the [cache-nix-action](#cache-nix-action).
+
+If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#local-store):
+
+Pros:
+
+* Quick restore and save `/tmp/nix`.
+
+Cons:
+
+* Slow [nix copy](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
+
+If used with [install-nix-action](https://github.com/cachix/install-nix-action) and this [trick](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1030697681), it's similar to the [cache-nix-action](#cache-nix-action), but slower ([link](https://github.com/ryantm/nix-installer-action-benchmark)).
+
+### Hosted binary caches
+
+See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-binary-cache), [HTTP Binary Cache Store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#http-binary-cache-store).
+
+* [cachix](https://www.cachix.org/)
+* [attic](https://github.com/zhaofengli/attic)
+
+Pros:
+
+* Restore and save paths selectively.
+* Provide LRU garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
+* Don't cache paths available from the NixOS cache ([cachix](https://docs.cachix.org/garbage-collection?highlight=upstream)).
+* Allow to share paths between projects ([cachix](https://docs.cachix.org/getting-started#using-binaries-with-nix)).
+
+Cons:
+
+* Have limited free storage ([cachix](https://www.cachix.org/pricing) gives 5GB for open-source projects).
+* Need good bandwidth for receiving and pushing paths over the Internet.
+* Can be down.
+
 # Cache action
+
+## !!! This documentation was inherited from actions/cache and may be partially irrelevant to cache-nix-action
 
 This action allows caching dependencies and build outputs to improve workflow execution time.
 
