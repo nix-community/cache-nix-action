@@ -1,7 +1,44 @@
 jobs:
+  build:
+    name: Build and test the action
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      # http://man7.org/linux/man-pages/man1/date.1.html
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "date=$(/bin/date -u "+date-%Y-%m-%d-time-%H-%M-%S")" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json', 'package.json') }}-${{ steps.get-date.outputs.date }}
+          restore-keys: |
+            ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json', 'package.json') }}-
+
+      - name: Install packages & Build the action
+        run: npm ci
+
+      - name: Commit & Push changes
+        if: github.event_name == 'push'
+        run: |
+          git config --global user.name github-actions
+          git config --global user.email github-actions@github.com
+          git pull --rebase --autostash
+          git add dist
+          git commit -m "action: build the action" || echo ""
+          git push
+
   test:
     name: Nix CI
     runs-on: ${{ matrix.os }}
+    needs: build
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
@@ -12,7 +49,15 @@ jobs:
             substituters = https://cache.nixos.org/ https://nix-community.cachix.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
             keep-outputs = true
+      
+      # http://man7.org/linux/man-pages/man1/date.1.html
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "date=$(/bin/date -u "+date-%Y-%m-%d-time-%H-%M-%S")" >> $GITHUB_OUTPUT
+        shell: bash
 
+      # -------- THIS ACTION --------
       - name: Restore and cache Nix store
         if: ${{ matrix.do-cache }}
         uses: ./.
@@ -21,10 +66,13 @@ jobs:
           linux-max-store-size: 8000000000
           macos-gc-enabled: true
           macos-max-store-size: 8000000000
-          key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # save a new cache every time
+          key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}-${{ steps.get-date.outputs.date }}
           restore-keys: |
-            cache-${{ matrix.os }}
-
+            cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}-
+            cache-${{ matrix.os }}-
+      # -------- THIS ACTION --------
+      
       # Uncomment to debug this job
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
@@ -76,8 +124,8 @@ jobs:
   remove-old-data:
     name: Remove old data
     runs-on: ubuntu-22.04
+    needs: test
     permissions:
-      contents: read
       actions: write
     steps:
       - name: Delete workflow runs
@@ -87,9 +135,11 @@ jobs:
           keep_minimum_runs: 7
       - uses: deemp/purge-cache@v1
         with:
-          # 3 days
           debug: true
-          max-age: 259200
+          created: true
+          accessed: true
+          # 3 days
+          max-age: 86400
         
 name: Nix CI
 "on":
