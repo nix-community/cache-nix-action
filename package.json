@@ -5,6 +5,7 @@
   "description": "Cache dependencies and build outputs",
   "main": "dist/restore/index.js",
   "scripts": {
+    "postinstall": "npm run build",
     "build": "tsc && ncc build -o dist/restore src/restore.ts && ncc build -o dist/save src/save.ts && ncc build -o dist/restore-only src/restoreOnly.ts && ncc build -o dist/save-only src/saveOnly.ts",
     "test": "tsc --noEmit && jest --coverage",
     "lint": "eslint **/*.ts --cache",
@@ -34,7 +35,7 @@
     "@types/node": "^16.18.3",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.45.0",
-    "@zeit/ncc": "^0.20.5",
+    "@vercel/ncc": "^0.36.1",
     "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-standard-with-typescript": "^36.0.0",
