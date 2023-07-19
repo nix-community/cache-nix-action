@@ -39,6 +39,9 @@ jobs:
     name: Nix CI
     runs-on: ${{ matrix.os }}
     needs: build
+    permissions:
+      # required by the `purge-cache` action
+      actions: write
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
@@ -49,17 +52,6 @@ jobs:
             substituters = https://cache.nixos.org/ https://nix-community.cachix.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
             keep-outputs = true
-      
-      # http://man7.org/linux/man-pages/man1/date.1.html
-      - name: Get Date
-        id: get-date
-        run: |
-          if [ ${{ matrix.do-save-cache }} = true ] ; then
-            echo "date=$(/bin/date -u "+date-%Y-%m-%d-time-%H-%M-%S")" >> $GITHUB_OUTPUT
-          else
-            echo "date=''" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
 
       # -------- THIS ACTION --------
       - name: Restore and cache Nix store
@@ -71,11 +63,22 @@ jobs:
           macos-gc-enabled: true
           macos-max-store-size: 8000000000
           # save a new cache every time
-          key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}-${{ steps.get-date.outputs.date }}
+          key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-keys: |
             cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}-
             cache-${{ matrix.os }}-
       # -------- THIS ACTION --------
+      
+      # Purge after restoring a cache
+      # In this case, the post phase of `cache-nix-action` won't find a cache
+      # And thus will save a new one
+      - uses: deemp/purge-cache@v1
+        with:
+          debug: true
+          created: true
+          accessed: true
+          # 3 days
+          max-age: 86400
       
       # Uncomment to debug this job
       # - name: Setup tmate session
@@ -124,11 +127,8 @@ jobs:
         do-cache:
           - true
           - false
-        do-save-cache:
-          - true
-          - false
 
-  remove-old-data:
+  remove-old-workflows:
     name: Remove old data
     runs-on: ubuntu-22.04
     needs: test
@@ -140,13 +140,6 @@ jobs:
         with:
           retain_days: 7
           keep_minimum_runs: 7
-      - uses: deemp/purge-cache@v1
-        with:
-          debug: true
-          created: true
-          accessed: true
-          # 3 days
-          max-age: 86400
         
 name: Nix CI
 "on":
