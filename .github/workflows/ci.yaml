@@ -39,9 +39,6 @@ jobs:
     name: Nix CI
     runs-on: ${{ matrix.os }}
     needs: build
-    permissions:
-      # required by the `purge-cache` action
-      actions: write
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
@@ -68,17 +65,6 @@ jobs:
             cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}-
             cache-${{ matrix.os }}-
       # -------- THIS ACTION --------
-      
-      # Purge after restoring a cache
-      # In this case, the post phase of `cache-nix-action` won't find a cache
-      # And thus will save a new one
-      - uses: deemp/purge-cache@v1
-        with:
-          debug: true
-          created: true
-          accessed: true
-          # 3 days
-          max-age: 86400
       
       # Uncomment to debug this job
       # - name: Setup tmate session
@@ -128,7 +114,7 @@ jobs:
           - true
           - false
 
-  remove-old-workflows:
+  remove-old-data:
     name: Remove old data
     runs-on: ubuntu-22.04
     needs: test
@@ -140,6 +126,15 @@ jobs:
         with:
           retain_days: 7
           keep_minimum_runs: 7
+      
+      # Purge old caches
+      - uses: deemp/purge-cache@v1
+        with:
+          debug: true
+          created: true
+          accessed: true
+          # 3 days
+          max-age: 86400
         
 name: Nix CI
 "on":
