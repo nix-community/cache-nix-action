@@ -54,7 +54,11 @@ jobs:
       - name: Get Date
         id: get-date
         run: |
-          echo "date=$(/bin/date -u "+date-%Y-%m-%d-time-%H-%M-%S")" >> $GITHUB_OUTPUT
+          if [ ${{ matrix.do-save-cache }} = true ] ; then
+            echo "date=$(/bin/date -u "+date-%Y-%m-%d-time-%H-%M-%S")" >> $GITHUB_OUTPUT
+          else
+            echo "date=''" >> $GITHUB_OUTPUT
+          fi
         shell: bash
 
       # -------- THIS ACTION --------
@@ -118,6 +122,9 @@ jobs:
           - ubuntu-20.04
           - ubuntu-22.04
         do-cache:
+          - true
+          - false
+        do-save-cache:
           - true
           - false
 
