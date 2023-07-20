@@ -4,6 +4,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v3
 
@@ -102,6 +103,16 @@ jobs:
 
       - name: Show profile
         run: nix profile list
+      
+      # Purge old caches just before saving a new one
+      # in the Post phase of the cache-nix-action.
+      - uses: deemp/purge-cache@v1
+        with:
+          debug: true
+          created: true
+          accessed: true
+          # 3 days
+          max-age: 86400
 
     strategy:
       matrix:
@@ -113,28 +124,6 @@ jobs:
         do-cache:
           - true
           - false
-
-  remove-old-data:
-    name: Remove old data
-    runs-on: ubuntu-22.04
-    needs: test
-    permissions:
-      actions: write
-    steps:
-      - name: Delete workflow runs
-        uses: Mattraks/delete-workflow-runs@v2.0.4
-        with:
-          retain_days: 7
-          keep_minimum_runs: 7
-      
-      # Purge old caches
-      - uses: deemp/purge-cache@v1
-        with:
-          debug: true
-          created: true
-          accessed: true
-          # 3 days
-          max-age: 86400
         
 name: Nix CI
 "on":
