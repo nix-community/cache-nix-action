@@ -7,9 +7,9 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 ## Approach
 
 The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) action makes `/nix/store` owned by an unpriviliged user.
-That's why, the `cache-nix-too` action can restore and save `/nix`.
+That's why, the `cache-nix-action` action can restore and save `/nix`.
 
-When there is a cache hit, restoring `/nix/store` from a cache is faster than downloading multiple paths from binary caches (see [ci.yaml](.github/workflows/ci.yaml) and related [Actions](https://github.com/nix-community/cache-nix-too/actions/workflows/ci.yaml)).
+When there is a cache hit, restoring `/nix/store` from a cache is faster than downloading multiple paths from binary caches (see [ci.yaml](.github/workflows/ci.yaml) and related [Actions](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml)).
 
 The [Approaches](#approaches) section compares this approach with other caching approaches.
 
@@ -69,7 +69,7 @@ There are alternative approaches to garbage collection (see [Garbage collection]
       keep-outputs = true
 
 - name: Restore and cache Nix store
-  uses: nix-community/cache-nix-too@v1
+  uses: nix-community/cache-nix-action@v1
   with:
     linux-gc-enabled: true
     linux-max-store-size: 536870912
@@ -88,7 +88,7 @@ See [ci.yaml](.github/workflows/ci.yaml).
 
 ## Garbage collection
 
-Discussed [here](https://github.com/nix-community/cache-nix-too/issues/4).
+Discussed [here](https://github.com/nix-community/cache-nix-action/issues/4).
 
 ## Approaches
 
