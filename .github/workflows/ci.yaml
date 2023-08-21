@@ -56,11 +56,20 @@ jobs:
         if: ${{ matrix.do-cache }}
         uses: ./.
         with:
-          linux-gc-enabled: true
-          linux-max-store-size: 8000000000
-          macos-gc-enabled: true
-          macos-max-store-size: 8000000000
-          # save a new cache every time
+          gc-enabled-linux: true
+          gc-max-store-size-linux: 8000000000
+          gc-enabled-macos: true
+          gc-max-store-size-macos: 8000000000
+          
+          # 3 days
+          purge-max-age: 86400
+          purge-by-created-time: true
+          purge-by-accessed-time: true
+          
+          # output debug info
+          debug: true
+          
+          # save a new cache every time ci file changes
           key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-keys: |
             cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}-
@@ -103,16 +112,6 @@ jobs:
 
       - name: Show profile
         run: nix profile list
-      
-      # Purge old caches just before saving a new one
-      # in the Post phase of the cache-nix-action.
-      - uses: deemp/purge-cache@v1
-        with:
-          debug: true
-          created: true
-          accessed: true
-          # 3 days
-          max-age: 86400
 
     strategy:
       matrix:
