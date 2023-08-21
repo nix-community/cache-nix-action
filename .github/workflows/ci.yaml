@@ -62,7 +62,6 @@ jobs:
           gc-max-store-size-macos: 8000000000
           
           purge-enabled: true
-          # 3 days
           purge-max-age: 86400
           purge-by-created-time: true
           purge-by-accessed-time: true
