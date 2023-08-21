@@ -3,6 +3,7 @@ import * as core from "@actions/core";
 import { exec } from "@actions/exec";
 
 import { Events, Inputs, State } from "./constants";
+import { purgeCaches } from "./purge";
 import { type IStateProvider } from "./stateProvider";
 import * as utils from "./utils/actionUtils";
 
@@ -45,6 +46,12 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             Inputs.EnableCrossOsArchive
         );
 
+        const purgeEnabled = utils.getInputAsBool(Inputs.PurgeEnabled);
+
+        if (purgeEnabled) {
+            await purgeCaches();
+        }
+
         // If matched restore key is same as primary key, then do not save cache
         // NO-OP in case of SaveOnly action
         const cacheKey = await utils.getCacheKey(
@@ -68,16 +75,16 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
         const gcEnabled = utils.getInputAsBool(
             process.platform == "darwin"
-                ? Inputs.MacosGCEnabled
-                : Inputs.LinuxGCEnabled,
+                ? Inputs.GCEnabledMacos
+                : Inputs.GCEnabledLinux,
             { required: false }
         );
 
         if (gcEnabled) {
             const maxStoreSize = utils.getInputAsInt(
                 process.platform == "darwin"
-                    ? Inputs.MacosMaxStoreSize
-                    : Inputs.LinuxMaxStoreSize,
+                    ? Inputs.GCMaxStoreSizeMacos
+                    : Inputs.GCMaxStoreSizeLinux,
                 { required: true }
             );
 

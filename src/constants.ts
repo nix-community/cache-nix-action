@@ -4,12 +4,21 @@ export enum Inputs {
     RestoreKeys = "restore-keys", // Input for cache, restore action
     UploadChunkSize = "upload-chunk-size", // Input for cache, save action
     EnableCrossOsArchive = "enableCrossOsArchive", // Input for cache, restore, save action
-    MacosGCEnabled = "macos-gc-enabled",
-    MacosMaxStoreSize = "macos-max-store-size",
-    LinuxGCEnabled = "linux-gc-enabled",
-    LinuxMaxStoreSize = "linux-max-store-size",
     FailOnCacheMiss = "fail-on-cache-miss", // Input for cache, restore action
-    LookupOnly = "lookup-only" // Input for cache, restore action
+    LookupOnly = "lookup-only", // Input for cache, restore action
+
+    Debug = "debug", // Input for cache, restore, save action
+    Token = "token", // Input for cache, save action
+
+    GCEnabledMacos = "gc-enabled-macos", // Input for cache, save action
+    GCMaxStoreSizeMacos = "gc-max-store-size-macos", // Input for cache, save action
+    GCEnabledLinux = "gc-enabled-linux", // Input for cache, save action
+    GCMaxStoreSizeLinux = "gc-max-store-size-linux", // Input for cache, save action
+
+    PurgeEnabled = "purge-enabled", // Input for cache, save action
+    MaxAge = "purge-max-age", // Input for cache, save action
+    Accessed = "purge-by-accessed-time", // Input for cache, save action
+    Created = "purge-by-created-time" // Input for cache, save action
 }
 
 export enum Outputs {

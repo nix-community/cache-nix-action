@@ -7,36 +7,48 @@ inputs:
     required: true
   restore-keys:
     description: 'An ordered list of keys to use for restoring stale cache if no cache hit occurred for key. Note `cache-hit` returns false in this case.'
-    required: false
   upload-chunk-size:
     description: 'The chunk size used to split up large files during upload, in bytes'
-    required: false
   enableCrossOsArchive:
     description: 'An optional boolean when enabled, allows windows runners to save or restore caches that can be restored or saved respectively on other platforms'
     default: 'false'
-    required: false
   fail-on-cache-miss:
     description: 'Fail the workflow if cache entry is not found'
     default: 'false'
-    required: false
   lookup-only:
     description: 'Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache'
     default: 'false'
-    required: false
-  macos-gc-enabled:
-    description: 'When `true`, enables conditional garbage collection before saving a cache on macOS runners.'
-    required: false
-    default: "false"
-  macos-max-store-size:
-    description: 'Maximum Nix store size in bytes on macOS runners. Requires `macos-gc-enabled: true`.'
-    required: false
-  linux-gc-enabled:
-    description: 'When `true`, enables conditional garbage collection before saving a cache on Linux runners.'
-    required: false
-    default: "false"
-  linux-max-store-size:
-    description: 'Maximum Nix store size in bytes on Linux runners. Requires `linux-gc-enabled: true`.'
-    required: false
+
+  gc-enabled-macos:
+    description: 'When `true`, enables Nix store garbage collection before saving a cache on macOS runners.'
+    default: 'false'
+  gc-max-store-size-macos:
+    description: 'Maximum Nix store size in bytes on `macOS` runners. Requires `gc-enabled-macos: true`.'
+  gc-enabled-linux:
+    description: 'When `true`, enables Nix store garbage collection before saving a cache on Linux runners.'
+    default: 'false'
+  gc-max-store-size-linux:
+    description: 'Maximum Nix store size in bytes on `Linux` runners. Requires `gc-enabled-linux: true`.'
+  
+  purge-enabled:
+    description: 'Enable purging old caches'
+    default: 'false'
+  purge-max-age:
+    description: 'Delete all caches older than this value in seconds. Requires `purge-enabled: true`'
+    default: '604800'
+  purge-by-accessed-time:
+    description: 'When `true`, delete caches by `last accessed` time. Requires `purge-enabled: true`'
+    default: 'false'
+  purge-by-created-time:
+    description: 'When `true`, delete caches by `created` time. Requires `purge-enabled: true`'
+    default: 'true'
+  
+  debug:
+    description: 'Output debug info'
+    default: 'false'
+  token:
+    description: 'Used to communicate with GitHub API'
+    default: ${{ github.token }}
 outputs:
   cache-hit:
     description: 'A boolean value to indicate an exact match was found for the primary key'
