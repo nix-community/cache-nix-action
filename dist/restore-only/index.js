@@ -59419,12 +59419,18 @@ var Inputs;
     Inputs["RestoreKeys"] = "restore-keys";
     Inputs["UploadChunkSize"] = "upload-chunk-size";
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
-    Inputs["MacosGCEnabled"] = "macos-gc-enabled";
-    Inputs["MacosMaxStoreSize"] = "macos-max-store-size";
-    Inputs["LinuxGCEnabled"] = "linux-gc-enabled";
-    Inputs["LinuxMaxStoreSize"] = "linux-max-store-size";
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
-    Inputs["LookupOnly"] = "lookup-only"; // Input for cache, restore action
+    Inputs["LookupOnly"] = "lookup-only";
+    Inputs["Debug"] = "debug";
+    Inputs["Token"] = "token";
+    Inputs["GCEnabledMacos"] = "gc-enabled-macos";
+    Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
+    Inputs["GCEnabledLinux"] = "gc-enabled-linux";
+    Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
+    Inputs["PurgeEnabled"] = "purge-enabled";
+    Inputs["MaxAge"] = "purge-max-age";
+    Inputs["Accessed"] = "purge-by-accessed-time";
+    Inputs["Created"] = "purge-by-created-time"; // Input for cache, save action
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 var Outputs;
 (function (Outputs) {
