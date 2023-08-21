@@ -21,7 +21,9 @@ This action is based on [actions/cache](https://github.com/actions/cache).
    * The store may contain useless paths from previous runs.
    * This action allows to limit nix store size (see [Configuration](#configuration)).
 
-1. `cache-nix-action` saves a new cache.
+1. `cache-nix-action` saves a new cache when there's no cache hit.
+   * Saving a cache takes time.
+   * There may be no cache hit when an old matching cache was purged.
 
 ## Limitations
 
