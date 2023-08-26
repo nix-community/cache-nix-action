@@ -62562,6 +62562,7 @@ function purgeByTime(useAccessedTime, key) {
             if (cachesRequest.actions_caches.length == 0) {
                 break;
             }
+            results.push(...cachesRequest.actions_caches);
         }
         core.info(`Found ${results.length} caches`);
         results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
