@@ -1,8 +1,8 @@
 import * as cache from "@actions/cache";
 import * as core from "@actions/core";
-import { exec } from "@actions/exec";
 
 import { Events, Inputs, State } from "./constants";
+import { collectGarbage } from "./gc";
 import { purgeCaches } from "./purge";
 import { type IStateProvider } from "./stateProvider";
 import * as utils from "./utils/actionUtils";
@@ -46,23 +46,17 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             Inputs.EnableCrossOsArchive
         );
 
-        const purgeEnabled = utils.getInputAsBool(Inputs.PurgeEnabled);
-
-        if (purgeEnabled) {
-            await purgeCaches();
-        }
+        await purgeCaches(primaryKey);
 
         // If matched restore key is same as primary key, then do not save cache
         // NO-OP in case of SaveOnly action
-        const cacheKey = await utils.getCacheKey(
+        const restoredKey = await utils.getCacheKey(
             cachePaths,
             primaryKey,
             restoreKeys,
             true,
             enableCrossOsArchive
         );
-
-        const restoredKey = cacheKey;
 
         if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
             core.info(
@@ -71,40 +65,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             return;
         }
 
-        await exec("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
-
-        const gcEnabled = utils.getInputAsBool(
-            process.platform == "darwin"
-                ? Inputs.GCEnabledMacos
-                : Inputs.GCEnabledLinux,
-            { required: false }
-        );
-
-        if (gcEnabled) {
-            const maxStoreSize = utils.getInputAsInt(
-                process.platform == "darwin"
-                    ? Inputs.GCMaxStoreSizeMacos
-                    : Inputs.GCMaxStoreSizeLinux,
-                { required: true }
-            );
-
-            await exec("bash", [
-                "-c",
-                `
-                STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"
-                printf "Current store size in bytes: $STORE_SIZE\\n"
-
-                MAX_STORE_SIZE=${maxStoreSize}
-                
-                if (( STORE_SIZE > MAX_STORE_SIZE )); then
-                    (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
-                    (( R2 = R1 > 0 ? R1 : 0 ))
-                    printf "Max bytes to free: $R2\\n"
-                    nix store gc --max "$R2"
-                fi
-                `
-            ]);
-        }
+        await collectGarbage();
 
         cacheId = await cache.saveCache(
             cachePaths,

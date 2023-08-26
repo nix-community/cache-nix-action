@@ -23,10 +23,11 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 1. `cache-nix-action` saves a new cache when there's no cache hit.
    * Saving a cache takes time.
-   * There may be no cache hit when an old matching cache was purged.
+   * There may be no cache hit after an old matching cache was purged.
 
 ## Limitations
 
+* `GitHub` allows only 10GB of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)).
 * `cache-nix-action` restores and saves the whole `/nix` directory.
 * `cache-nix-action` requires `nix-quick-install-action` (see [Approach](#approach)).
 * Store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
@@ -34,48 +35,57 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 * When restoring, `cache-nix-action` writes cached Nix store paths into a read-only `/nix/store` of a runner.
   Some of these paths may already be present, so the action will show `File exists` errors and a warning that it failed to restore.
   It's OK.
-* It may be necessary to purge old caches (see [Example workflow](#example-workflow)) and [New inputs](#new-inputs).
+* It may be necessary to purge old caches (see [Example workflow](#example-workflow) and [New inputs](#new-inputs)).
+
+See alternative [caching approaches](#caching-approaches).
 
 ## Configuration
 
 See [action.yaml](action.yaml).
 
 This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/cache`.
-Other inputs are new or override the inherited inputs.
 
 ### New inputs
 
-| `name`                    | `description`                                                                               | `required` | `default` |
-| ------------------------- | ------------------------------------------------------------------------------------------- | ---------- | --------- |
-| `gc-enabled-macos`        | When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache. | `false`    | `false`   |
-| `gc-max-cache-size-macos` | Maximum Nix store size in bytes on `macOS` runners. Requires `gc-enabled-macos: true`.      | `false`    |           |
-| `gc-enabled-linux`        | When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache. | `false`    | `false`   |
-| `gc-max-cache-size-linux` | Maximum Nix store size in bytes on `Linux` runners. Requires `gc-enabled-linux: true`.      | `false`    |           |
-| `purge-enabled`           | When `true`, old caches will be purged before saving a cache.                               | `false`    | `false`   |
-| `purge-max-age`           | Purge all caches older than this value in seconds. Requires `purge-enabled: true`.          | `false`    | `604800`  |
-| `purge-by-accessed-time`  | When `true`, delete caches by `last accessed` time. Requires `purge-enabled: true`.         | `false`    | `false`   |
-| `purge-by-created-time`   | When `true`, delete caches by `created` time. Requires `purge-enabled: true`.               | `false`    | `true`    |
+| `name`                    | `description`                                                                                     | `required` | `default` | `needs`                |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | ---------- | --------- | ---------------------- |
+| `gc-macos`                | When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.       | `false`    | `false`   | `gc-macos: true`       |
+| `gc-max-store-size-macos` | Maximum Nix store size in bytes on `macOS` runners.                                               | `false`    |           |                        |
+| `gc-linux`                | When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.       | `false`    | `false`   |                        |
+| `gc-max-store-size-linux` | Maximum Nix store size in bytes on `Linux` runners.                                               | `false`    |           | `gc-linux: true`       |
+| `purge`                   | When `true`, purge old caches before saving a new cache with a `key`.                             | `false`    | `false`   |                        |
+| `purge-key`               | A prefix used to purge caches with such a key prefix. An empty prefix is equivalent to the `key`. | `false`    | `''`      | `purge: true`          |
+| `purge-accessed`          | When `true`, purge caches by their last access time.                                              | `false`    | `false`   | `purge: true`          |
+| `purge-accessed-max-age`  | Purge caches last accessed more than this number of seconds ago.                                  | `false`    | `604800`  | `purge-accessed: true` |
+| `purge-created`           | When `true`, delete caches by their creation time.                                                | `false`    | `true`    | `purge: true`          |
+| `purge-created-max-age`   | Purge caches created more than this number of seconds ago.                                        | `false`    | `604800`  | `purge-created: true`. |
 
-### Default cached directories
+Note:
+
+* `cache-nix-action` purges only caches specific to a branch that has triggered a workflow.
+
+### Removed inputs
 
 The `cache-nix-action` doesn't provide the `path` input from the original [inputs](#inputs) of `actions/cache` due to [limitations](#limitations).
 Instead, the `cache-nix-action` caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
 
 ### Garbage collection parameters
 
-On `macOS` runners, when `gc-enabled-macos` is `true`, when a cache size is greater than `gc-max-cache-size-macos`, this action will run `nix store gc --max R` before saving a cache.
-Here, `R` is `max(0, S - gc-max-store-size-macos)`, where `S` is the current store size.
-Respective conditions hold for `Linux` runners.
+On `Linux` runners, when `gc-linux` is `true`, when a cache size is greater than `gc-max-cache-size-linux`, this action will run `nix store gc --max R` before saving a cache.
+Here, `R` is `max(0, S - gc-max-store-size-linux)`, where `S` is the current store size.
+Respective conditions hold for `macOS` runners.
 
 There are alternative approaches to garbage collection (see [Garbage collection](#garbage-collection)).
 
 ## Usage
 
 * This action **must** be used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
-* Maximum Nix store size on `Linux` runners will be `512MB` due to `gc-max-store-size-linux: 536870912`.
+* Maximum Nix store size on `Linux` runners will be `~1GB` due to `gc-max-store-size-linux: 1000000000`.
   * If the store has a larger size, it will be garbage collected to reach this limit (See [Garbage collection parameters](#garbage-collection-parameters)).
-* Maximum Nix store size on `macOS` runners will be limited by the runner storage size.
-  * Stores won't be garbage collected since `gc-enabled-macos: true` isn't set.
+  * The `cache-nix-action` will print the Nix store size in the `Post` phase, so you can choose an optimal store size to avoid garbage collection.
+* On `macOS` runners, Nix store won't be garbage collected since `gc-macos: true` isn't set.
+* The `cache-nix-action` will find caches with a key prefix `cache-${{ matrix.os }}-`.
+  Among these caches, the `cache-nix-action` will delete caches created more than `42` seconds ago
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v25
@@ -86,30 +96,42 @@ There are alternative approaches to garbage collection (see [Garbage collection]
       keep-outputs = true
 
 - name: Restore and cache Nix store
-  uses: nix-community/cache-nix-action@v2
+  uses: nix-community/cache-nix-action@v3
   with:
-    gc-enabled-linux: true
-    gc-max-store-size-linux: 1000000000
-
-    purge-enabled: true
-    purge-max-age: 86400
-    purge-by-created-time: true
-    purge-by-accessed-time: true
-
     key: cache-${{ matrix.os }}-${{ hashFiles('**/*.nix') }}
     restore-keys: |
       cache-${{ matrix.os }}-
+
+    gc-linux: true
+    gc-max-store-size-linux: 1000000000
+    
+    purge-caches: true
+    purge-key: cache-${{ matrix.os }}-
+    purge-created: true
+    purge-created-max-age: 42
 ```
 
-## Example workflow
+### Example workflow
 
 See [ci.yaml](.github/workflows/ci.yaml).
 
-## Troubleshooting
+### Troubleshooting
 
 * Use [action-tmate](https://github.com/mxschmitt/action-tmate) to debug on a runner via SSH.
 
-## Approaches
+### Purge old caches
+
+The `cache-nix-action` allows to delete old caches before saving a new cache (see [New inputs](#new-inputs)).
+
+The [purge-cache](https://github.com/MyAlbum/purge-cache) action allows to remove caches based on their `last accessed` or `created` time without branch limitations.
+
+Alternatively, you can use the [GitHub Actions Cache API](https://docs.github.com/en/rest/actions/cache).
+
+### Get more space on a runner
+
+The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
+
+## Caching approaches
 
 Discussed in more details [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
 
@@ -129,7 +151,7 @@ Pros:
 * Uses `GitHub Actions Cache` and works fast.
 * Easy to set up.
 * Allows to save a store of at most a given size (see [Garbage collection parameters](#garbage-collection-parameters)).
-* Allows to save output from garbage collection (see [Garbage collection](#garbage-collection)).
+* Allows to save outputs from garbage collection (see [Garbage collection](#garbage-collection)).
 
 Cons: see [Limitations](#limitations)
 

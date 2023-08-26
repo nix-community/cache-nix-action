@@ -1,29 +1,39 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 
+import * as utils from "./utils/actionUtils";
+
 function setFailedWrongValue(input: string, value: string) {
     core.setFailed(`Wrong value for the input '${input}': ${value}`);
 }
 
 enum Inputs {
-    Debug = "debug",
     Token = "token",
-    MaxAge = "purge-max-age",
-    Accessed = "purge-by-accessed-time",
-    Created = "purge-by-created-time"
+    PurgeEnabled = "purge",
+    AccessedMaxAge = "purge-accessed-max-age",
+    Accessed = "purge-accessed",
+    CreatedMaxAge = "purge-created-max-age",
+    Created = "purge-created",
+    PurgeKey = "purge-key"
 }
 
-export async function purgeCaches() {
-    const debug = core.getInput(Inputs.Debug, { required: false }) === "true";
-    const maxAge = core.getInput(Inputs.MaxAge, { required: true });
+async function purgeByTime(useAccessedTime: boolean, key: string) {
+    const verb = useAccessedTime ? "last accessed" : "created";
+
+    const inputMaxAge = useAccessedTime
+        ? Inputs.AccessedMaxAge
+        : Inputs.CreatedMaxAge;
+
+    const maxAge = core.getInput(inputMaxAge, { required: true });
+
     const maxDate = new Date(Date.now() - Number.parseInt(maxAge) * 1000);
+
     if (maxDate === null) {
-        setFailedWrongValue(Inputs.MaxAge, maxAge);
+        setFailedWrongValue(inputMaxAge, maxAge);
     }
-    const accessed =
-        core.getInput(Inputs.Accessed, { required: false }) === "true";
-    const created =
-        core.getInput(Inputs.Created, { required: false }) === "true";
+
+    console.log(`Deleting caches with key '${key}' ${verb} before ${maxDate}`);
+
     const token = core.getInput(Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
 
@@ -39,49 +49,32 @@ export async function purgeCaches() {
 
     const results: Cache[] = [];
 
-    for (let i = 1; i <= 100; i += 1) {
+    for (let i = 1; i <= 500; i += 1) {
         const { data: cachesRequest } =
             await octokit.rest.actions.getActionsCacheList({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
+                key,
                 per_page: 100,
-                page: i
+                page: i,
+                ref: github.context.ref
             });
 
         if (cachesRequest.actions_caches.length == 0) {
             break;
         }
-
-        results.push(...cachesRequest.actions_caches);
     }
 
-    if (debug) {
-        console.log(`Found ${results.length} caches`);
-    }
+    console.log(`Found ${results.length} caches`);
 
     results.forEach(async cache => {
-        if (
-            cache.last_accessed_at !== undefined &&
-            cache.created_at !== undefined &&
-            cache.id !== undefined
-        ) {
-            const accessedAt = new Date(cache.last_accessed_at);
-            const createdAt = new Date(cache.created_at);
-            const accessedCondition = accessed && accessedAt < maxDate;
-            const createdCondition = created && createdAt < maxDate;
-            if (accessedCondition || createdCondition) {
-                if (debug) {
-                    if (accessedCondition) {
-                        console.log(
-                            `Deleting cache ${cache.key}, last accessed at ${accessedAt} before ${maxDate}`
-                        );
-                    }
-                    if (createdCondition) {
-                        console.log(
-                            `Deleting cache ${cache.key}, created at ${createdAt} before ${maxDate}`
-                        );
-                    }
-                }
+        const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
+        if (at !== undefined && cache.id !== undefined) {
+            const atDate = new Date(at);
+            if (atDate < maxDate) {
+                console.log(
+                    `Deleting cache with key '${cache.key}' ${verb} at ${at}`
+                );
 
                 try {
                     await octokit.rest.actions.deleteActionsCacheById({
@@ -92,21 +85,60 @@ export async function purgeCaches() {
                     });
                 } catch (error) {
                     console.log(
-                        `Failed to delete cache ${cache.key};\n\n${error}`
+                        `Failed to delete cache ${cache.key}\n\n${error}`
                     );
                 }
-            } else if (debug) {
-                if (accessed) {
-                    console.log(
-                        `Skipping cache ${cache.key}, last accessed at ${accessedAt} after ${maxDate}`
-                    );
-                }
-                if (created) {
-                    console.log(
-                        `Skipping cache ${cache.key}, created at ${createdAt} after ${maxDate}`
-                    );
-                }
+            } else {
+                console.log(
+                    `Skipping cache ${cache.key}, ${verb} at ${atDate}`
+                );
             }
         }
     });
+}
+
+async function purgeByKey(key: string) {
+    console.log(`Purging caches with key '${key}'`);
+
+    const token = core.getInput(Inputs.Token, { required: false });
+    const octokit = github.getOctokit(token);
+
+    await octokit.rest.actions.deleteActionsCacheByKey({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        key,
+        ref: github.context.ref
+    });
+}
+
+async function purge(key: string) {
+    const accessed =
+        core.getInput(Inputs.Accessed, { required: false }) === "true";
+
+    const created =
+        core.getInput(Inputs.Created, { required: false }) === "true";
+
+    let purgeKey = core.getInput(Inputs.PurgeKey, { required: false });
+
+    if (purgeKey.trim().length === 0) {
+        purgeKey = key;
+    }
+
+    if (accessed || created) {
+        if (accessed) {
+            await purgeByTime(true, purgeKey);
+        }
+        if (created) {
+            await purgeByTime(false, purgeKey);
+        }
+    } else {
+        purgeByKey(purgeKey);
+    }
+}
+
+export async function purgeCaches(key: string) {
+    const purgeEnabled = utils.getInputAsBool(Inputs.PurgeEnabled);
+    if (purgeEnabled) {
+        await purge(key);
+    }
 }

@@ -19,33 +19,36 @@ inputs:
     description: 'Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache.'
     default: 'false'
 
-  gc-enabled-macos:
+  gc-macos:
     description: 'When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.'
     default: 'false'
   gc-max-store-size-macos:
-    description: 'Maximum Nix store size in bytes on `macOS` runners. Requires `gc-enabled-macos: true`.'
-  gc-enabled-linux:
+    description: 'Maximum Nix store size in bytes on `macOS` runners. Requires `gc-macos: true`.'
+  gc-linux:
     description: 'When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.'
     default: 'false'
   gc-max-store-size-linux:
-    description: 'Maximum Nix store size in bytes on `Linux` runners. Requires `gc-enabled-linux: true`.'
+    description: 'Maximum Nix store size in bytes on `Linux` runners. Requires `gc-linux: true`.'
   
-  purge-enabled:
-    description: 'When `true`, old caches will be purged before saving a new cache.'
+  purge:
+    description: 'When `true`, purge old caches before saving a new cache with a `key`.'
     default: 'false'
-  purge-max-age:
-    description: 'Purge all caches older than this value in seconds. Requires `purge-enabled: true`.'
+  purge-key:
+    description: 'A prefix used to purge caches with such a key prefix. An empty prefix is equivalent to the `key`'
+    required: false
+  purge-accessed:
+    description: 'When `true`, purge caches by `last accessed` time. Requires `purge: true`.'
+    default: 'false'
+  purge-accessed-max-age:
+    description: 'Purge caches accessed more than this number of seconds ago. Requires `purge-accessed: true`.'
     default: '604800'
-  purge-by-accessed-time:
-    description: 'When `true`, delete caches by `last accessed` time. Requires `purge-enabled: true`.'
-    default: 'false'
-  purge-by-created-time:
-    description: 'When `true`, delete caches by `created` time. Requires `purge-enabled: true`.'
+  purge-created:
+    description: 'When `true`, purge caches by `created` time. Requires `purge: true`.'
     default: 'true'
+  purge-created-max-age:
+    description: 'Purge caches created more than this number of seconds ago. Requires `purge-created: true`.'
+    default: '604800'
   
-  debug:
-    description: 'Output debug info.'
-    default: 'false'
   token:
     description: 'Used to communicate with GitHub API.'
     default: ${{ github.token }}

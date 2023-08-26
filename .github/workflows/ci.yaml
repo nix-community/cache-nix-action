@@ -56,24 +56,21 @@ jobs:
         if: ${{ matrix.do-cache }}
         uses: ./.
         with:
-          gc-enabled-linux: true
-          gc-max-store-size-linux: 8000000000
-          gc-enabled-macos: true
-          gc-max-store-size-macos: 8000000000
-          
-          purge-enabled: true
-          purge-max-age: 86400
-          purge-by-created-time: true
-          purge-by-accessed-time: true
-          
-          # output debug info
-          debug: true
-          
           # save a new cache every time ci file changes
           key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-keys: |
-            cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}-
             cache-${{ matrix.os }}-
+          
+          gc-linux: true
+          gc-max-store-size-linux: 8000000000
+          gc-macos: true
+          gc-max-store-size-macos: 8000000000
+          
+          purge: true
+          purge-key: cache-${{ matrix.os }}-
+          purge-created: true
+          purge-created-max-age: 172800
+          
       # -------- THIS ACTION --------
       
       # Uncomment to debug this job
