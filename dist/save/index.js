@@ -62550,6 +62550,7 @@ function purgeByTime(useAccessedTime, key) {
         const token = core.getInput(Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         const results = [];
+        core.info(`ref: ${github.context.ref}\nowner: ${github.context.repo.owner}\nrepo: ${github.context.repo.repo}\nkey: ${key}`);
         for (let i = 1; i <= 500; i += 1) {
             const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
                 owner: github.context.repo.owner,
