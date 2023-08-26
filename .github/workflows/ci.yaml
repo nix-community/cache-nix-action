@@ -40,6 +40,8 @@ jobs:
     name: Nix CI
     runs-on: ${{ matrix.os }}
     needs: build
+    permissions:
+      actions: write
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
