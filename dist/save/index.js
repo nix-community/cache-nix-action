@@ -62550,22 +62550,21 @@ function purgeByTime(useAccessedTime, key) {
         const token = core.getInput(Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         const results = [];
-        core.info(`ref: ${github.context.ref}\nowner: ${github.context.repo.owner}\nrepo: ${github.context.repo.repo}\nkey: ${key}`);
         for (let i = 1; i <= 500; i += 1) {
             const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
                 key,
                 per_page: 100,
-                page: i
-                // ref: github.context.ref
+                page: i,
+                ref: github.context.ref
             });
             if (cachesRequest.actions_caches.length == 0) {
                 break;
             }
             results.push(...cachesRequest.actions_caches);
         }
-        core.info(`Found ${results.length} caches`);
+        core.info(`Found ${results.length} cache(s)`);
         results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
             const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
             if (at !== undefined && cache.id !== undefined) {
