@@ -63,6 +63,8 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
         if (cachesRequest.actions_caches.length == 0) {
             break;
         }
+
+        results.push(...cachesRequest.actions_caches);
     }
 
     core.info(`Found ${results.length} caches`);
