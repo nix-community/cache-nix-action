@@ -49,6 +49,10 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
 
     const results: Cache[] = [];
 
+    core.info(
+        `ref: ${github.context.ref}\nowner: ${github.context.repo.owner}\nrepo: ${github.context.repo.repo}\nkey: ${key}`
+    );
+
     for (let i = 1; i <= 500; i += 1) {
         const { data: cachesRequest } =
             await octokit.rest.actions.getActionsCacheList({
