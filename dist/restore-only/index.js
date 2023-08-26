@@ -59421,16 +59421,8 @@ var Inputs;
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
     Inputs["LookupOnly"] = "lookup-only";
-    Inputs["Debug"] = "debug";
     Inputs["Token"] = "token";
-    Inputs["GCEnabledMacos"] = "gc-enabled-macos";
-    Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
-    Inputs["GCEnabledLinux"] = "gc-enabled-linux";
-    Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
-    Inputs["PurgeEnabled"] = "purge-enabled";
-    Inputs["MaxAge"] = "purge-max-age";
-    Inputs["Accessed"] = "purge-by-accessed-time";
-    Inputs["Created"] = "purge-by-created-time"; // Input for cache, save action
+    Inputs["PurgeEnabled"] = "purge-enabled"; // Input for cache, save action
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 var Outputs;
 (function (Outputs) {

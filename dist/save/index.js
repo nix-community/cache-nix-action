@@ -62373,16 +62373,8 @@ var Inputs;
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
     Inputs["LookupOnly"] = "lookup-only";
-    Inputs["Debug"] = "debug";
     Inputs["Token"] = "token";
-    Inputs["GCEnabledMacos"] = "gc-enabled-macos";
-    Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
-    Inputs["GCEnabledLinux"] = "gc-enabled-linux";
-    Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
-    Inputs["PurgeEnabled"] = "purge-enabled";
-    Inputs["MaxAge"] = "purge-max-age";
-    Inputs["Accessed"] = "purge-by-accessed-time";
-    Inputs["Created"] = "purge-by-created-time"; // Input for cache, save action
+    Inputs["PurgeEnabled"] = "purge-enabled"; // Input for cache, save action
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 var Outputs;
 (function (Outputs) {
@@ -62402,6 +62394,86 @@ var Events;
     Events["PullRequest"] = "pull_request";
 })(Events = exports.Events || (exports.Events = {}));
 exports.RefKey = "GITHUB_REF";
+
+
+/***/ }),
+
+/***/ 2193:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.collectGarbage = exports.Inputs = void 0;
+const exec_1 = __nccwpck_require__(1514);
+const utils = __importStar(__nccwpck_require__(6850));
+var Inputs;
+(function (Inputs) {
+    Inputs["GCMacos"] = "gc-macos";
+    Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
+    Inputs["GCLinux"] = "gc-linux";
+    Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux"; // Input for cache, save action
+})(Inputs = exports.Inputs || (exports.Inputs = {}));
+function collectGarbage() {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
+        const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? Inputs.GCMacos : Inputs.GCLinux, { required: false });
+        if (gcEnabled) {
+            const maxStoreSize = utils.getInputAsInt(process.platform == "darwin"
+                ? Inputs.GCMaxStoreSizeMacos
+                : Inputs.GCMaxStoreSizeLinux, { required: true });
+            yield (0, exec_1.exec)("bash", [
+                "-c",
+                `
+                STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"
+                printf "Current store size in bytes: $STORE_SIZE\\n"
+
+                MAX_STORE_SIZE=${maxStoreSize}
+                
+                if (( STORE_SIZE > MAX_STORE_SIZE )); then
+                    (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
+                    (( R2 = R1 > 0 ? R1 : 0 ))
+                    printf "Max bytes to free: $R2\\n"
+                    nix store gc --max "$R2"
+                fi
+                `
+            ]);
+        }
+    });
+}
+exports.collectGarbage = collectGarbage;
 
 
 /***/ }),
@@ -62447,62 +62519,55 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.purgeCaches = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const utils = __importStar(__nccwpck_require__(6850));
 function setFailedWrongValue(input, value) {
     core.setFailed(`Wrong value for the input '${input}': ${value}`);
 }
 var Inputs;
 (function (Inputs) {
-    Inputs["Debug"] = "debug";
     Inputs["Token"] = "token";
-    Inputs["MaxAge"] = "purge-max-age";
-    Inputs["Accessed"] = "purge-by-accessed-time";
-    Inputs["Created"] = "purge-by-created-time";
+    Inputs["PurgeEnabled"] = "purge";
+    Inputs["AccessedMaxAge"] = "purge-accessed-max-age";
+    Inputs["Accessed"] = "purge-accessed";
+    Inputs["CreatedMaxAge"] = "purge-created-max-age";
+    Inputs["Created"] = "purge-created";
+    Inputs["PurgeKey"] = "purge-key";
 })(Inputs || (Inputs = {}));
-function purgeCaches() {
+function purgeByTime(useAccessedTime, key) {
     return __awaiter(this, void 0, void 0, function* () {
-        const debug = core.getInput(Inputs.Debug, { required: false }) === "true";
-        const maxAge = core.getInput(Inputs.MaxAge, { required: true });
+        const verb = useAccessedTime ? "last accessed" : "created";
+        const inputMaxAge = useAccessedTime
+            ? Inputs.AccessedMaxAge
+            : Inputs.CreatedMaxAge;
+        const maxAge = core.getInput(inputMaxAge, { required: true });
         const maxDate = new Date(Date.now() - Number.parseInt(maxAge) * 1000);
         if (maxDate === null) {
-            setFailedWrongValue(Inputs.MaxAge, maxAge);
+            setFailedWrongValue(inputMaxAge, maxAge);
         }
-        const accessed = core.getInput(Inputs.Accessed, { required: false }) === "true";
-        const created = core.getInput(Inputs.Created, { required: false }) === "true";
+        console.log(`Deleting caches with key '${key}' ${verb} before ${maxDate}`);
         const token = core.getInput(Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         const results = [];
-        for (let i = 1; i <= 100; i += 1) {
+        for (let i = 1; i <= 500; i += 1) {
             const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
+                key,
                 per_page: 100,
-                page: i
+                page: i,
+                ref: github.context.ref
             });
             if (cachesRequest.actions_caches.length == 0) {
                 break;
             }
-            results.push(...cachesRequest.actions_caches);
         }
-        if (debug) {
-            console.log(`Found ${results.length} caches`);
-        }
+        console.log(`Found ${results.length} caches`);
         results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
-            if (cache.last_accessed_at !== undefined &&
-                cache.created_at !== undefined &&
-                cache.id !== undefined) {
-                const accessedAt = new Date(cache.last_accessed_at);
-                const createdAt = new Date(cache.created_at);
-                const accessedCondition = accessed && accessedAt < maxDate;
-                const createdCondition = created && createdAt < maxDate;
-                if (accessedCondition || createdCondition) {
-                    if (debug) {
-                        if (accessedCondition) {
-                            console.log(`Deleting cache ${cache.key}, last accessed at ${accessedAt} before ${maxDate}`);
-                        }
-                        if (createdCondition) {
-                            console.log(`Deleting cache ${cache.key}, created at ${createdAt} before ${maxDate}`);
-                        }
-                    }
+            const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
+            if (at !== undefined && cache.id !== undefined) {
+                const atDate = new Date(at);
+                if (atDate < maxDate) {
+                    console.log(`Deleting cache with key '${cache.key}' ${verb} at ${at}`);
                     try {
                         yield octokit.rest.actions.deleteActionsCacheById({
                             per_page: 100,
@@ -62512,19 +62577,56 @@ function purgeCaches() {
                         });
                     }
                     catch (error) {
-                        console.log(`Failed to delete cache ${cache.key};\n\n${error}`);
+                        console.log(`Failed to delete cache ${cache.key}\n\n${error}`);
                     }
                 }
-                else if (debug) {
-                    if (accessed) {
-                        console.log(`Skipping cache ${cache.key}, last accessed at ${accessedAt} after ${maxDate}`);
-                    }
-                    if (created) {
-                        console.log(`Skipping cache ${cache.key}, created at ${createdAt} after ${maxDate}`);
-                    }
+                else {
+                    console.log(`Skipping cache ${cache.key}, ${verb} at ${atDate}`);
                 }
             }
         }));
+    });
+}
+function purgeByKey(key) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log(`Purging caches with key '${key}'`);
+        const token = core.getInput(Inputs.Token, { required: false });
+        const octokit = github.getOctokit(token);
+        yield octokit.rest.actions.deleteActionsCacheByKey({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            key,
+            ref: github.context.ref
+        });
+    });
+}
+function purge(key) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const accessed = core.getInput(Inputs.Accessed, { required: false }) === "true";
+        const created = core.getInput(Inputs.Created, { required: false }) === "true";
+        let purgeKey = core.getInput(Inputs.PurgeKey, { required: false });
+        if (purgeKey.trim().length === 0) {
+            purgeKey = key;
+        }
+        if (accessed || created) {
+            if (accessed) {
+                yield purgeByTime(true, purgeKey);
+            }
+            if (created) {
+                yield purgeByTime(false, purgeKey);
+            }
+        }
+        else {
+            purgeByKey(purgeKey);
+        }
+    });
+}
+function purgeCaches(key) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const purgeEnabled = utils.getInputAsBool(Inputs.PurgeEnabled);
+        if (purgeEnabled) {
+            yield purge(key);
+        }
     });
 }
 exports.purgeCaches = purgeCaches;
@@ -62603,8 +62705,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
-const exec_1 = __nccwpck_require__(1514);
 const constants_1 = __nccwpck_require__(9042);
+const gc_1 = __nccwpck_require__(2193);
 const purge_1 = __nccwpck_require__(6231);
 const utils = __importStar(__nccwpck_require__(6850));
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
@@ -62633,43 +62735,15 @@ function saveImpl(stateProvider) {
             const cachePaths = utils.paths;
             const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
-            const purgeEnabled = utils.getInputAsBool(constants_1.Inputs.PurgeEnabled);
-            if (purgeEnabled) {
-                yield (0, purge_1.purgeCaches)();
-            }
+            yield (0, purge_1.purgeCaches)(primaryKey);
             // If matched restore key is same as primary key, then do not save cache
             // NO-OP in case of SaveOnly action
-            const cacheKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, true, enableCrossOsArchive);
-            const restoredKey = cacheKey;
+            const restoredKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, true, enableCrossOsArchive);
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
                 return;
             }
-            yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
-            const gcEnabled = utils.getInputAsBool(process.platform == "darwin"
-                ? constants_1.Inputs.GCEnabledMacos
-                : constants_1.Inputs.GCEnabledLinux, { required: false });
-            if (gcEnabled) {
-                const maxStoreSize = utils.getInputAsInt(process.platform == "darwin"
-                    ? constants_1.Inputs.GCMaxStoreSizeMacos
-                    : constants_1.Inputs.GCMaxStoreSizeLinux, { required: true });
-                yield (0, exec_1.exec)("bash", [
-                    "-c",
-                    `
-                STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"
-                printf "Current store size in bytes: $STORE_SIZE\\n"
-
-                MAX_STORE_SIZE=${maxStoreSize}
-                
-                if (( STORE_SIZE > MAX_STORE_SIZE )); then
-                    (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
-                    (( R2 = R1 > 0 ? R1 : 0 ))
-                    printf "Max bytes to free: $R2\\n"
-                    nix store gc --max "$R2"
-                fi
-                `
-                ]);
-            }
+            yield (0, gc_1.collectGarbage)();
             cacheId = yield cache.saveCache(cachePaths, primaryKey, {
                 uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize)
             }, enableCrossOsArchive);
