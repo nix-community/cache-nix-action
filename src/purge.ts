@@ -10,11 +10,11 @@ function setFailedWrongValue(input: string, value: string) {
 enum Inputs {
     Token = "token",
     PurgeEnabled = "purge",
-    AccessedMaxAge = "purge-accessed-max-age",
+    PurgeKey = "purge-key",
     Accessed = "purge-accessed",
-    CreatedMaxAge = "purge-created-max-age",
+    AccessedMaxAge = "purge-accessed-max-age",
     Created = "purge-created",
-    PurgeKey = "purge-key"
+    CreatedMaxAge = "purge-created-max-age"
 }
 
 async function purgeByTime(useAccessedTime: boolean, key: string) {
@@ -24,7 +24,7 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
         ? Inputs.AccessedMaxAge
         : Inputs.CreatedMaxAge;
 
-    const maxAge = core.getInput(inputMaxAge, { required: true });
+    const maxAge = core.getInput(inputMaxAge, { required: false });
 
     const maxDate = new Date(Date.now() - Number.parseInt(maxAge) * 1000);
 
@@ -32,7 +32,7 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
         setFailedWrongValue(inputMaxAge, maxAge);
     }
 
-    console.log(`Deleting caches with key '${key}' ${verb} before ${maxDate}`);
+    core.info(`Purging caches with key '${key}' ${verb} before ${maxDate}`);
 
     const token = core.getInput(Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
@@ -65,14 +65,14 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
         }
     }
 
-    console.log(`Found ${results.length} caches`);
+    core.info(`Found ${results.length} caches`);
 
     results.forEach(async cache => {
         const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
         if (at !== undefined && cache.id !== undefined) {
             const atDate = new Date(at);
             if (atDate < maxDate) {
-                console.log(
+                core.info(
                     `Deleting cache with key '${cache.key}' ${verb} at ${at}`
                 );
 
@@ -84,21 +84,19 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
                         cache_id: cache.id
                     });
                 } catch (error) {
-                    console.log(
+                    core.info(
                         `Failed to delete cache ${cache.key}\n\n${error}`
                     );
                 }
             } else {
-                console.log(
-                    `Skipping cache ${cache.key}, ${verb} at ${atDate}`
-                );
+                core.info(`Skipping cache ${cache.key}, ${verb} at ${atDate}`);
             }
         }
     });
 }
 
 async function purgeByKey(key: string) {
-    console.log(`Purging caches with key '${key}'`);
+    core.info(`Purging caches with key '${key}'`);
 
     const token = core.getInput(Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
@@ -132,7 +130,7 @@ async function purge(key: string) {
             await purgeByTime(false, purgeKey);
         }
     } else {
-        purgeByKey(purgeKey);
+        await purgeByKey(purgeKey);
     }
 }
 

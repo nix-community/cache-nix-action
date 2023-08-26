@@ -1,3 +1,4 @@
+import * as core from "@actions/core";
 import { exec } from "@actions/exec";
 
 import * as utils from "./utils/actionUtils";
@@ -10,6 +11,8 @@ export enum Inputs {
 }
 
 export async function collectGarbage() {
+    core.info("Collecting garbage");
+
     await exec("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
 
     const gcEnabled = utils.getInputAsBool(
