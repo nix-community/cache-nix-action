@@ -62437,6 +62437,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.collectGarbage = exports.Inputs = void 0;
+const core = __importStar(__nccwpck_require__(2186));
 const exec_1 = __nccwpck_require__(1514);
 const utils = __importStar(__nccwpck_require__(6850));
 var Inputs;
@@ -62448,6 +62449,7 @@ var Inputs;
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 function collectGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
+        core.info("Collecting garbage");
         yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
         const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? Inputs.GCMacos : Inputs.GCLinux, { required: false });
         if (gcEnabled) {
@@ -62527,11 +62529,11 @@ var Inputs;
 (function (Inputs) {
     Inputs["Token"] = "token";
     Inputs["PurgeEnabled"] = "purge";
-    Inputs["AccessedMaxAge"] = "purge-accessed-max-age";
-    Inputs["Accessed"] = "purge-accessed";
-    Inputs["CreatedMaxAge"] = "purge-created-max-age";
-    Inputs["Created"] = "purge-created";
     Inputs["PurgeKey"] = "purge-key";
+    Inputs["Accessed"] = "purge-accessed";
+    Inputs["AccessedMaxAge"] = "purge-accessed-max-age";
+    Inputs["Created"] = "purge-created";
+    Inputs["CreatedMaxAge"] = "purge-created-max-age";
 })(Inputs || (Inputs = {}));
 function purgeByTime(useAccessedTime, key) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -62539,12 +62541,12 @@ function purgeByTime(useAccessedTime, key) {
         const inputMaxAge = useAccessedTime
             ? Inputs.AccessedMaxAge
             : Inputs.CreatedMaxAge;
-        const maxAge = core.getInput(inputMaxAge, { required: true });
+        const maxAge = core.getInput(inputMaxAge, { required: false });
         const maxDate = new Date(Date.now() - Number.parseInt(maxAge) * 1000);
         if (maxDate === null) {
             setFailedWrongValue(inputMaxAge, maxAge);
         }
-        console.log(`Deleting caches with key '${key}' ${verb} before ${maxDate}`);
+        core.info(`Purging caches with key '${key}' ${verb} before ${maxDate}`);
         const token = core.getInput(Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         const results = [];
@@ -62561,13 +62563,13 @@ function purgeByTime(useAccessedTime, key) {
                 break;
             }
         }
-        console.log(`Found ${results.length} caches`);
+        core.info(`Found ${results.length} caches`);
         results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
             const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
             if (at !== undefined && cache.id !== undefined) {
                 const atDate = new Date(at);
                 if (atDate < maxDate) {
-                    console.log(`Deleting cache with key '${cache.key}' ${verb} at ${at}`);
+                    core.info(`Deleting cache with key '${cache.key}' ${verb} at ${at}`);
                     try {
                         yield octokit.rest.actions.deleteActionsCacheById({
                             per_page: 100,
@@ -62577,11 +62579,11 @@ function purgeByTime(useAccessedTime, key) {
                         });
                     }
                     catch (error) {
-                        console.log(`Failed to delete cache ${cache.key}\n\n${error}`);
+                        core.info(`Failed to delete cache ${cache.key}\n\n${error}`);
                     }
                 }
                 else {
-                    console.log(`Skipping cache ${cache.key}, ${verb} at ${atDate}`);
+                    core.info(`Skipping cache ${cache.key}, ${verb} at ${atDate}`);
                 }
             }
         }));
@@ -62589,7 +62591,7 @@ function purgeByTime(useAccessedTime, key) {
 }
 function purgeByKey(key) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(`Purging caches with key '${key}'`);
+        core.info(`Purging caches with key '${key}'`);
         const token = core.getInput(Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         yield octokit.rest.actions.deleteActionsCacheByKey({
@@ -62617,7 +62619,7 @@ function purge(key) {
             }
         }
         else {
-            purgeByKey(purgeKey);
+            yield purgeByKey(purgeKey);
         }
     });
 }
