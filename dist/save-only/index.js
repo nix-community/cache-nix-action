@@ -62556,8 +62556,8 @@ function purgeByTime(useAccessedTime, key) {
                 repo: github.context.repo.repo,
                 key,
                 per_page: 100,
-                page: i,
-                ref: github.context.ref
+                page: i
+                // ref: github.context.ref
             });
             if (cachesRequest.actions_caches.length == 0) {
                 break;
