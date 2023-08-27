@@ -3,7 +3,7 @@ jobs:
     name: Check if src/ changed
     runs-on: ubuntu-latest
     outputs:
-      src-changed: ${{ steps.src-changed.outputs.any_changed == 'true' }}
+      src-changed: ${{ steps.src-changed.outputs.any_changed }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -21,7 +21,7 @@ jobs:
       contents: write
       actions: write
     needs: check-src-changed
-    if: needs.check-src-changed.outputs.src-changed == 'true'
+    if: needs.check-src-changed.outputs.src-changed
     steps:
       - uses: actions/checkout@v3
 
