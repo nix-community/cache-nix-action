@@ -8,7 +8,11 @@ function setFailedWrongValue(input: string, value: string) {
     core.setFailed(`Wrong value for the input '${input}': ${value}`);
 }
 
-async function purgeByTime(useAccessedTime: boolean, keys: string[]) {
+async function purgeByTime(
+    useAccessedTime: boolean,
+    keys: string[],
+    lookupOnly: boolean
+): Promise<[string]> {
     const verb = useAccessedTime ? "last accessed" : "created";
 
     const inputMaxAge = useAccessedTime
@@ -63,6 +67,10 @@ async function purgeByTime(useAccessedTime: boolean, keys: string[]) {
 
     core.info(`Found ${results.length} cache(s)`);
 
+    if (lookupOnly) {
+        return new Promise(() => results);
+    }
+
     results.forEach(async cache => {
         const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
         if (at !== undefined && cache.id !== undefined) {
@@ -89,26 +97,11 @@ async function purgeByTime(useAccessedTime: boolean, keys: string[]) {
             }
         }
     });
+
+    return new Promise(() => []);
 }
 
-function purgeByKey(keys: string[]) {
-    core.info(`Purging caches with keys ${keys}`);
-
-    const token = core.getInput(Inputs.Token, { required: false });
-    const octokit = github.getOctokit(token);
-
-    keys.forEach(
-        async key =>
-            await octokit.rest.actions.deleteActionsCacheByKey({
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                key,
-                ref: github.context.ref
-            })
-    );
-}
-
-async function purge(key: string) {
+async function purge(key: string, lookupOnly: boolean): Promise<[string]> {
     const accessed =
         core.getInput(Inputs.PurgeAccessed, { required: false }) === "true";
 
@@ -121,23 +114,32 @@ async function purge(key: string) {
         purgeKeys.push(...[key]);
     }
 
-    purgeKeys = purgeKeys.filter(key => key.trim().length > 0)
+    purgeKeys = purgeKeys.filter(key => key.trim().length > 0);
+
+    const results: string[] = [];
 
     if (accessed || created) {
         if (accessed) {
-            await purgeByTime(true, purgeKeys);
+            results.push(...(await purgeByTime(true, purgeKeys, lookupOnly)));
         }
         if (created) {
-            await purgeByTime(false, purgeKeys);
+            results.push(...(await purgeByTime(false, purgeKeys, lookupOnly)));
         }
     } else {
-        purgeByKey(purgeKeys);
+        core.warning("Either `accessed` or `created` input should be `true`.");
     }
+
+    return new Promise(() => results);
 }
 
-export async function purgeCaches(key: string) {
+export async function purgeCaches(key: string, lookupOnly: boolean) {
     const purgeEnabled = utils.getInputAsBool(Inputs.Purge);
+
+    const results: string[] = [];
+
     if (purgeEnabled) {
-        await purge(key);
+        results.push(...(await purge(key, lookupOnly)));
     }
+
+    return results;
 }

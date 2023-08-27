@@ -64,6 +64,7 @@ This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/
 Note:
 
 * `cache-nix-action` purges only caches specific to a branch that has triggered a workflow.
+* `*-max-age` is used before saving a cache.
 
 ### Removed inputs
 

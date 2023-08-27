@@ -46,8 +46,6 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             Inputs.EnableCrossOsArchive
         );
 
-        await purgeCaches(primaryKey);
-
         // If matched restore key is same as primary key, then do not save cache
         // NO-OP in case of SaveOnly action
         const restoredKey = await utils.getCacheKey(
@@ -59,10 +57,16 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         );
 
         if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
-            core.info(
-                `Cache hit occurred on the primary key ${primaryKey}, not saving cache.`
-            );
-            return;
+            core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
+
+            const caches = await purgeCaches(primaryKey, true);
+
+            if (primaryKey in caches) {
+                core.info(`This cache will be purged. Saving a new cache.`);
+            } else {
+                core.info(`Not saving a new cache.`);
+                return;
+            }
         }
 
         await collectGarbage();
@@ -78,6 +82,8 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
         if (cacheId != -1) {
             core.info(`Cache saved with key: ${primaryKey}`);
+
+            await purgeCaches(primaryKey, false);
         }
     } catch (error: unknown) {
         utils.logWarning((error as Error).message);
