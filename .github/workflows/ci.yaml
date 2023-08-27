@@ -157,6 +157,7 @@ jobs:
           - 2
           - 3
     runs-on: ${{ matrix.os }}
+    if: ${{ always() }}
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
