@@ -62541,7 +62541,7 @@ function purgeByTime(useAccessedTime, keys) {
         if (maxDate === null) {
             setFailedWrongValue(inputMaxAge, maxAge);
         }
-        core.info(`Purging caches with keys '${keys}' ${verb} before ${maxDate}`);
+        core.info(`Purging caches with keys\n${keys}\n${verb} before ${maxDate}`);
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         const results = [];
@@ -62589,7 +62589,7 @@ function purgeByTime(useAccessedTime, keys) {
     });
 }
 function purgeByKey(keys) {
-    core.info(`Purging caches with key '${keys}'`);
+    core.info(`Purging caches with keys\n${keys}`);
     const token = core.getInput(constants_1.Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
     keys.forEach((key) => __awaiter(this, void 0, void 0, function* () {
