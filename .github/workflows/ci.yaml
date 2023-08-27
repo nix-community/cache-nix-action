@@ -69,6 +69,7 @@ jobs:
           - true
           - false
     runs-on: ${{ matrix.os }}
+    if: always()
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
@@ -157,7 +158,7 @@ jobs:
           - 2
           - 3
     runs-on: ${{ matrix.os }}
-    if: ${{ always() }}
+    if: always()
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
@@ -180,6 +181,7 @@ jobs:
     name: Check cache changes
     needs: make-similar-caches
     runs-on: ubuntu-20.04
+    if: always()
     outputs:
       ci-changed: ${{ steps.ci-changed.outputs.any_changed == 'true' }}
     steps:
@@ -206,7 +208,7 @@ jobs:
           - ubuntu-20.04
           - ubuntu-22.04
     runs-on: ${{ matrix.os }}
-    if: needs.check-cache-changes.outputs.ci-changed == 'true'
+    if: always() && needs.check-cache-changes.outputs.ci-changed == 'true'
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
