@@ -128,7 +128,7 @@ async function purge(key: string) {
 }
 
 export async function purgeCaches(key: string) {
-    const purgeEnabled = utils.getInputAsBool(Inputs.PurgeEnabled);
+    const purgeEnabled = utils.getInputAsBool(Inputs.Purge);
     if (purgeEnabled) {
         await purge(key);
     }
