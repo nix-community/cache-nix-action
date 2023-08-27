@@ -127,7 +127,7 @@ jobs:
   
   make-similar-caches:
     name: Make similar caches
-    needs: build
+    needs: test
     strategy:
       matrix:
         os:
