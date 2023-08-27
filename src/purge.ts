@@ -1,28 +1,19 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 
+import { Inputs } from "./constants";
 import * as utils from "./utils/actionUtils";
 
 function setFailedWrongValue(input: string, value: string) {
     core.setFailed(`Wrong value for the input '${input}': ${value}`);
 }
 
-enum Inputs {
-    Token = "token",
-    PurgeEnabled = "purge",
-    PurgeKey = "purge-key",
-    Accessed = "purge-accessed",
-    AccessedMaxAge = "purge-accessed-max-age",
-    Created = "purge-created",
-    CreatedMaxAge = "purge-created-max-age"
-}
-
 async function purgeByTime(useAccessedTime: boolean, key: string) {
     const verb = useAccessedTime ? "last accessed" : "created";
 
     const inputMaxAge = useAccessedTime
-        ? Inputs.AccessedMaxAge
-        : Inputs.CreatedMaxAge;
+        ? Inputs.PurgeAccessedMaxAge
+        : Inputs.PurgeCreatedMaxAge;
 
     const maxAge = core.getInput(inputMaxAge, { required: false });
 
@@ -113,10 +104,10 @@ async function purgeByKey(key: string) {
 
 async function purge(key: string) {
     const accessed =
-        core.getInput(Inputs.Accessed, { required: false }) === "true";
+        core.getInput(Inputs.PurgeAccessed, { required: false }) === "true";
 
     const created =
-        core.getInput(Inputs.Created, { required: false }) === "true";
+        core.getInput(Inputs.PurgeCreated, { required: false }) === "true";
 
     let purgeKey = core.getInput(Inputs.PurgeKey, { required: false });
 

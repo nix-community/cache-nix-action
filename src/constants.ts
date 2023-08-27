@@ -7,9 +7,19 @@ export enum Inputs {
     FailOnCacheMiss = "fail-on-cache-miss", // Input for cache, restore action
     LookupOnly = "lookup-only", // Input for cache, restore action
 
+    GCMacos = "gc-macos", // Input for cache, save action
+    GCMaxStoreSizeMacos = "gc-max-store-size-macos", // Input for cache, save action
+    GCLinux = "gc-linux", // Input for cache, save action
+    GCMaxStoreSizeLinux = "gc-max-store-size-linux", // Input for cache, save action
+
     Token = "token", // Input for cache, save action
 
-    PurgeEnabled = "purge-enabled" // Input for cache, save action
+    PurgeEnabled = "purge-enabled", // Input for cache, save action
+    PurgeKey = "purge-key", // Input for cache, save action
+    PurgeAccessed = "purge-accessed", // Input for cache, save action
+    PurgeAccessedMaxAge = "purge-accessed-max-age", // Input for cache, save action
+    PurgeCreated = "purge-created", // Input for cache, save action
+    PurgeCreatedMaxAge = "purge-created-max-age" // Input for cache, save action
 }
 
 export enum Outputs {

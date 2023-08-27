@@ -1,14 +1,8 @@
 import * as core from "@actions/core";
 import { exec } from "@actions/exec";
 
+import { Inputs } from "./constants";
 import * as utils from "./utils/actionUtils";
-
-export enum Inputs {
-    GCMacos = "gc-macos", // Input for cache, save action
-    GCMaxStoreSizeMacos = "gc-max-store-size-macos", // Input for cache, save action
-    GCLinux = "gc-linux", // Input for cache, save action
-    GCMaxStoreSizeLinux = "gc-max-store-size-linux" // Input for cache, save action
-}
 
 export async function collectGarbage() {
     core.info("Collecting garbage");

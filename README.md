@@ -41,7 +41,7 @@ See alternative [caching approaches](#caching-approaches).
 
 ## Configuration
 
-See [action.yaml](action.yaml).
+See [action.yaml](action.yml), [restore/action.yml](restore/action.yml), [save/action.yml](save/action.yml).
 
 This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/cache`.
 

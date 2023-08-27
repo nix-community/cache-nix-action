@@ -15,6 +15,40 @@ inputs:
     description: 'An optional boolean when enabled, allows windows runners to save caches that can be restored on other platforms'
     default: 'false'
     required: false
+  
+  gc-macos:
+    description: 'When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.'
+    default: 'false'
+  gc-max-store-size-macos:
+    description: 'Maximum Nix store size in bytes on `macOS` runners. Requires `gc-macos: true`.'
+  gc-linux:
+    description: 'When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.'
+    default: 'false'
+  gc-max-store-size-linux:
+    description: 'Maximum Nix store size in bytes on `Linux` runners. Requires `gc-linux: true`.'
+  
+  purge:
+    description: 'When `true`, purge old caches before saving a new cache with a `key`.'
+    default: 'false'
+  purge-key:
+    description: 'A prefix used to purge caches with such a key prefix. An empty prefix is equivalent to the `key`'
+    required: false
+  purge-accessed:
+    description: 'When `true`, purge caches by `last accessed` time. Requires `purge: true`.'
+    default: 'false'
+  purge-accessed-max-age:
+    description: 'Purge caches accessed more than this number of seconds ago. Requires `purge-accessed: true`.'
+    default: '604800'
+  purge-created:
+    description: 'When `true`, purge caches by `created` time. Requires `purge: true`.'
+    default: 'true'
+  purge-created-max-age:
+    description: 'Purge caches created more than this number of seconds ago. Requires `purge-created: true`.'
+    default: '604800'
+  
+  token:
+    description: 'Used to communicate with GitHub API.'
+    default: ${{ github.token }}
 runs:
   using: 'node16'
   main: '../dist/save-only/index.js'
