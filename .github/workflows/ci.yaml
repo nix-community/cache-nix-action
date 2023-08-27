@@ -100,7 +100,7 @@ jobs:
           gc-max-store-size-macos: 8000000000
           
           purge: true
-          purge-key: cache-${{ matrix.os }}-
+          purge-keys: cache-${{ matrix.os }}-
           purge-created: true
           purge-created-max-age: 172800
           
@@ -244,7 +244,9 @@ jobs:
           key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
           
           purge: true
-          purge-key: similar-cache-${{ matrix.os }}-
+          purge-keys: |
+            similar-cache-${{ matrix.os }}-id-
+            similar-cache-${{ matrix.os }}-common-
           purge-created-max-age: 0
           
 
