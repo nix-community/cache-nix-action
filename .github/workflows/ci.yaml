@@ -1,10 +1,27 @@
 jobs:
+  check-src-changed:
+    name: Check if src/ changed
+    runs-on: ubuntu-latest
+    outputs:
+      src-changed: ${{ steps.src-changed.outputs.any_changed == 'true' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      
+      - uses: tj-actions/changed-files@v38
+        id: src-changed
+        with:
+          files: src/**
+
   build:
     name: Build and test the action
     runs-on: ubuntu-latest
     permissions:
       contents: write
       actions: write
+    needs: check-src-changed
+    if: needs.check-src-changed.outputs.src-changed == 'true'
     steps:
       - uses: actions/checkout@v3
 
