@@ -143,9 +143,27 @@ jobs:
       - name: Show profile
         run: nix profile list
   
+  check-cache-changes:
+    name: Check cache changes
+    needs: build
+    runs-on: ubuntu-20.04
+    if: always()
+    outputs:
+      files-changed: ${{ steps.files-changed.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - uses: tj-actions/changed-files@v38
+        id: files-changed
+        with:
+          files: |
+            .github/workflows/ci.yaml
+            src/**
+
   make-similar-caches:
     name: Make similar caches
-    needs: build
+    needs: check-cache-changes
     strategy:
       matrix:
         os:
@@ -158,7 +176,7 @@ jobs:
           - 2
           - 3
     runs-on: ${{ matrix.os }}
-    if: always()
+    if: always() && needs.check-cache-changes.outputs.files-changed
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
@@ -173,31 +191,13 @@ jobs:
         uses: ./.
         with:
           # save a new cache every time ci file changes
-          key: similar-cache-${{ matrix.os }}-id-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
-          restore-keys: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
+          key: similar-cache-${{ matrix.os }}-id-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml', 'src/**/*') }}
+          restore-keys: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml', 'src/**/*') }}
           restore-key-hit: true
   
-  check-cache-changes:
-    name: Check cache changes
-    needs: make-similar-caches
-    runs-on: ubuntu-20.04
-    if: always()
-    outputs:
-      ci-changed: ${{ steps.ci-changed.outputs.any_changed == 'true' }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-      - uses: tj-actions/changed-files@v38
-        id: ci-changed
-        with:
-          files: |
-            .github/workflows/ci.yaml
-  
-  # this job may run conditionally, e.g., when caches in make-similar-caches change
   merge-similar-caches:
     name: Merge similar caches
-    needs: check-cache-changes
+    needs: [check-cache-changes, make-similar-caches]
     permissions:
       actions: write
     strategy:
@@ -208,7 +208,7 @@ jobs:
           - ubuntu-20.04
           - ubuntu-22.04
     runs-on: ${{ matrix.os }}
-    if: always() && needs.check-cache-changes.outputs.ci-changed == 'true'
+    if: always() && needs.check-cache-changes.outputs.files-changed
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
