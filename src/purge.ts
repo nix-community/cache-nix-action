@@ -8,7 +8,7 @@ function setFailedWrongValue(input: string, value: string) {
     core.setFailed(`Wrong value for the input '${input}': ${value}`);
 }
 
-async function purgeByTime(useAccessedTime: boolean, key: string) {
+async function purgeByTime(useAccessedTime: boolean, keys: string[]) {
     const verb = useAccessedTime ? "last accessed" : "created";
 
     const inputMaxAge = useAccessedTime
@@ -23,7 +23,7 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
         setFailedWrongValue(inputMaxAge, maxAge);
     }
 
-    core.info(`Purging caches with key '${key}' ${verb} before ${maxDate}`);
+    core.info(`Purging caches with keys '${keys}' ${verb} before ${maxDate}`);
 
     const token = core.getInput(Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
@@ -40,22 +40,25 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
 
     const results: Cache[] = [];
 
-    for (let i = 1; i <= 500; i += 1) {
-        const { data: cachesRequest } =
-            await octokit.rest.actions.getActionsCacheList({
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                key,
-                per_page: 100,
-                page: i,
-                ref: github.context.ref
-            });
+    for (let i = 0; i <= keys.length; i += 1) {
+        const key = keys[i];
+        for (let j = 1; j <= 500; j += 1) {
+            const { data: cachesRequest } =
+                await octokit.rest.actions.getActionsCacheList({
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    key,
+                    per_page: 100,
+                    page: j,
+                    ref: github.context.ref
+                });
 
-        if (cachesRequest.actions_caches.length == 0) {
-            break;
+            if (cachesRequest.actions_caches.length == 0) {
+                break;
+            }
+
+            results.push(...cachesRequest.actions_caches);
         }
-
-        results.push(...cachesRequest.actions_caches);
     }
 
     core.info(`Found ${results.length} cache(s)`);
@@ -88,18 +91,21 @@ async function purgeByTime(useAccessedTime: boolean, key: string) {
     });
 }
 
-async function purgeByKey(key: string) {
-    core.info(`Purging caches with key '${key}'`);
+function purgeByKey(keys: string[]) {
+    core.info(`Purging caches with key '${keys}'`);
 
     const token = core.getInput(Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
 
-    await octokit.rest.actions.deleteActionsCacheByKey({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        key,
-        ref: github.context.ref
-    });
+    keys.forEach(
+        async key =>
+            await octokit.rest.actions.deleteActionsCacheByKey({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                key,
+                ref: github.context.ref
+            })
+    );
 }
 
 async function purge(key: string) {
@@ -109,21 +115,21 @@ async function purge(key: string) {
     const created =
         core.getInput(Inputs.PurgeCreated, { required: false }) === "true";
 
-    let purgeKey = core.getInput(Inputs.PurgeKey, { required: false });
+    const purgeKeys = utils.getInputAsArray(Inputs.RestoreKeys);
 
-    if (purgeKey.trim().length === 0) {
-        purgeKey = key;
+    if (purgeKeys.length == 0) {
+        purgeKeys.push(...[key]);
     }
 
     if (accessed || created) {
         if (accessed) {
-            await purgeByTime(true, purgeKey);
+            await purgeByTime(true, purgeKeys);
         }
         if (created) {
-            await purgeByTime(false, purgeKey);
+            await purgeByTime(false, purgeKeys);
         }
     } else {
-        await purgeByKey(purgeKey);
+        purgeByKey(purgeKeys);
     }
 }
 

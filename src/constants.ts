@@ -17,7 +17,7 @@ export enum Inputs {
     Token = "token", // Input for cache, save action
 
     Purge = "purge", // Input for cache, save action
-    PurgeKey = "purge-key", // Input for cache, save action
+    PurgeKey = "purge-keys", // Input for cache, save action
     PurgeAccessed = "purge-accessed", // Input for cache, save action
     PurgeAccessedMaxAge = "purge-accessed-max-age", // Input for cache, save action
     PurgeCreated = "purge-created", // Input for cache, save action

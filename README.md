@@ -54,7 +54,7 @@ This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/
 | `gc-linux`                | When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.                             | `false`    | `false`   |                        |
 | `gc-max-store-size-linux` | Maximum Nix store size in bytes on `Linux` runners.                                                                     | `false`    |           | `gc-linux: true`       |
 | `purge`                   | When `true`, purge old caches before saving a new cache with a `key`.                                                   | `false`    | `false`   |                        |
-| `purge-key`               | A prefix used to purge caches with such a key prefix. An empty prefix is equivalent to the `key`.                       | `false`    | `''`      | `purge: true`          |
+| `purge-keys`              | A newline-separated list of cache key prefixes used to purge caches. An empty list is equivalent to the `key` input.    | `false`    | `''`      | `purge: true`          |
 | `purge-accessed`          | When `true`, purge caches by their last access time.                                                                    | `false`    | `false`   | `purge: true`          |
 | `purge-accessed-max-age`  | Purge caches last accessed more than this number of seconds ago.                                                        | `false`    | `604800`  | `purge-accessed: true` |
 | `purge-created`           | When `true`, delete caches by their creation time.                                                                      | `false`    | `true`    | `purge: true`          |

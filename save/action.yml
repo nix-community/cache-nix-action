@@ -30,8 +30,8 @@ inputs:
   purge:
     description: 'When `true`, purge old caches before saving a new cache with a `key`.'
     default: 'false'
-  purge-key:
-    description: 'A prefix used to purge caches with such a key prefix. An empty prefix is equivalent to the `key`'
+  purge-keys:
+    description: 'A newline-separated list of cache key prefixes used to purge caches. An empty list is equivalent to the `key` input.'
     required: false
   purge-accessed:
     description: 'When `true`, purge caches by `last accessed` time. Requires `purge: true`.'
