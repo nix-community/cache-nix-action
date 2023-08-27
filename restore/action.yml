@@ -23,6 +23,11 @@ inputs:
     description: 'Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache'
     default: 'false'
     required: false
+  
+  restore-key-hit:
+    description: "When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache."
+    default: 'false'
+    required: false
 outputs:
   cache-hit:
     description: 'A boolean value to indicate an exact match was found for the primary key'

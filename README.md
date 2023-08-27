@@ -47,18 +47,19 @@ This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/
 
 ### New inputs
 
-| `name`                    | `description`                                                                                     | `required` | `default` | `needs`                |
-| ------------------------- | ------------------------------------------------------------------------------------------------- | ---------- | --------- | ---------------------- |
-| `gc-macos`                | When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.       | `false`    | `false`   | `gc-macos: true`       |
-| `gc-max-store-size-macos` | Maximum Nix store size in bytes on `macOS` runners.                                               | `false`    |           |                        |
-| `gc-linux`                | When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.       | `false`    | `false`   |                        |
-| `gc-max-store-size-linux` | Maximum Nix store size in bytes on `Linux` runners.                                               | `false`    |           | `gc-linux: true`       |
-| `purge`                   | When `true`, purge old caches before saving a new cache with a `key`.                             | `false`    | `false`   |                        |
-| `purge-key`               | A prefix used to purge caches with such a key prefix. An empty prefix is equivalent to the `key`. | `false`    | `''`      | `purge: true`          |
-| `purge-accessed`          | When `true`, purge caches by their last access time.                                              | `false`    | `false`   | `purge: true`          |
-| `purge-accessed-max-age`  | Purge caches last accessed more than this number of seconds ago.                                  | `false`    | `604800`  | `purge-accessed: true` |
-| `purge-created`           | When `true`, delete caches by their creation time.                                                | `false`    | `true`    | `purge: true`          |
-| `purge-created-max-age`   | Purge caches created more than this number of seconds ago.                                        | `false`    | `604800`  | `purge-created: true`. |
+| `name`                    | `description`                                                                                                           | `required` | `default` | `needs`                |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------- | --------- | ---------------------- |
+| `gc-macos`                | When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.                             | `false`    | `false`   | `gc-macos: true`       |
+| `gc-max-store-size-macos` | Maximum Nix store size in bytes on `macOS` runners.                                                                     | `false`    |           |                        |
+| `gc-linux`                | When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.                             | `false`    | `false`   |                        |
+| `gc-max-store-size-linux` | Maximum Nix store size in bytes on `Linux` runners.                                                                     | `false`    |           | `gc-linux: true`       |
+| `purge`                   | When `true`, purge old caches before saving a new cache with a `key`.                                                   | `false`    | `false`   |                        |
+| `purge-key`               | A prefix used to purge caches with such a key prefix. An empty prefix is equivalent to the `key`.                       | `false`    | `''`      | `purge: true`          |
+| `purge-accessed`          | When `true`, purge caches by their last access time.                                                                    | `false`    | `false`   | `purge: true`          |
+| `purge-accessed-max-age`  | Purge caches last accessed more than this number of seconds ago.                                                        | `false`    | `604800`  | `purge-accessed: true` |
+| `purge-created`           | When `true`, delete caches by their creation time.                                                                      | `false`    | `true`    | `purge: true`          |
+| `purge-created-max-age`   | Purge caches created more than this number of seconds ago.                                                              | `false`    | `604800`  | `purge-created: true`. |
+| `restore-key-hit`         | When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache. | `false`    | `false`   |                        |
 
 Note:
 

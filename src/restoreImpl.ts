@@ -34,13 +34,27 @@ async function restoreImpl(
         const failOnCacheMiss = utils.getInputAsBool(Inputs.FailOnCacheMiss);
         const lookupOnly = utils.getInputAsBool(Inputs.LookupOnly);
 
-        const cacheKey = await utils.getCacheKey(
+        let cacheKey = await utils.getCacheKey(
             cachePaths,
             primaryKey,
             restoreKeys,
             lookupOnly,
             enableCrossOsArchive
         );
+
+        const restoreKeyHit = utils.getInputAsBool(Inputs.RestoreKeyHit);
+
+        const restoreKey = await utils.getCacheKey(
+            cachePaths,
+            primaryKey,
+            restoreKeys,
+            true,
+            enableCrossOsArchive
+        );
+
+        if (restoreKeyHit) {
+            cacheKey = restoreKey;
+        }
 
         if (!cacheKey) {
             if (failOnCacheMiss) {
@@ -61,10 +75,11 @@ async function restoreImpl(
         // Store the matched cache key in states
         stateProvider.setState(State.CacheMatchedKey, cacheKey);
 
-        const isExactKeyMatch = utils.isExactKeyMatch(
-            core.getInput(Inputs.Key, { required: true }),
-            cacheKey
-        );
+        const isExactKeyMatch =
+            utils.isExactKeyMatch(
+                core.getInput(Inputs.Key, { required: true }),
+                cacheKey
+            ) || restoreKeyHit;
 
         core.setOutput(Outputs.CacheHit, isExactKeyMatch.toString());
         if (lookupOnly) {

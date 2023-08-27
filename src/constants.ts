@@ -7,6 +7,8 @@ export enum Inputs {
     FailOnCacheMiss = "fail-on-cache-miss", // Input for cache, restore action
     LookupOnly = "lookup-only", // Input for cache, restore action
 
+    RestoreKeyHit = "restore-key-hit",
+
     GCMacos = "gc-macos", // Input for cache, save action
     GCMaxStoreSizeMacos = "gc-max-store-size-macos", // Input for cache, save action
     GCLinux = "gc-linux", // Input for cache, save action
