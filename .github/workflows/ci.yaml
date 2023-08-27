@@ -15,7 +15,7 @@ jobs:
           files: src/**
 
   build:
-    name: Build and test the action
+    name: Build the action
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -54,7 +54,7 @@ jobs:
           git push
 
   test:
-    name: Nix CI
+    name: Test the action
     needs: merge-similar-caches
     permissions:
       actions: write
