@@ -141,6 +141,9 @@ jobs:
           - 3
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+      
       - uses: nixbuild/nix-quick-install-action@v25
         with:
           nix_conf: |
@@ -187,6 +190,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: needs.check-cache-changes.outputs.ci-changed == 'true'
     steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+      
       - uses: nixbuild/nix-quick-install-action@v25
         with:
           nix_conf: |
