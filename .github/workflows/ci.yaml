@@ -38,10 +38,20 @@ jobs:
 
   test:
     name: Nix CI
-    runs-on: ${{ matrix.os }}
     needs: build
     permissions:
       actions: write
+    strategy:
+      matrix:
+        os:
+          - macos-11
+          - macos-12
+          - ubuntu-20.04
+          - ubuntu-22.04
+        do-cache:
+          - true
+          - false
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
