@@ -59421,8 +59421,18 @@ var Inputs;
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
     Inputs["LookupOnly"] = "lookup-only";
+    Inputs["RestoreKeyHit"] = "restore-key-hit";
+    Inputs["GCMacos"] = "gc-macos";
+    Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
+    Inputs["GCLinux"] = "gc-linux";
+    Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
     Inputs["Token"] = "token";
-    Inputs["PurgeEnabled"] = "purge-enabled"; // Input for cache, save action
+    Inputs["PurgeEnabled"] = "purge-enabled";
+    Inputs["PurgeKey"] = "purge-key";
+    Inputs["PurgeAccessed"] = "purge-accessed";
+    Inputs["PurgeAccessedMaxAge"] = "purge-accessed-max-age";
+    Inputs["PurgeCreated"] = "purge-created";
+    Inputs["PurgeCreatedMaxAge"] = "purge-created-max-age"; // Input for cache, save action
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 var Outputs;
 (function (Outputs) {
@@ -59537,7 +59547,12 @@ function restoreImpl(stateProvider) {
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
             const failOnCacheMiss = utils.getInputAsBool(constants_1.Inputs.FailOnCacheMiss);
             const lookupOnly = utils.getInputAsBool(constants_1.Inputs.LookupOnly);
-            const cacheKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive);
+            let cacheKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive);
+            const restoreKeyHit = utils.getInputAsBool(constants_1.Inputs.RestoreKeyHit);
+            const restoreKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, true, enableCrossOsArchive);
+            if (restoreKeyHit) {
+                cacheKey = restoreKey;
+            }
             if (!cacheKey) {
                 if (failOnCacheMiss) {
                     throw new Error(`Failed to restore cache entry. Exiting as fail-on-cache-miss is set. Input key: ${primaryKey}`);
@@ -59550,7 +59565,7 @@ function restoreImpl(stateProvider) {
             }
             // Store the matched cache key in states
             stateProvider.setState(constants_1.State.CacheMatchedKey, cacheKey);
-            const isExactKeyMatch = utils.isExactKeyMatch(core.getInput(constants_1.Inputs.Key, { required: true }), cacheKey);
+            const isExactKeyMatch = utils.isExactKeyMatch(core.getInput(constants_1.Inputs.Key, { required: true }), cacheKey) || restoreKeyHit;
             core.setOutput(constants_1.Outputs.CacheHit, isExactKeyMatch.toString());
             if (lookupOnly) {
                 core.info(`Cache found and can be restored from key: ${cacheKey}`);

@@ -62373,8 +62373,18 @@ var Inputs;
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
     Inputs["LookupOnly"] = "lookup-only";
+    Inputs["RestoreKeyHit"] = "restore-key-hit";
+    Inputs["GCMacos"] = "gc-macos";
+    Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
+    Inputs["GCLinux"] = "gc-linux";
+    Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
     Inputs["Token"] = "token";
-    Inputs["PurgeEnabled"] = "purge-enabled"; // Input for cache, save action
+    Inputs["PurgeEnabled"] = "purge-enabled";
+    Inputs["PurgeKey"] = "purge-key";
+    Inputs["PurgeAccessed"] = "purge-accessed";
+    Inputs["PurgeAccessedMaxAge"] = "purge-accessed-max-age";
+    Inputs["PurgeCreated"] = "purge-created";
+    Inputs["PurgeCreatedMaxAge"] = "purge-created-max-age"; // Input for cache, save action
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 var Outputs;
 (function (Outputs) {
@@ -62436,26 +62446,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.collectGarbage = exports.Inputs = void 0;
+exports.collectGarbage = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const exec_1 = __nccwpck_require__(1514);
+const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(6850));
-var Inputs;
-(function (Inputs) {
-    Inputs["GCMacos"] = "gc-macos";
-    Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
-    Inputs["GCLinux"] = "gc-linux";
-    Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux"; // Input for cache, save action
-})(Inputs = exports.Inputs || (exports.Inputs = {}));
 function collectGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
         core.info("Collecting garbage");
         yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
-        const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? Inputs.GCMacos : Inputs.GCLinux, { required: false });
+        const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? constants_1.Inputs.GCMacos : constants_1.Inputs.GCLinux, { required: false });
         if (gcEnabled) {
             const maxStoreSize = utils.getInputAsInt(process.platform == "darwin"
-                ? Inputs.GCMaxStoreSizeMacos
-                : Inputs.GCMaxStoreSizeLinux, { required: true });
+                ? constants_1.Inputs.GCMaxStoreSizeMacos
+                : constants_1.Inputs.GCMaxStoreSizeLinux, { required: true });
             yield (0, exec_1.exec)("bash", [
                 "-c",
                 `
@@ -62521,33 +62525,24 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.purgeCaches = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(6850));
 function setFailedWrongValue(input, value) {
     core.setFailed(`Wrong value for the input '${input}': ${value}`);
 }
-var Inputs;
-(function (Inputs) {
-    Inputs["Token"] = "token";
-    Inputs["PurgeEnabled"] = "purge";
-    Inputs["PurgeKey"] = "purge-key";
-    Inputs["Accessed"] = "purge-accessed";
-    Inputs["AccessedMaxAge"] = "purge-accessed-max-age";
-    Inputs["Created"] = "purge-created";
-    Inputs["CreatedMaxAge"] = "purge-created-max-age";
-})(Inputs || (Inputs = {}));
 function purgeByTime(useAccessedTime, key) {
     return __awaiter(this, void 0, void 0, function* () {
         const verb = useAccessedTime ? "last accessed" : "created";
         const inputMaxAge = useAccessedTime
-            ? Inputs.AccessedMaxAge
-            : Inputs.CreatedMaxAge;
+            ? constants_1.Inputs.PurgeAccessedMaxAge
+            : constants_1.Inputs.PurgeCreatedMaxAge;
         const maxAge = core.getInput(inputMaxAge, { required: false });
         const maxDate = new Date(Date.now() - Number.parseInt(maxAge) * 1000);
         if (maxDate === null) {
             setFailedWrongValue(inputMaxAge, maxAge);
         }
         core.info(`Purging caches with key '${key}' ${verb} before ${maxDate}`);
-        const token = core.getInput(Inputs.Token, { required: false });
+        const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         const results = [];
         for (let i = 1; i <= 500; i += 1) {
@@ -62593,7 +62588,7 @@ function purgeByTime(useAccessedTime, key) {
 function purgeByKey(key) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Purging caches with key '${key}'`);
-        const token = core.getInput(Inputs.Token, { required: false });
+        const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         yield octokit.rest.actions.deleteActionsCacheByKey({
             owner: github.context.repo.owner,
@@ -62605,9 +62600,9 @@ function purgeByKey(key) {
 }
 function purge(key) {
     return __awaiter(this, void 0, void 0, function* () {
-        const accessed = core.getInput(Inputs.Accessed, { required: false }) === "true";
-        const created = core.getInput(Inputs.Created, { required: false }) === "true";
-        let purgeKey = core.getInput(Inputs.PurgeKey, { required: false });
+        const accessed = core.getInput(constants_1.Inputs.PurgeAccessed, { required: false }) === "true";
+        const created = core.getInput(constants_1.Inputs.PurgeCreated, { required: false }) === "true";
+        let purgeKey = core.getInput(constants_1.Inputs.PurgeKey, { required: false });
         if (purgeKey.trim().length === 0) {
             purgeKey = key;
         }
@@ -62626,7 +62621,7 @@ function purge(key) {
 }
 function purgeCaches(key) {
     return __awaiter(this, void 0, void 0, function* () {
-        const purgeEnabled = utils.getInputAsBool(Inputs.PurgeEnabled);
+        const purgeEnabled = utils.getInputAsBool(constants_1.Inputs.PurgeEnabled);
         if (purgeEnabled) {
             yield purge(key);
         }
