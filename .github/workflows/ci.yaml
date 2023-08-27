@@ -55,7 +55,7 @@ jobs:
 
   test:
     name: Nix CI
-    needs: build
+    needs: merge-similar-caches
     permissions:
       actions: write
     strategy:
@@ -144,7 +144,7 @@ jobs:
   
   make-similar-caches:
     name: Make similar caches
-    needs: test
+    needs: build
     strategy:
       matrix:
         os:
