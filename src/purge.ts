@@ -23,7 +23,7 @@ async function purgeByTime(useAccessedTime: boolean, keys: string[]) {
         setFailedWrongValue(inputMaxAge, maxAge);
     }
 
-    core.info(`Purging caches with keys\n${keys}\n${verb} before ${maxDate}`);
+    core.info(`Purging caches with keys ${keys} ${verb} before ${maxDate}`);
 
     const token = core.getInput(Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
@@ -92,7 +92,7 @@ async function purgeByTime(useAccessedTime: boolean, keys: string[]) {
 }
 
 function purgeByKey(keys: string[]) {
-    core.info(`Purging caches with keys\n${keys}`);
+    core.info(`Purging caches with keys ${keys}`);
 
     const token = core.getInput(Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
@@ -115,11 +115,13 @@ async function purge(key: string) {
     const created =
         core.getInput(Inputs.PurgeCreated, { required: false }) === "true";
 
-    const purgeKeys = utils.getInputAsArray(Inputs.RestoreKeys);
+    let purgeKeys = utils.getInputAsArray(Inputs.RestoreKeys);
 
     if (purgeKeys.length == 0) {
         purgeKeys.push(...[key]);
     }
+
+    purgeKeys = purgeKeys.filter(key => key.trim().length > 0)
 
     if (accessed || created) {
         if (accessed) {
