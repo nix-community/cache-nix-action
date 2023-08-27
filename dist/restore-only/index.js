@@ -59427,7 +59427,7 @@ var Inputs;
     Inputs["GCLinux"] = "gc-linux";
     Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
     Inputs["Token"] = "token";
-    Inputs["PurgeEnabled"] = "purge-enabled";
+    Inputs["Purge"] = "purge";
     Inputs["PurgeKey"] = "purge-key";
     Inputs["PurgeAccessed"] = "purge-accessed";
     Inputs["PurgeAccessedMaxAge"] = "purge-accessed-max-age";

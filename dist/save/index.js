@@ -62379,7 +62379,7 @@ var Inputs;
     Inputs["GCLinux"] = "gc-linux";
     Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
     Inputs["Token"] = "token";
-    Inputs["PurgeEnabled"] = "purge-enabled";
+    Inputs["Purge"] = "purge";
     Inputs["PurgeKey"] = "purge-key";
     Inputs["PurgeAccessed"] = "purge-accessed";
     Inputs["PurgeAccessedMaxAge"] = "purge-accessed-max-age";
@@ -62621,7 +62621,7 @@ function purge(key) {
 }
 function purgeCaches(key) {
     return __awaiter(this, void 0, void 0, function* () {
-        const purgeEnabled = utils.getInputAsBool(constants_1.Inputs.PurgeEnabled);
+        const purgeEnabled = utils.getInputAsBool(constants_1.Inputs.Purge);
         if (purgeEnabled) {
             yield purge(key);
         }
