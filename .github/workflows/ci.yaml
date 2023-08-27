@@ -191,7 +191,8 @@ jobs:
         with:
           # save a new cache every time ci file changes
           key: similar-cache-${{ matrix.os }}-id-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
-          restore-keys: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
+          restore-keys: |
+            similar-cache-${{ matrix.os }}-common
           restore-key-hit: true
   
   merge-similar-caches:
