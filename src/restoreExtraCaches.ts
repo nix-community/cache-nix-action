@@ -24,8 +24,8 @@ export async function restoreExtraCaches(
 
     core.info(
         `Found ${results.length} cache(s)\n${JSON.stringify(
-            results.map(cache => cache.key)
-        )}`
+            results
+        )}\n\n`
     );
 
     if (lookupOnly) {

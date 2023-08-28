@@ -41,7 +41,7 @@ async function purgeByTime(
     const results = await utils.getCachesByKeys(token, keys);
 
     core.info(
-        `Found ${results.length} cache(s)\n\n${JSON.stringify(results)}`
+        `Found ${results.length} cache(s)\n\n${JSON.stringify(results)}\n\n`
     );
 
     if (lookupOnly) {
