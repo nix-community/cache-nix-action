@@ -62560,7 +62560,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly) {
                     break;
                 }
                 results.push(...cachesRequest.actions_caches);
-                core.info(`key: ${i}, page: ${page}, caches: ${cachesRequest.actions_caches}`);
+                core.info(`key: ${i}, page: ${page}, caches: ${JSON.stringify(cachesRequest.actions_caches)}`);
             }
         }
         core.info(`Found ${results.length} cache(s)`);
