@@ -83,7 +83,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         );
 
         if (cacheId != -1) {
-            core.info(`Cache saved with key: ${primaryKey}`);
+            core.info(`Cache saved with the key ${primaryKey}`);
 
             await purgeCaches(primaryKey, false, time);
         }
