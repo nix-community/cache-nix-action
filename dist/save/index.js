@@ -62454,9 +62454,9 @@ const utils = __importStar(__nccwpck_require__(6850));
 function collectGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
         core.info("Collecting garbage");
+        yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
         const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? constants_1.Inputs.GCMacos : constants_1.Inputs.GCLinux, { required: false });
         if (gcEnabled) {
-            yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
             const maxStoreSize = utils.getInputAsInt(process.platform == "darwin"
                 ? constants_1.Inputs.GCMaxStoreSizeMacos
                 : constants_1.Inputs.GCMaxStoreSizeLinux, { required: true });
