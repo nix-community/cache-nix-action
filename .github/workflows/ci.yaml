@@ -173,7 +173,6 @@ jobs:
         id:
           - 1
           - 2
-          - 3
     runs-on: ${{ matrix.os }}
     if: always() && needs.check-cache-changes.outputs.files-changed
     steps:
