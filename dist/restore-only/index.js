@@ -62453,9 +62453,12 @@ const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(6850));
 function restoreExtraCaches(cachePaths, lookupOnly, enableCrossOsArchive) {
     return __awaiter(this, void 0, void 0, function* () {
-        const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const extraRestoreKeys = utils.getInputAsArray(constants_1.Inputs.ExtraRestoreKeys);
-        core.info(`Searching for caches with keys ${JSON.stringify(extraRestoreKeys)}.`);
+        if (extraRestoreKeys.length == 0) {
+            return;
+        }
+        const token = core.getInput(constants_1.Inputs.Token, { required: false });
+        core.info(`Restoring extra caches with keys ${JSON.stringify(extraRestoreKeys)}.`);
         const results = yield utils.getCachesByKeys(token, extraRestoreKeys);
         core.info(`Found ${results.length} cache(s)\n${JSON.stringify(results.map(cache => cache.key))}`);
         if (lookupOnly) {
