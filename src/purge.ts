@@ -27,7 +27,11 @@ async function purgeByTime(
         setFailedWrongValue(inputMaxAge, maxAge);
     }
 
-    core.info(`Purging caches with keys ${keys} ${verb} before ${maxDate}`);
+    core.info(
+        `Purging caches with keys ${JSON.stringify(
+            keys
+        )} ${verb} before ${maxDate}`
+    );
 
     const token = core.getInput(Inputs.Token, { required: false });
     const octokit = github.getOctokit(token);
@@ -62,6 +66,10 @@ async function purgeByTime(
             }
 
             results.push(...cachesRequest.actions_caches);
+
+            core.info(
+                `key: ${i}, page: ${j}, caches: ${cachesRequest.actions_caches}`
+            );
         }
     }
 
