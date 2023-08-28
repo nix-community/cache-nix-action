@@ -62693,10 +62693,10 @@ function saveImpl(stateProvider) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
                 const caches = yield (0, purge_1.purgeCaches)(primaryKey, true, time);
                 if (primaryKey in caches) {
-                    core.info(`This cache will be purged. Saving a new cache.`);
+                    core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
                 }
                 else {
-                    core.info(`Not saving a new cache.`);
+                    core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
                     yield (0, purge_1.purgeCaches)(primaryKey, false, time);
                     return;
                 }
