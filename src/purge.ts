@@ -68,7 +68,9 @@ async function purgeByTime(
             results.push(...cachesRequest.actions_caches);
 
             core.info(
-                `key: ${i}, page: ${page}, caches: ${cachesRequest.actions_caches}`
+                `key: ${i}, page: ${page}, caches: ${JSON.stringify(
+                    cachesRequest.actions_caches
+                )}`
             );
         }
     }
