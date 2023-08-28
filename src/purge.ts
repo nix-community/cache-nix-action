@@ -29,16 +29,18 @@ async function purgeByTime(
     }
 
     core.info(
-        `Purging caches with keys ${JSON.stringify(
-            keys
-        )} ${verb} before ${maxDate}`
+        `${
+            lookupOnly ? "Purging" : "Searching for"
+        } caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate}`
     );
 
     const token = core.getInput(Inputs.Token, { required: false });
 
     const results = await utils.getCachesByKeys(token, keys);
 
-    core.info(`Found ${results.length} cache(s)`);
+    core.info(
+        `Found ${results.length} cache(s)\n\n${JSON.stringify(results)}\n\n`
+    );
 
     if (lookupOnly) {
         return new Promise(() => results);
