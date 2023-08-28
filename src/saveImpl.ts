@@ -60,17 +60,21 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
         if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
             core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
-
-            const caches = await purgeCaches(primaryKey, true, time);
-
-            if (primaryKey in caches) {
-                core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
-            } else {
-                core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
-
-                await purgeCaches(primaryKey, false, time);
-
-                return;
+            
+            try {
+                const caches = await purgeCaches(primaryKey, true, time);
+                if (primaryKey in caches) {
+                    core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
+                } else {
+                    core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
+    
+                    await purgeCaches(primaryKey, false, time);
+    
+                    return;
+                }
+            } catch (error: unknown) {
+                utils.logWarning("An error occured")
+                utils.logWarning((error as Error).message);
             }
         }
 
