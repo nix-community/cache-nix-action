@@ -1,5 +1,6 @@
 import * as cache from "@actions/cache";
 import * as core from "@actions/core";
+import * as github from "@actions/github";
 
 import { RefKey } from "../constants";
 
@@ -96,4 +97,43 @@ export async function getCacheKey(
         { lookupOnly: lookupOnly },
         enableCrossOsArchive
     );
+}
+
+export interface Cache {
+    id?: number | undefined;
+    ref?: string | undefined;
+    key?: string | undefined;
+    version?: string | undefined;
+    last_accessed_at?: string | undefined;
+    created_at?: string | undefined;
+    size_in_bytes?: number | undefined;
+}
+
+export async function getCachesByKeys(token: string, keys: string[]) {
+    const results: Cache[] = [];
+
+    const octokit = github.getOctokit(token);
+
+    for (let i = 0; i < keys.length; i += 1) {
+        const key = keys[i];
+        for (let page = 1; page <= 500; page += 1) {
+            const { data: cachesRequest } =
+                await octokit.rest.actions.getActionsCacheList({
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    key,
+                    per_page: 100,
+                    page,
+                    ref: github.context.ref
+                });
+
+            if (cachesRequest.actions_caches.length == 0) {
+                break;
+            }
+
+            results.push(...cachesRequest.actions_caches);
+        }
+    }
+
+    return results;
 }

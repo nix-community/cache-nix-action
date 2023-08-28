@@ -28,6 +28,10 @@ inputs:
     description: "When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache."
     default: 'false'
     required: false
+
+  extra-restore-keys:
+    description: 'A newline-separated list of key prefixes used for restoring multiple caches.'
+    default: ''
 outputs:
   cache-hit:
     description: 'A boolean value to indicate an exact match was found for the primary key'

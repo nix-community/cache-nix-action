@@ -1,6 +1,7 @@
 import * as core from "@actions/core";
 
 import { Events, Inputs, Outputs, State } from "./constants";
+import { restoreExtraCaches } from "./restoreExtraCaches";
 import { IStateProvider } from "./stateProvider";
 import * as utils from "./utils/actionUtils";
 
@@ -87,6 +88,8 @@ async function restoreImpl(
         } else {
             core.info(`Cache restored from key: ${cacheKey}`);
         }
+
+        await restoreExtraCaches(cachePaths, lookupOnly, enableCrossOsArchive);
 
         return cacheKey;
     } catch (error: unknown) {

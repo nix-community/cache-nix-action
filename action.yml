@@ -19,10 +19,13 @@ inputs:
     description: 'Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache.'
     default: 'false'
 
+  extra-restore-keys:
+    description: 'A newline-separated list of key prefixes used for restoring multiple caches.'
+    default: ''
+
   restore-key-hit:
     description: "When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache."
     default: 'false'
-    required: false
 
   gc-macos:
     description: 'When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.'
@@ -40,7 +43,6 @@ inputs:
     default: 'false'
   purge-keys:
     description: 'A newline-separated list of cache key prefixes used to purge caches. An empty string is equivalent to the `key` input.'
-    required: false
     default: ''
   purge-accessed:
     description: 'When `true`, purge caches by `last accessed` time. Requires `purge: true`.'

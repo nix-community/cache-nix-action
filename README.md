@@ -60,6 +60,7 @@ This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/
 | `purge-created`           | When `true`, delete caches by their creation time.                                                                      | `false`    | `true`    | `purge: true`          |
 | `purge-created-max-age`   | Purge caches created more than this number of seconds ago.                                                              | `false`    | `604800`  | `purge-created: true`. |
 | `restore-key-hit`         | When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache. | `false`    | `false`   |                        |
+| `extra-restore-keys`      | A newline-separated list of key prefixes used for restoring multiple caches.                                            | `false`    | `''`      |                        |
 
 Note:
 
@@ -132,6 +133,8 @@ Alternatively, you can use the [GitHub Actions Cache API](https://docs.github.co
 ### Get more space on a runner
 
 The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
+
+<!-- TODO combine caches -->
 
 ## Caching approaches
 

@@ -9,6 +9,8 @@ export enum Inputs {
 
     RestoreKeyHit = "restore-key-hit",
 
+    ExtraRestoreKeys = "extra-restore-keys", // Input for cache, restore action
+
     GCMacos = "gc-macos", // Input for cache, save action
     GCMaxStoreSizeMacos = "gc-max-store-size-macos", // Input for cache, save action
     GCLinux = "gc-linux", // Input for cache, save action
