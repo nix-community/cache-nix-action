@@ -62374,6 +62374,7 @@ var Inputs;
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
     Inputs["LookupOnly"] = "lookup-only";
     Inputs["RestoreKeyHit"] = "restore-key-hit";
+    Inputs["ExtraRestoreKeys"] = "extra-restore-keys";
     Inputs["GCMacos"] = "gc-macos";
     Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
     Inputs["GCLinux"] = "gc-linux";
@@ -62543,30 +62544,12 @@ function purgeByTime(useAccessedTime, keys, lookupOnly) {
         }
         core.info(`Purging caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate}`);
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
-        const octokit = github.getOctokit(token);
-        const results = [];
-        for (let i = 0; i < keys.length; i += 1) {
-            const key = keys[i];
-            for (let page = 1; page <= 500; page += 1) {
-                const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
-                    owner: github.context.repo.owner,
-                    repo: github.context.repo.repo,
-                    key,
-                    per_page: 100,
-                    page,
-                    ref: github.context.ref
-                });
-                if (cachesRequest.actions_caches.length == 0) {
-                    break;
-                }
-                results.push(...cachesRequest.actions_caches);
-                core.info(`key: ${i}, page: ${page}, caches: ${JSON.stringify(cachesRequest.actions_caches)}`);
-            }
-        }
+        const results = yield utils.getCachesByKeys(token, keys);
         core.info(`Found ${results.length} cache(s)`);
         if (lookupOnly) {
             return new Promise(() => results);
         }
+        const octokit = github.getOctokit(token);
         results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
             const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
             if (at !== undefined && cache.id !== undefined) {
@@ -62907,9 +62890,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
+const github = __importStar(__nccwpck_require__(5438));
 const constants_1 = __nccwpck_require__(9042);
 function isGhes() {
     const ghUrl = new URL(process.env["GITHUB_SERVER_URL"] || "https://github.com");
@@ -62977,6 +62961,31 @@ function getCacheKey(paths, primaryKey, restoreKeys, lookupOnly, enableCrossOsAr
     });
 }
 exports.getCacheKey = getCacheKey;
+function getCachesByKeys(token, keys) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const results = [];
+        const octokit = github.getOctokit(token);
+        for (let i = 0; i < keys.length; i += 1) {
+            const key = keys[i];
+            for (let page = 1; page <= 500; page += 1) {
+                const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    key,
+                    per_page: 100,
+                    page,
+                    ref: github.context.ref
+                });
+                if (cachesRequest.actions_caches.length == 0) {
+                    break;
+                }
+                results.push(...cachesRequest.actions_caches);
+            }
+        }
+        return results;
+    });
+}
+exports.getCachesByKeys = getCachesByKeys;
 
 
 /***/ }),
