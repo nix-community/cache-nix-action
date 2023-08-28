@@ -56,10 +56,12 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             enableCrossOsArchive
         );
 
+        const time = Date.now();
+
         if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
             core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
 
-            const caches = await purgeCaches(primaryKey, true);
+            const caches = await purgeCaches(primaryKey, true, time);
 
             if (primaryKey in caches) {
                 core.info(`This cache will be purged. Saving a new cache.`);
@@ -83,7 +85,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         if (cacheId != -1) {
             core.info(`Cache saved with key: ${primaryKey}`);
 
-            await purgeCaches(primaryKey, false);
+            await purgeCaches(primaryKey, false, time);
         }
     } catch (error: unknown) {
         utils.logWarning((error as Error).message);

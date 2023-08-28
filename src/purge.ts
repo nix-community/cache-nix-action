@@ -11,7 +11,8 @@ function setFailedWrongValue(input: string, value: string) {
 async function purgeByTime(
     useAccessedTime: boolean,
     keys: string[],
-    lookupOnly: boolean
+    lookupOnly: boolean,
+    time: number
 ): Promise<[string]> {
     const verb = useAccessedTime ? "last accessed" : "created";
 
@@ -21,7 +22,7 @@ async function purgeByTime(
 
     const maxAge = core.getInput(inputMaxAge, { required: false });
 
-    const maxDate = new Date(Date.now() - Number.parseInt(maxAge) * 1000);
+    const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
 
     if (maxDate === null) {
         setFailedWrongValue(inputMaxAge, maxAge);
@@ -75,7 +76,11 @@ async function purgeByTime(
     return new Promise(() => []);
 }
 
-async function purge(key: string, lookupOnly: boolean): Promise<[string]> {
+async function purge(
+    key: string,
+    lookupOnly: boolean,
+    time: number
+): Promise<[string]> {
     const accessed =
         core.getInput(Inputs.PurgeAccessed, { required: false }) === "true";
 
@@ -94,10 +99,14 @@ async function purge(key: string, lookupOnly: boolean): Promise<[string]> {
 
     if (accessed || created) {
         if (accessed) {
-            results.push(...(await purgeByTime(true, purgeKeys, lookupOnly)));
+            results.push(
+                ...(await purgeByTime(true, purgeKeys, lookupOnly, time))
+            );
         }
         if (created) {
-            results.push(...(await purgeByTime(false, purgeKeys, lookupOnly)));
+            results.push(
+                ...(await purgeByTime(false, purgeKeys, lookupOnly, time))
+            );
         }
     } else {
         core.warning("Either `accessed` or `created` input should be `true`.");
@@ -106,13 +115,17 @@ async function purge(key: string, lookupOnly: boolean): Promise<[string]> {
     return new Promise(() => results);
 }
 
-export async function purgeCaches(key: string, lookupOnly: boolean) {
+export async function purgeCaches(
+    key: string,
+    lookupOnly: boolean,
+    time: number
+) {
     const purgeEnabled = utils.getInputAsBool(Inputs.Purge);
 
     const results: string[] = [];
 
     if (purgeEnabled) {
-        results.push(...(await purge(key, lookupOnly)));
+        results.push(...(await purge(key, lookupOnly, time)));
     }
 
     return results;
