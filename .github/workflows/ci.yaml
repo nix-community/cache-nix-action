@@ -194,7 +194,7 @@ jobs:
           # save a new cache every time ci file changes
           key: similar-cache-${{ matrix.os }}-id-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-keys: |
-            similar-cache-${{ matrix.os }}-common
+            similar-cache-${{ matrix.os }}-common-
           restore-key-hit: true
   
   merge-similar-caches:
@@ -224,30 +224,14 @@ jobs:
             substituters = https://cache.nixos.org/ https://nix-community.cachix.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
             keep-outputs = true
-      
-      - name: Restore Nix store - 1
-        uses: ./restore
-        with:
-          # save a new cache every time ci file changes
-          key: similar-cache-${{ matrix.os }}-id-1-${{ hashFiles('.github/workflows/ci.yaml') }}
-      
-      - name: Restore Nix store - 2
-        uses: ./restore
-        with:
-          # save a new cache every time ci file changes
-          key: similar-cache-${{ matrix.os }}-id-2-${{ hashFiles('.github/workflows/ci.yaml') }}
-      
-      - name: Restore Nix store - 3
-        uses: ./restore
-        with:
-          # save a new cache every time ci file changes
-          key: similar-cache-${{ matrix.os }}-id-3-${{ hashFiles('.github/workflows/ci.yaml') }}
-      
+              
       - name: Save Nix store
-        uses: ./save
+        uses: ./.
         with:
           key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
-          
+          extra-restore-keys: |
+            similar-cache-${{ matrix.os }}-id-
+
           purge: true
           purge-keys: |
             similar-cache-${{ matrix.os }}-id-
