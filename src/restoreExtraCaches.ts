@@ -8,12 +8,16 @@ export async function restoreExtraCaches(
     lookupOnly: boolean,
     enableCrossOsArchive: boolean
 ) {
-    const token = core.getInput(Inputs.Token, { required: false });
-
     const extraRestoreKeys = utils.getInputAsArray(Inputs.ExtraRestoreKeys);
 
+    if (extraRestoreKeys.length == 0) {
+        return;
+    }
+
+    const token = core.getInput(Inputs.Token, { required: false });
+
     core.info(
-        `Searching for caches with keys ${JSON.stringify(extraRestoreKeys)}.`
+        `Restoring extra caches with keys ${JSON.stringify(extraRestoreKeys)}.`
     );
 
     const results = await utils.getCachesByKeys(token, extraRestoreKeys);
