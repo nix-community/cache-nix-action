@@ -30,7 +30,7 @@ async function purgeByTime(
 
     core.info(
         `${
-            lookupOnly ? "Purging" : "Searching for"
+            lookupOnly ? "Searching for" : "Purging"
         } caches with keys ${JSON.stringify(
             keys
         )} ${verb} before ${maxDate.toISOString()}`
