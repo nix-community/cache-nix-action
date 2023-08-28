@@ -1,5 +1,7 @@
 import * as cache from "@actions/cache";
 import * as core from "@actions/core";
+import { getOctokit } from "@actions/github";
+import * as github from "@actions/github";
 
 import { Events, Inputs, State } from "./constants";
 import { collectGarbage } from "./gc";
@@ -64,9 +66,13 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             const caches = await purgeCaches(primaryKey, true, time);
 
             if (caches.map(cache => cache.key).includes(primaryKey)) {
-                core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
+                core.info(
+                    `The cache with the key ${primaryKey} will be purged. Saving a new cache.`
+                );
             } else {
-                core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
+                core.info(
+                    `The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`
+                );
 
                 await purgeCaches(primaryKey, false, time);
 
@@ -75,6 +81,16 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         }
 
         await collectGarbage();
+
+        const token = core.getInput(Inputs.Token, { required: false });
+        const octokit = getOctokit(token);
+
+        octokit.rest.actions.deleteActionsCacheByKey({
+            per_page: 100,
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            key: primaryKey
+        });
 
         cacheId = await cache.saveCache(
             cachePaths,
