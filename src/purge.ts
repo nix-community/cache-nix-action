@@ -48,7 +48,7 @@ async function purgeByTime(
 
     const results: Cache[] = [];
 
-    for (let i = 0; i <= keys.length; i += 1) {
+    for (let i = 0; i < keys.length; i += 1) {
         const key = keys[i];
         for (let page = 1; page <= 500; page += 1) {
             const { data: cachesRequest } =
