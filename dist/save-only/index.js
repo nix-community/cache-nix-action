@@ -62545,7 +62545,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
         core.info(`${lookupOnly ? "Searching for" : "Purging"} caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate.toISOString()}`);
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const results = yield utils.getCachesByKeys(token, keys);
-        core.info(`Found ${results.length} cache(s)\n\n${JSON.stringify(results)}\n\n`);
+        core.info(`Found ${results.length} cache(s)\n\n${JSON.stringify(results)}`);
         if (lookupOnly) {
             return new Promise(() => results);
         }
@@ -62691,20 +62691,14 @@ function saveImpl(stateProvider) {
             const time = Date.now();
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
-                try {
-                    const caches = yield (0, purge_1.purgeCaches)(primaryKey, true, time);
-                    if (primaryKey in caches) {
-                        core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
-                    }
-                    else {
-                        core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
-                        yield (0, purge_1.purgeCaches)(primaryKey, false, time);
-                        return;
-                    }
+                const caches = yield (0, purge_1.purgeCaches)(primaryKey, true, time);
+                if (primaryKey in caches) {
+                    core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
                 }
-                catch (error) {
-                    utils.logWarning("An error occured");
-                    utils.logWarning(error.message);
+                else {
+                    core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
+                    yield (0, purge_1.purgeCaches)(primaryKey, false, time);
+                    return;
                 }
             }
             yield (0, gc_1.collectGarbage)();
