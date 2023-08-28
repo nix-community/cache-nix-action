@@ -62692,7 +62692,7 @@ function saveImpl(stateProvider) {
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
                 const caches = yield (0, purge_1.purgeCaches)(primaryKey, true, time);
-                if (primaryKey in caches.map(cache => cache.key)) {
+                if (caches.map(cache => cache.key).includes(primaryKey)) {
                     core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
                 }
                 else {
