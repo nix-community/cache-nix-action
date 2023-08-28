@@ -62547,7 +62547,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
         const results = yield utils.getCachesByKeys(token, keys);
         core.info(`Found ${results.length} cache(s)\n\n${JSON.stringify(results)}`);
         if (lookupOnly) {
-            return new Promise(() => results);
+            return results;
         }
         const octokit = github.getOctokit(token);
         results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
@@ -62573,7 +62573,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
                 }
             }
         }));
-        return new Promise(() => []);
+        return [];
     });
 }
 function purge(key, lookupOnly, time) {
@@ -62597,7 +62597,7 @@ function purge(key, lookupOnly, time) {
         else {
             core.warning("Either `accessed` or `created` input should be `true`.");
         }
-        return new Promise(() => results);
+        return results;
     });
 }
 function purgeCaches(key, lookupOnly, time) {
@@ -62692,7 +62692,7 @@ function saveImpl(stateProvider) {
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
                 const caches = yield (0, purge_1.purgeCaches)(primaryKey, true, time);
-                if (primaryKey in caches) {
+                if (primaryKey in caches.map(cache => cache.key)) {
                     core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
                 }
                 else {
