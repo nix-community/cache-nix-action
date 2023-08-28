@@ -62579,10 +62579,11 @@ function restoreImpl(stateProvider) {
                 if (failOnCacheMiss) {
                     throw new Error(`Failed to restore cache entry. Exiting as fail-on-cache-miss is set. Input key: ${primaryKey}`);
                 }
-                core.info(`Cache not found for input keys: ${[
+                core.info(`Cache not found for input keys: ${JSON.stringify([
                     primaryKey,
                     ...restoreKeys
-                ].join(", ")}`);
+                ])}`);
+                yield (0, restoreExtraCaches_1.restoreExtraCaches)(cachePaths, lookupOnly, enableCrossOsArchive);
                 return;
             }
             // Store the matched cache key in states

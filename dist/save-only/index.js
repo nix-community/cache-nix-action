@@ -62531,14 +62531,14 @@ const utils = __importStar(__nccwpck_require__(6850));
 function setFailedWrongValue(input, value) {
     core.setFailed(`Wrong value for the input '${input}': ${value}`);
 }
-function purgeByTime(useAccessedTime, keys, lookupOnly) {
+function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
     return __awaiter(this, void 0, void 0, function* () {
         const verb = useAccessedTime ? "last accessed" : "created";
         const inputMaxAge = useAccessedTime
             ? constants_1.Inputs.PurgeAccessedMaxAge
             : constants_1.Inputs.PurgeCreatedMaxAge;
         const maxAge = core.getInput(inputMaxAge, { required: false });
-        const maxDate = new Date(Date.now() - Number.parseInt(maxAge) * 1000);
+        const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
         if (maxDate === null) {
             setFailedWrongValue(inputMaxAge, maxAge);
         }
@@ -62576,7 +62576,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly) {
         return new Promise(() => []);
     });
 }
-function purge(key, lookupOnly) {
+function purge(key, lookupOnly, time) {
     return __awaiter(this, void 0, void 0, function* () {
         const accessed = core.getInput(constants_1.Inputs.PurgeAccessed, { required: false }) === "true";
         const created = core.getInput(constants_1.Inputs.PurgeCreated, { required: false }) === "true";
@@ -62588,10 +62588,10 @@ function purge(key, lookupOnly) {
         const results = [];
         if (accessed || created) {
             if (accessed) {
-                results.push(...(yield purgeByTime(true, purgeKeys, lookupOnly)));
+                results.push(...(yield purgeByTime(true, purgeKeys, lookupOnly, time)));
             }
             if (created) {
-                results.push(...(yield purgeByTime(false, purgeKeys, lookupOnly)));
+                results.push(...(yield purgeByTime(false, purgeKeys, lookupOnly, time)));
             }
         }
         else {
@@ -62600,12 +62600,12 @@ function purge(key, lookupOnly) {
         return new Promise(() => results);
     });
 }
-function purgeCaches(key, lookupOnly) {
+function purgeCaches(key, lookupOnly, time) {
     return __awaiter(this, void 0, void 0, function* () {
         const purgeEnabled = utils.getInputAsBool(constants_1.Inputs.Purge);
         const results = [];
         if (purgeEnabled) {
-            results.push(...(yield purge(key, lookupOnly)));
+            results.push(...(yield purge(key, lookupOnly, time)));
         }
         return results;
     });
@@ -62688,9 +62688,10 @@ function saveImpl(stateProvider) {
             // If matched restore key is same as primary key, then do not save cache
             // NO-OP in case of SaveOnly action
             const restoredKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, true, enableCrossOsArchive);
+            const time = Date.now();
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
-                const caches = yield (0, purge_1.purgeCaches)(primaryKey, true);
+                const caches = yield (0, purge_1.purgeCaches)(primaryKey, true, time);
                 if (primaryKey in caches) {
                     core.info(`This cache will be purged. Saving a new cache.`);
                 }
@@ -62705,7 +62706,7 @@ function saveImpl(stateProvider) {
             }, enableCrossOsArchive);
             if (cacheId != -1) {
                 core.info(`Cache saved with key: ${primaryKey}`);
-                yield (0, purge_1.purgeCaches)(primaryKey, false);
+                yield (0, purge_1.purgeCaches)(primaryKey, false, time);
             }
         }
         catch (error) {
