@@ -62545,7 +62545,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
         core.info(`${lookupOnly ? "Searching for" : "Purging"} caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate.toISOString()}`);
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const results = yield utils.getCachesByKeys(token, keys);
-        core.info(`Found ${results.length} cache(s)\n\n${JSON.stringify(results)}`);
+        core.info(`Found ${results.length} cache(s)\n\n${JSON.stringify(results)}\n\n`);
         if (lookupOnly) {
             return results;
         }

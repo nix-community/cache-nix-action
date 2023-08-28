@@ -62460,7 +62460,7 @@ function restoreExtraCaches(cachePaths, lookupOnly, enableCrossOsArchive) {
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
         core.info(`Restoring extra caches with keys ${JSON.stringify(extraRestoreKeys)}.`);
         const results = yield utils.getCachesByKeys(token, extraRestoreKeys);
-        core.info(`Found ${results.length} cache(s)\n${JSON.stringify(results.map(cache => cache.key))}`);
+        core.info(`Found ${results.length} cache(s)\n${JSON.stringify(results)}\n\n`);
         if (lookupOnly) {
             return;
         }
