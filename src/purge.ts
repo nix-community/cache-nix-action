@@ -50,14 +50,14 @@ async function purgeByTime(
 
     for (let i = 0; i <= keys.length; i += 1) {
         const key = keys[i];
-        for (let j = 1; j <= 500; j += 1) {
+        for (let page = 1; page <= 500; page += 1) {
             const { data: cachesRequest } =
                 await octokit.rest.actions.getActionsCacheList({
                     owner: github.context.repo.owner,
                     repo: github.context.repo.repo,
                     key,
                     per_page: 100,
-                    page: j,
+                    page,
                     ref: github.context.ref
                 });
 
@@ -68,7 +68,7 @@ async function purgeByTime(
             results.push(...cachesRequest.actions_caches);
 
             core.info(
-                `key: ${i}, page: ${j}, caches: ${cachesRequest.actions_caches}`
+                `key: ${i}, page: ${page}, caches: ${cachesRequest.actions_caches}`
             );
         }
     }
