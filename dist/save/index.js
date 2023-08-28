@@ -62381,7 +62381,7 @@ var Inputs;
     Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
     Inputs["Token"] = "token";
     Inputs["Purge"] = "purge";
-    Inputs["PurgeKey"] = "purge-keys";
+    Inputs["PurgeKeys"] = "purge-keys";
     Inputs["PurgeAccessed"] = "purge-accessed";
     Inputs["PurgeAccessedMaxAge"] = "purge-accessed-max-age";
     Inputs["PurgeCreated"] = "purge-created";
@@ -62542,7 +62542,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
         if (maxDate === null) {
             setFailedWrongValue(inputMaxAge, maxAge);
         }
-        core.info(`${lookupOnly ? "Purging" : "Searching for"} caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate.toISOString()}`);
+        core.info(`${lookupOnly ? "Searching for" : "Purging"} caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate.toISOString()}`);
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const results = yield utils.getCachesByKeys(token, keys);
         core.info(`Found ${results.length} cache(s)\n\n${JSON.stringify(results)}\n\n`);
@@ -62580,7 +62580,7 @@ function purge(key, lookupOnly, time) {
     return __awaiter(this, void 0, void 0, function* () {
         const accessed = core.getInput(constants_1.Inputs.PurgeAccessed, { required: false }) === "true";
         const created = core.getInput(constants_1.Inputs.PurgeCreated, { required: false }) === "true";
-        let purgeKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
+        let purgeKeys = utils.getInputAsArray(constants_1.Inputs.PurgeKeys);
         if (purgeKeys.length == 0) {
             purgeKeys.push(...[key]);
         }
@@ -62736,7 +62736,7 @@ function saveImpl(stateProvider) {
                 uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize)
             }, enableCrossOsArchive);
             if (cacheId != -1) {
-                core.info(`Cache saved with key: ${primaryKey}`);
+                core.info(`Cache saved with the key ${primaryKey}`);
                 yield (0, purge_1.purgeCaches)(primaryKey, false, time);
             }
         }
