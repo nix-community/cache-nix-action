@@ -63,7 +63,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
             const caches = await purgeCaches(primaryKey, true, time);
 
-            if (primaryKey in caches) {
+            if (primaryKey in caches.map(cache => cache.key)) {
                 core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
             } else {
                 core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);

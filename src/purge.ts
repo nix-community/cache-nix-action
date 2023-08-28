@@ -13,7 +13,7 @@ async function purgeByTime(
     keys: string[],
     lookupOnly: boolean,
     time: number
-): Promise<[string]> {
+): Promise<utils.Cache[]> {
     const verb = useAccessedTime ? "last accessed" : "created";
 
     const inputMaxAge = useAccessedTime
@@ -45,7 +45,7 @@ async function purgeByTime(
     );
 
     if (lookupOnly) {
-        return new Promise(() => results);
+        return results;
     }
 
     const octokit = github.getOctokit(token);
@@ -81,14 +81,14 @@ async function purgeByTime(
         }
     });
 
-    return new Promise(() => []);
+    return [];
 }
 
 async function purge(
     key: string,
     lookupOnly: boolean,
     time: number
-): Promise<[string]> {
+): Promise<utils.Cache[]> {
     const accessed =
         core.getInput(Inputs.PurgeAccessed, { required: false }) === "true";
 
@@ -103,7 +103,7 @@ async function purge(
 
     purgeKeys = purgeKeys.filter(key => key.trim().length > 0);
 
-    const results: string[] = [];
+    const results: utils.Cache[] = [];
 
     if (accessed || created) {
         if (accessed) {
@@ -120,17 +120,17 @@ async function purge(
         core.warning("Either `accessed` or `created` input should be `true`.");
     }
 
-    return new Promise(() => results);
+    return results;
 }
 
 export async function purgeCaches(
     key: string,
     lookupOnly: boolean,
     time: number
-) {
+): Promise<utils.Cache[]> {
     const purgeEnabled = utils.getInputAsBool(Inputs.Purge);
 
-    const results: string[] = [];
+    const results: utils.Cache[] = [];
 
     if (purgeEnabled) {
         results.push(...(await purge(key, lookupOnly, time)));
