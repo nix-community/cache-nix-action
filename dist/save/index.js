@@ -62541,25 +62541,26 @@ function purgeByTime(useAccessedTime, keys, lookupOnly) {
         if (maxDate === null) {
             setFailedWrongValue(inputMaxAge, maxAge);
         }
-        core.info(`Purging caches with keys ${keys} ${verb} before ${maxDate}`);
+        core.info(`Purging caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate}`);
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         const results = [];
         for (let i = 0; i <= keys.length; i += 1) {
             const key = keys[i];
-            for (let j = 1; j <= 500; j += 1) {
+            for (let page = 1; page <= 500; page += 1) {
                 const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
                     owner: github.context.repo.owner,
                     repo: github.context.repo.repo,
                     key,
                     per_page: 100,
-                    page: j,
+                    page,
                     ref: github.context.ref
                 });
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
                 }
                 results.push(...cachesRequest.actions_caches);
+                core.info(`key: ${i}, page: ${page}, caches: ${cachesRequest.actions_caches}`);
             }
         }
         core.info(`Found ${results.length} cache(s)`);
