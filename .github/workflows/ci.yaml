@@ -149,7 +149,11 @@ jobs:
     runs-on: ubuntu-20.04
     if: always()
     outputs:
-      files-changed: ${{ steps.files-changed.outputs.any_changed }}
+      # assume files-changed so that the 'similar-caches' jobs run always
+      files-changed: true
+      
+      # the following line is more fair
+      # files-changed: ${{ steps.files-changed.outputs.any_changed }}
     steps:
       - uses: actions/checkout@v3
         with:
