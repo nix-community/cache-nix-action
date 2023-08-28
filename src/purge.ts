@@ -31,7 +31,9 @@ async function purgeByTime(
     core.info(
         `${
             lookupOnly ? "Purging" : "Searching for"
-        } caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate}`
+        } caches with keys ${JSON.stringify(
+            keys
+        )} ${verb} before ${maxDate.toISOString()}`
     );
 
     const token = core.getInput(Inputs.Token, { required: false });
@@ -70,7 +72,11 @@ async function purgeByTime(
                     );
                 }
             } else {
-                core.info(`Skipping cache ${cache.key}, ${verb} at ${atDate}`);
+                core.info(
+                    `Skipping cache ${
+                        cache.key
+                    }, ${verb} at ${atDate.toISOString()}`
+                );
             }
         }
     });
