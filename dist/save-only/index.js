@@ -62542,10 +62542,10 @@ function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
         if (maxDate === null) {
             setFailedWrongValue(inputMaxAge, maxAge);
         }
-        core.info(`Purging caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate}`);
+        core.info(`${lookupOnly ? "Purging" : "Searching for"} caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate.toISOString()}`);
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const results = yield utils.getCachesByKeys(token, keys);
-        core.info(`Found ${results.length} cache(s)`);
+        core.info(`Found ${results.length} cache(s)\n\n${JSON.stringify(results)}\n\n`);
         if (lookupOnly) {
             return new Promise(() => results);
         }
@@ -62569,7 +62569,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
                     }
                 }
                 else {
-                    core.info(`Skipping cache ${cache.key}, ${verb} at ${atDate}`);
+                    core.info(`Skipping cache ${cache.key}, ${verb} at ${atDate.toISOString()}`);
                 }
             }
         }));
