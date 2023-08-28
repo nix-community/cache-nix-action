@@ -95,7 +95,7 @@ async function purge(
     const created =
         core.getInput(Inputs.PurgeCreated, { required: false }) === "true";
 
-    let purgeKeys = utils.getInputAsArray(Inputs.RestoreKeys);
+    let purgeKeys = utils.getInputAsArray(Inputs.PurgeKeys);
 
     if (purgeKeys.length == 0) {
         purgeKeys.push(...[key]);
