@@ -62697,6 +62697,7 @@ function saveImpl(stateProvider) {
                 }
                 else {
                     core.info(`Not saving a new cache.`);
+                    yield (0, purge_1.purgeCaches)(primaryKey, false, time);
                     return;
                 }
             }
