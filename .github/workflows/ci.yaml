@@ -179,6 +179,9 @@ jobs:
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
+
+      - name: Rebase
+        run: git pull --rebase
       
       - uses: nixbuild/nix-quick-install-action@v25
         with:
@@ -212,6 +215,9 @@ jobs:
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
+
+      - name: Rebase
+        run: git pull --rebase
       
       - uses: nixbuild/nix-quick-install-action@v25
         with:
