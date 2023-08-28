@@ -62545,7 +62545,7 @@ function purgeByTime(useAccessedTime, keys, lookupOnly) {
         const token = core.getInput(constants_1.Inputs.Token, { required: false });
         const octokit = github.getOctokit(token);
         const results = [];
-        for (let i = 0; i <= keys.length; i += 1) {
+        for (let i = 0; i < keys.length; i += 1) {
             const key = keys[i];
             for (let page = 1; page <= 500; page += 1) {
                 const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
