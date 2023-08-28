@@ -64,10 +64,16 @@ async function restoreImpl(
                 );
             }
             core.info(
-                `Cache not found for input keys: ${[
+                `Cache not found for input keys: ${JSON.stringify([
                     primaryKey,
                     ...restoreKeys
-                ].join(", ")}`
+                ])}`
+            );
+
+            await restoreExtraCaches(
+                cachePaths,
+                lookupOnly,
+                enableCrossOsArchive
             );
 
             return;
