@@ -67,6 +67,9 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 core.info(`This cache will be purged. Saving a new cache.`);
             } else {
                 core.info(`Not saving a new cache.`);
+
+                await purgeCaches(primaryKey, false, time);
+
                 return;
             }
         }
