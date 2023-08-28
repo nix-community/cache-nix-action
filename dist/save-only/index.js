@@ -62655,6 +62655,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
+const github_1 = __nccwpck_require__(5438);
+const github = __importStar(__nccwpck_require__(5438));
 const constants_1 = __nccwpck_require__(9042);
 const gc_1 = __nccwpck_require__(2193);
 const purge_1 = __nccwpck_require__(6231);
@@ -62702,6 +62704,14 @@ function saveImpl(stateProvider) {
                 }
             }
             yield (0, gc_1.collectGarbage)();
+            const token = core.getInput(constants_1.Inputs.Token, { required: false });
+            const octokit = (0, github_1.getOctokit)(token);
+            octokit.rest.actions.deleteActionsCacheByKey({
+                per_page: 100,
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                key: primaryKey
+            });
             cacheId = yield cache.saveCache(cachePaths, primaryKey, {
                 uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize)
             }, enableCrossOsArchive);
