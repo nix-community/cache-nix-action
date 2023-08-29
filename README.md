@@ -28,6 +28,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 ## Limitations
 
 * `GitHub` allows only 10GB of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)).
+  * Can be overcome by merging similar caches (see [Merge caches](#merge-caches))
 * `cache-nix-action` restores and saves the whole `/nix` directory.
 * `cache-nix-action` requires `nix-quick-install-action` (see [Approach](#approach)).
 * Store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
@@ -65,20 +66,12 @@ This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/
 Note:
 
 * `cache-nix-action` purges only caches specific to a branch that has triggered a workflow.
-* `*-max-age` is used before saving a cache.
+* `*-max-age` is relative to the time before saving a new cache.
 
 ### Removed inputs
 
 The `cache-nix-action` doesn't provide the `path` input from the original [inputs](#inputs) of `actions/cache` due to [limitations](#limitations).
 Instead, the `cache-nix-action` caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
-
-### Garbage collection parameters
-
-On `Linux` runners, when `gc-linux` is `true`, when a cache size is greater than `gc-max-cache-size-linux`, this action will run `nix store gc --max R` before saving a cache.
-Here, `R` is `max(0, S - gc-max-store-size-linux)`, where `S` is the current store size.
-Respective conditions hold for `macOS` runners.
-
-There are alternative approaches to garbage collection (see [Garbage collection](#garbage-collection)).
 
 ## Usage
 
@@ -122,19 +115,33 @@ See [ci.yaml](.github/workflows/ci.yaml).
 
 * Use [action-tmate](https://github.com/mxschmitt/action-tmate) to debug on a runner via SSH.
 
+### Garbage collection parameters
+
+On `Linux` runners, when `gc-linux` is `true`, when a cache size is greater than `gc-max-cache-size-linux`, this action will run `nix store gc --max R` before saving a cache.
+Here, `R` is `max(0, S - gc-max-store-size-linux)`, where `S` is the current store size.
+Respective conditions hold for `macOS` runners.
+
+There are alternative approaches to garbage collection (see [Garbage collection](#garbage-collection)).
+
 ### Purge old caches
 
-The `cache-nix-action` allows to delete old caches before saving a new cache (see [New inputs](#new-inputs)).
+The `cache-nix-action` allows to delete old caches after saving a new cache (see [New inputs](#new-inputs)).
 
 The [purge-cache](https://github.com/MyAlbum/purge-cache) action allows to remove caches based on their `last accessed` or `created` time without branch limitations.
 
 Alternatively, you can use the [GitHub Actions Cache API](https://docs.github.com/en/rest/actions/cache).
 
+### Merge caches
+
+`GitHub` evicts LRU caches when their total size exceeds `10GB` (see [Limitations](#limitations)).
+
+If you have multiple similar caches, you can merge them into a single cache and store just it to save space.
+
+See the `make-similar-caches` and `merge-similar-caches` jobs in the [example workflow](#example-workflow).
+
 ### Get more space on a runner
 
 The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
-
-<!-- TODO combine caches -->
 
 ## Caching approaches
 
