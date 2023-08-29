@@ -3,7 +3,7 @@ name: Nix CI
   push: {}
   pull_request: {}
   release:
-    types: []
+    types: [edited]
   schedule:
     - cron: 0 0 * * *
   workflow_dispatch: {}
