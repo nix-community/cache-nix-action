@@ -137,7 +137,16 @@ Alternatively, you can use the [GitHub Actions Cache API](https://docs.github.co
 
 If you have multiple similar caches, you can merge them into a single cache and store just it to save space.
 
+In short:
+
+1. Matrix jobs produce similar caches.
+1. The next job restores all of these individual caches, saves a common cache, and purges individual caches.
+1. On subsequent runs, matrix jobs use the common cache.
+
 See the `make-similar-caches` and `merge-similar-caches` jobs in the [example workflow](#example-workflow).
+
+Pros: if `N` individual caches are very similar, a common cache will take approximately `N` times less space.
+Cons: if caches aren't very similar, run time may increase due to a bigger common cache.
 
 ### Get more space on a runner
 
