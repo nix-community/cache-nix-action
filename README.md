@@ -36,7 +36,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 * When restoring, `cache-nix-action` writes cached Nix store paths into a read-only `/nix/store` of a runner.
   Some of these paths may already be present, so the action will show `File exists` errors and a warning that it failed to restore.
   It's OK.
-* It may be necessary to purge old caches (see [Example workflow](#example-workflow) and [New inputs](#new-inputs)).
+* It may be necessary to purge old caches (see [Purge old caches](#purge-old-caches)).
 
 See alternative [caching approaches](#caching-approaches).
 
@@ -125,7 +125,7 @@ There are alternative approaches to garbage collection (see [Garbage collection]
 
 ### Purge old caches
 
-The `cache-nix-action` allows to delete old caches after saving a new cache (see [New inputs](#new-inputs)).
+The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [New inputs](#new-inputs) and `compare-run-times` in [Example workflow](#example-workflow)).
 
 The [purge-cache](https://github.com/MyAlbum/purge-cache) action allows to remove caches based on their `last accessed` or `created` time without branch limitations.
 
