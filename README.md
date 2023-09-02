@@ -40,6 +40,8 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 See alternative [caching approaches](#caching-approaches).
 
+See how you can [contribute](#contribute).
+
 ## Configuration
 
 See [action.yaml](action.yml), [restore/action.yml](restore/action.yml), [save/action.yml](save/action.yml).
@@ -274,6 +276,19 @@ Disadvantages:
 * Use [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc) for cache eviction via `atime`
 * gc via gc roots [nix-cache-cut](https://github.com/astro/nix-cache-cut)
 * gc based on time [cache-gc](https://github.com/lheckemann/cache-gc)
+
+## Contribute
+
+* Improve README
+* Report errors, suggest improvements in issues
+* Upgrade code.
+  * Read about [JavaScript actions](https://docs.github.com/en/actions/creating-actions/about-custom-actions?learn=create_actions&learnProduct=actions#javascript-actions)
+  * See main files:
+    * [restoreImpl.ts](./src/restoreImpl.ts)
+    * [saveImpl.ts](./src/saveImpl.ts)
+    * [acton.yml](./action.yml)
+    * [save/action.yml](./save/action.yml)
+    * [restore/action.yml](./restore/action.yml)
 
 # Cache action
 
