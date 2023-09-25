@@ -1,14 +1,20 @@
-# Cache Nix Too
+# Cache Nix
 
 A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
+## Capabilities
+
+* Cache full Nix store into a single cache.
+* Collect garbage in the store before saving.
+* Fuse caches produced by several jobs.
+* After saving a new cache, remove old caches by creation or last access time.
+
 ## Approach
 
 1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) action makes `/nix/store` owned by an unpriviliged user.
 1. `cache-nix-action` restores `/nix`.
-
    * When there's a cache hit, restoring `/nix/store` from a cache is faster than downloading multiple paths from binary caches.
       * You can compare run times of jobs with and without store caching in [Actions](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml).
       * Open a run and click on the time under `Total duration`.

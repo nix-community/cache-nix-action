@@ -1,5 +1,5 @@
-name: 'Cache nix'
-description: 'Cache artifacts like dependencies and build outputs to improve workflow execution time'
+name: 'Cache Nix store'
+description: 'Cache Nix store using GitHub Actions cache to speed up workflows.'
 author: 'GitHub'
 inputs:
   key:
