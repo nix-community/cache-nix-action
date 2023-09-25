@@ -176,20 +176,20 @@ jobs:
           purge-created-max-age: 0
 
   compare-run-times:
-    name: Compare run times of jobs with and without caching
+    name: Job with caching
     needs: merge-similar-caches
     permissions:
       actions: write
     strategy:
       matrix:
+        do-cache:
+          - true
+          - false
         os:
           - macos-11
           - macos-12
           - ubuntu-20.04
           - ubuntu-22.04
-        do-cache:
-          - true
-          - false
     runs-on: ${{ matrix.os }}
     if: always()
     steps:
