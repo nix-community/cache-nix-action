@@ -35,6 +35,8 @@ async function restoreImpl(
         const failOnCacheMiss = utils.getInputAsBool(Inputs.FailOnCacheMiss);
         const lookupOnly = utils.getInputAsBool(Inputs.LookupOnly);
 
+        core.info(`::group::Logs while restoring`);
+
         let cacheKey = await utils.getCacheKey(
             cachePaths,
             primaryKey,
@@ -42,6 +44,8 @@ async function restoreImpl(
             lookupOnly,
             enableCrossOsArchive
         );
+
+        core.info(`::endgroup::`);
 
         const restoreKeyHit = utils.getInputAsBool(Inputs.RestoreKeyHit);
 
