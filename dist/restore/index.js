@@ -62572,7 +62572,9 @@ function restoreImpl(stateProvider) {
             const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
             const failOnCacheMiss = utils.getInputAsBool(constants_1.Inputs.FailOnCacheMiss);
             const lookupOnly = utils.getInputAsBool(constants_1.Inputs.LookupOnly);
+            core.info(`::group::Logs while restoring`);
             let cacheKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive);
+            core.info(`::endgroup::`);
             const restoreKeyHit = utils.getInputAsBool(constants_1.Inputs.RestoreKeyHit);
             const restoreKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, true, enableCrossOsArchive);
             if (restoreKeyHit) {
