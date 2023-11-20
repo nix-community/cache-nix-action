@@ -1,9 +1,11 @@
 name: Nix CI
 "on":
   push:
-    # don't run on tags
+    # don't run on tags, run on commits
     # https://github.com/orgs/community/discussions/25615
     tags-ignore: 
+      - '**'
+    branches:
       - '**'
   pull_request: {}
   release:
