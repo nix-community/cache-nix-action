@@ -89,7 +89,8 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             per_page: 100,
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
-            key: primaryKey
+            key: primaryKey,
+            ref: github.context.ref
         });
 
         cacheId = await cache.saveCache(
