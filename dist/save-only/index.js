@@ -62759,14 +62759,14 @@ function saveImpl(stateProvider) {
             });
             const time = Date.now();
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
-                utils.info(`Cache hit occurred on the primary key ${primaryKey}.`);
+                utils.info(`Cache hit occurred on the primary key "${primaryKey}".`);
                 const caches = yield (0, purge_1.purgeCaches)({
                     key: primaryKey,
                     lookupOnly: true,
                     time
                 });
                 if (caches.map(cache => cache.key).includes(primaryKey)) {
-                    utils.info(`Purging the cache with the key ${primaryKey}...`);
+                    utils.info(`Purging the cache with the key "${primaryKey}".`);
                     const token = core.getInput(constants_1.Inputs.Token, { required: true });
                     const octokit = (0, github_1.getOctokit)(token);
                     octokit.rest.actions.deleteActionsCacheByKey({
@@ -62778,18 +62778,18 @@ function saveImpl(stateProvider) {
                     });
                 }
                 else {
-                    utils.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
+                    utils.info(`The cache with the key "${primaryKey}" won't be purged. Not saving a new cache.`);
                     yield (0, purge_1.purgeCaches)({ key: primaryKey, lookupOnly: false, time });
                     return;
                 }
             }
             yield (0, gc_1.collectGarbage)();
-            utils.info(`Saving a new cache with the key ${primaryKey}...`);
+            utils.info(`Saving a new cache with the key "${primaryKey}".`);
             cacheId = yield cache.saveCache(cachePaths, primaryKey, {
                 uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize)
             });
             if (cacheId != -1) {
-                utils.info(`Cache saved with the key ${primaryKey}.`);
+                utils.info(`Cache saved with the key "${primaryKey}".`);
                 yield (0, purge_1.purgeCaches)({ key: primaryKey, lookupOnly: false, time });
             }
         }

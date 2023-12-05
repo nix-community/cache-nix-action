@@ -62581,7 +62581,7 @@ const restoreExtraCaches_1 = __nccwpck_require__(5084);
 const utils = __importStar(__nccwpck_require__(6850));
 function restoreWithKey(key, paths) {
     return __awaiter(this, void 0, void 0, function* () {
-        utils.info(`Restoring a cache with the key "${key}"...`);
+        utils.info(`Restoring a cache with the key "${key}".`);
         utils.info(`::group::Logs while restoring. Errors are due to attempts to overwrite read-only paths.`);
         yield utils.getCacheKey({
             paths,
@@ -62590,7 +62590,7 @@ function restoreWithKey(key, paths) {
             lookupOnly: false
         });
         utils.info(`::endgroup::`);
-        utils.info(`Finished restoring a cache with the key "${key}"...`);
+        utils.info(`Finished restoring a cache with the key "${key}".`);
     });
 }
 exports.restoreWithKey = restoreWithKey;
@@ -62611,7 +62611,7 @@ function restoreImpl(stateProvider) {
             const cachePaths = utils.paths;
             const failOnCacheMiss = utils.getInputAsBool(constants_1.Inputs.FailOnCacheMiss);
             const restoreKeyHit = utils.getInputAsBool(constants_1.Inputs.RestoreKeyHit);
-            utils.info(`Searching for a cache with the key "${primaryKey}"...`);
+            utils.info(`Searching for a cache with the key "${primaryKey}".`);
             let cacheKey = yield utils.getCacheKey({
                 paths: cachePaths,
                 primaryKey,
@@ -62623,7 +62623,7 @@ function restoreImpl(stateProvider) {
             }
             else {
                 utils.info(`
-                No cache with the key "${cacheKey}" found.
+                No cache with the given primary key found.
                 Searching for a cache using restore keys:
                 ${JSON.stringify(restoreKeys)}
                 `);
@@ -62645,7 +62645,7 @@ function restoreImpl(stateProvider) {
                     throw new Error(`
                     Failed to restore cache entry. 
                     Exiting as fail-on-cache-miss is set. 
-                    Input key: ${primaryKey}
+                    Input key: "${primaryKey}"
                     `);
                 }
                 utils.info(`
@@ -62659,7 +62659,7 @@ function restoreImpl(stateProvider) {
             stateProvider.setState(constants_1.State.CacheMatchedKey, cacheKey);
             const isExactKeyMatch = utils.isExactKeyMatch(core.getInput(constants_1.Inputs.Key, { required: true }), cacheKey) || restoreKeyHit;
             core.setOutput(constants_1.Outputs.CacheHit, isExactKeyMatch.toString());
-            utils.info(`Cache restored from key: ${cacheKey}`);
+            utils.info(`Cache restored from key: "${cacheKey}"`);
             yield (0, restoreExtraCaches_1.restoreExtraCaches)();
             return cacheKey;
         }
