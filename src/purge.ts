@@ -4,59 +4,61 @@ import * as github from "@actions/github";
 import { Inputs } from "./constants";
 import * as utils from "./utils/actionUtils";
 
-function setFailedWrongValue(input: string, value: string) {
-    core.setFailed(`Wrong value for the input '${input}': ${value}`);
-}
+async function purgeByTime({
+    doUseLastAccessedTime,
+    keys,
+    lookupOnly,
+    time
+}: {
+    doUseLastAccessedTime: boolean;
+    keys: string[];
+    lookupOnly: boolean;
+    time: number;
+}): Promise<utils.Cache[]> {
+    const verb = doUseLastAccessedTime ? "last accessed" : "created";
 
-async function purgeByTime(
-    useAccessedTime: boolean,
-    keys: string[],
-    lookupOnly: boolean,
-    time: number
-): Promise<utils.Cache[]> {
-    const verb = useAccessedTime ? "last accessed" : "created";
-
-    const inputMaxAge = useAccessedTime
-        ? Inputs.PurgeAccessedMaxAge
-        : Inputs.PurgeCreatedMaxAge;
-
-    const maxAge = core.getInput(inputMaxAge, { required: false });
-
-    const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
-
-    if (maxDate === null) {
-        setFailedWrongValue(inputMaxAge, maxAge);
-    }
+    const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
 
     core.info(
-        `${
+        `
+        ${
             lookupOnly ? "Searching for" : "Purging"
-        } caches with keys ${JSON.stringify(
-            keys
-        )} ${verb} before ${maxDate.toISOString()}`
+        } caches ${verb} before ${maxDate.toISOString()} and having keys:
+        ${utils.stringify(keys)}
+        `
     );
 
-    const token = core.getInput(Inputs.Token, { required: false });
+    const token = core.getInput(Inputs.Token, { required: true });
 
-    const results = await utils.getCachesByKeys(token, keys);
+    const caches = utils.filterCachesByTime({
+        caches: await utils.getCachesByKeys(token, keys),
+        doUseLastAccessedTime,
+        maxDate
+    });
 
     core.info(
-        `Found ${results.length} cache(s)\n\n${JSON.stringify(results)}\n\n`
+        `
+        Found ${caches.length} cache(s):
+        ${utils.stringify(caches)}
+        `
     );
 
     if (lookupOnly) {
-        return results;
+        return caches;
     }
 
     const octokit = github.getOctokit(token);
 
-    results.forEach(async cache => {
-        const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
+    caches.forEach(async cache => {
+        const at = doUseLastAccessedTime
+            ? cache.last_accessed_at
+            : cache.created_at;
         if (at !== undefined && cache.id !== undefined) {
             const atDate = new Date(at);
+            const atDatePretty = atDate.toISOString();
             if (atDate < maxDate) {
                 core.info(
-                    `Deleting cache with key '${cache.key}' ${verb} at ${at}`
+                    `Deleting the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`
                 );
 
                 try {
@@ -68,14 +70,16 @@ async function purgeByTime(
                     });
                 } catch (error) {
                     core.info(
-                        `Failed to delete cache ${cache.key}\n\n${error}`
+                        `
+                        Failed to delete cache ${cache.key}
+                        
+                        ${error}
+                        `
                     );
                 }
             } else {
                 core.info(
-                    `Skipping cache ${
-                        cache.key
-                    }, ${verb} at ${atDate.toISOString()}`
+                    `Skipping the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`
                 );
             }
         }
@@ -84,16 +88,18 @@ async function purgeByTime(
     return [];
 }
 
-async function purge(
-    key: string,
-    lookupOnly: boolean,
-    time: number
-): Promise<utils.Cache[]> {
-    const accessed =
-        core.getInput(Inputs.PurgeAccessed, { required: false }) === "true";
+async function purge({
+    key,
+    lookupOnly,
+    time
+}: {
+    key: string;
+    lookupOnly: boolean;
+    time: number;
+}): Promise<utils.Cache[]> {
+    const accessed = core.getInput(Inputs.PurgeAccessed) === "true";
 
-    const created =
-        core.getInput(Inputs.PurgeCreated, { required: false }) === "true";
+    const created = core.getInput(Inputs.PurgeCreated) === "true";
 
     let purgeKeys = utils.getInputAsArray(Inputs.PurgeKeys);
 
@@ -108,12 +114,22 @@ async function purge(
     if (accessed || created) {
         if (accessed) {
             results.push(
-                ...(await purgeByTime(true, purgeKeys, lookupOnly, time))
+                ...(await purgeByTime({
+                    doUseLastAccessedTime: true,
+                    keys: purgeKeys,
+                    lookupOnly,
+                    time
+                }))
             );
         }
         if (created) {
             results.push(
-                ...(await purgeByTime(false, purgeKeys, lookupOnly, time))
+                ...(await purgeByTime({
+                    doUseLastAccessedTime: false,
+                    keys: purgeKeys,
+                    lookupOnly,
+                    time
+                }))
             );
         }
     } else {
@@ -123,17 +139,21 @@ async function purge(
     return results;
 }
 
-export async function purgeCaches(
-    key: string,
-    lookupOnly: boolean,
-    time: number
-): Promise<utils.Cache[]> {
+export async function purgeCaches({
+    key,
+    lookupOnly,
+    time
+}: {
+    key: string;
+    lookupOnly: boolean;
+    time: number;
+}): Promise<utils.Cache[]> {
     const purgeEnabled = utils.getInputAsBool(Inputs.Purge);
 
     const results: utils.Cache[] = [];
 
     if (purgeEnabled) {
-        results.push(...(await purge(key, lookupOnly, time)));
+        results.push(...(await purge({ key, lookupOnly, time })));
     }
 
     return results;

@@ -6,25 +6,18 @@ inputs:
     description: 'An explicit key for restoring and saving the cache.'
     required: true
   restore-keys:
-    description: 'An ordered list of keys to use for restoring stale cache if no cache hit occurred for key. Note `cache-hit` returns false in this case.'
-  upload-chunk-size:
-    description: 'The chunk size used to split up large files during upload, in bytes.'
-  enableCrossOsArchive:
-    description: 'An optional boolean when enabled, allows windows runners to save or restore caches that can be restored or saved respectively on other platforms.'
-    default: 'false'
-  fail-on-cache-miss:
-    description: 'Fail the workflow if cache entry is not found.'
-    default: 'false'
-  lookup-only:
-    description: 'Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache.'
-    default: 'false'
-
+    description: 'An ordered list of keys to use for restoring stale cache if no cache hit occurred for key. Note `cache-hit` returns `false` in this case. Use `restore-key-hit` to change this behavior.'
   extra-restore-keys:
     description: 'A newline-separated list of key prefixes used for restoring multiple caches.'
     default: ''
-
   restore-key-hit:
     description: "When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache."
+    default: 'false'
+
+  upload-chunk-size:
+    description: 'The chunk size used to split up large files during upload, in bytes.'
+  fail-on-cache-miss:
+    description: 'Fail the workflow if a cache entry is found neither via `key` nor via `restore-keys`.'
     default: 'false'
 
   gc-macos:
@@ -60,9 +53,14 @@ inputs:
   token:
     description: 'Used to communicate with GitHub API.'
     default: ${{ github.token }}
+    required: true
 outputs:
   cache-hit:
     description: 'A boolean value to indicate an exact match was found for the primary key.'
+  cache-primary-key:
+    description: 'A resolved cache key for which cache match was attempted'
+  cache-matched-key:
+    description: 'Key of the cache that was restored, it could either be the primary key on cache-hit or a partial/complete match of one of the restore keys'
 runs:
   using: 'node16'
   main: 'dist/restore/index.js'

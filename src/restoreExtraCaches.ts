@@ -3,46 +3,43 @@ import * as core from "@actions/core";
 import { Inputs } from "./constants";
 import * as utils from "./utils/actionUtils";
 
-export async function restoreExtraCaches(
-    cachePaths: string[],
-    lookupOnly: boolean,
-    enableCrossOsArchive: boolean
-) {
+export async function restoreExtraCaches() {
     const extraRestoreKeys = utils.getInputAsArray(Inputs.ExtraRestoreKeys);
 
     if (extraRestoreKeys.length == 0) {
         return;
     }
 
-    const token = core.getInput(Inputs.Token, { required: false });
+    const token = core.getInput(Inputs.Token, { required: true });
 
     core.info(
-        `Restoring extra caches with keys ${JSON.stringify(extraRestoreKeys)}.`
+        `
+        Restoring extra caches with keys:
+        ${utils.stringify(extraRestoreKeys)}
+        `
     );
 
     const results = await utils.getCachesByKeys(token, extraRestoreKeys);
 
     core.info(
-        `Found ${results.length} cache(s)\n${JSON.stringify(
-            results
-        )}\n\n`
+        `
+        Found ${results.length} cache(s):
+        ${utils.stringify(results)}
+        `
     );
 
-    if (lookupOnly) {
-        return;
-    }
+    const cachePaths = utils.paths;
 
     results.forEach(async cache => {
         core.info(`Restoring a cache with the key ${cache.key}`);
 
         if (cache.key !== undefined) {
-            const restoreKey = await utils.getCacheKey(
-                cachePaths,
-                cache.key,
-                [],
-                false,
-                enableCrossOsArchive
-            );
+            const restoreKey = await utils.getCacheKey({
+                paths: cachePaths,
+                primaryKey: cache.key,
+                restoreKeys: [],
+                lookupOnly: false
+            });
 
             if (restoreKey) {
                 core.info(`Restored a cache with the key ${cache.key}`);

@@ -2,7 +2,7 @@ import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 
-import { RefKey } from "../constants";
+import { Inputs, RefKey } from "../constants";
 
 export function isGhes(): boolean {
     const ghUrl = new URL(
@@ -23,6 +23,11 @@ export function isExactKeyMatch(key: string, cacheKey?: string): boolean {
 export function logWarning(message: string): void {
     const warningPrefix = "[warning]";
     core.info(`${warningPrefix}${message}`);
+}
+
+export function logError(message: string): void {
+    const prefix = "[error]";
+    core.error(`${prefix} ${message}`);
 }
 
 // Cache token authorized for all events that are tied to a ref
@@ -69,7 +74,7 @@ export function isCacheFeatureAvailable(): boolean {
     if (isGhes()) {
         logWarning(
             `Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
-Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`
+            Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`
         );
         return false;
     }
@@ -82,20 +87,24 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
 
 export const paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
 
-export async function getCacheKey(
-    paths: string[],
-    primaryKey: string,
-    restoreKeys: string[],
-    lookupOnly: boolean,
-    enableCrossOsArchive: boolean
-) {
+export async function getCacheKey({
+    paths,
+    primaryKey,
+    restoreKeys,
+    lookupOnly
+}: {
+    paths: string[];
+    primaryKey: string;
+    restoreKeys: string[];
+    lookupOnly: boolean;
+}) {
     return await cache.restoreCache(
         // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
         paths.slice(),
         primaryKey,
         restoreKeys,
-        { lookupOnly: lookupOnly },
-        enableCrossOsArchive
+        { lookupOnly },
+        false
     );
 }
 
@@ -110,7 +119,7 @@ export interface Cache {
 }
 
 export async function getCachesByKeys(token: string, keys: string[]) {
-    const results: Cache[] = [];
+    const caches: Cache[] = [];
 
     const octokit = github.getOctokit(token);
 
@@ -131,9 +140,55 @@ export async function getCachesByKeys(token: string, keys: string[]) {
                 break;
             }
 
-            results.push(...cachesRequest.actions_caches);
+            caches.push(...cachesRequest.actions_caches);
         }
     }
 
-    return results;
+    return caches;
 }
+
+export const filterCachesByTime = ({
+    caches,
+    doUseLastAccessedTime,
+    maxDate
+}: {
+    caches: Cache[];
+    doUseLastAccessedTime: boolean;
+    maxDate: Date;
+}) =>
+    caches.filter(cache => {
+        const at = doUseLastAccessedTime
+            ? cache.last_accessed_at
+            : cache.created_at;
+        if (at !== undefined && cache.id !== undefined) {
+            const atDate = new Date(at);
+            return atDate < maxDate;
+        } else return false;
+    });
+
+export const mkMessageWrongValue = (input: string, value: string) =>
+    `Wrong value for the input '${input}': ${value}`;
+
+export function getMaxDate({
+    doUseLastAccessedTime,
+    time
+}: {
+    doUseLastAccessedTime: boolean;
+    time: number;
+}) {
+    const inputMaxAge = doUseLastAccessedTime
+        ? Inputs.PurgeAccessedMaxAge
+        : Inputs.PurgeCreatedMaxAge;
+
+    const maxAge = core.getInput(inputMaxAge, { required: false });
+
+    const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
+
+    if (maxDate === null) {
+        throw new Error(mkMessageWrongValue(inputMaxAge, maxAge));
+    }
+
+    return maxDate;
+}
+
+export const stringify = (value: any) => JSON.stringify(value, null, 2);

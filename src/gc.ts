@@ -10,8 +10,7 @@ export async function collectGarbage() {
     await exec("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
 
     const gcEnabled = utils.getInputAsBool(
-        process.platform == "darwin" ? Inputs.GCMacos : Inputs.GCLinux,
-        { required: false }
+        process.platform == "darwin" ? Inputs.GCMacos : Inputs.GCLinux
     );
 
     if (gcEnabled) {

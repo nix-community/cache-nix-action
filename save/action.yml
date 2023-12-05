@@ -11,10 +11,6 @@ inputs:
   upload-chunk-size:
     description: 'The chunk size used to split up large files during upload, in bytes'
     required: false
-  enableCrossOsArchive:
-    description: 'An optional boolean when enabled, allows windows runners to save caches that can be restored on other platforms'
-    default: 'false'
-    required: false
   
   gc-macos:
     description: 'When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.'
@@ -50,6 +46,7 @@ inputs:
   token:
     description: 'Used to communicate with GitHub API.'
     default: ${{ github.token }}
+    required: true
 runs:
   using: 'node16'
   main: '../dist/save-only/index.js'

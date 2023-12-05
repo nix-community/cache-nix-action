@@ -4,11 +4,11 @@ A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
-## Capabilities
+## What it can do
 
-* Cache full Nix store into a single cache.
+* Cache full Nix store into a single cache on `Linux` and `macOS` runners.
 * Collect garbage in the store before saving.
-* Fuse caches produced by several jobs.
+* Merge caches produced by several jobs.
 * After saving a new cache, remove old caches by creation or last access time.
 
 ## Approach
@@ -28,8 +28,9 @@ This action is based on [actions/cache](https://github.com/actions/cache).
    * This action allows to limit nix store size (see [Configuration](#configuration)).
 
 1. `cache-nix-action` saves a new cache when there's no cache hit.
-   * Saving a cache takes time.
-   * There may be no cache hit after an old matching cache was purged.
+   * Limitations:
+      * Saving a cache takes time.
+      * There may be no cache hit after an old matching cache was purged.
 
 ## Limitations
 
@@ -351,9 +352,7 @@ If you are using a `self-hosted` Windows runner, `GNU tar` and `zstd` are requir
 * `key` - An explicit key for a cache entry. See [creating a cache key](#creating-a-cache-key).
 * `path` - A list of files, directories, and wildcard patterns to cache and restore. See [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns.
 * `restore-keys` - An ordered list of prefix-matched keys to use for restoring stale cache if no cache hit occurred for key.
-* `enableCrossOsArchive` - An optional boolean when enabled, allows Windows runners to save or restore caches that can be restored or saved respectively on other platforms. Default: `false`
 * `fail-on-cache-miss` - Fail the workflow if cache entry is not found. Default: `false`
-* `lookup-only` - If true, only checks if cache entry exists and skips download. Does not change save cache behavior. Default: `false`
 
 #### Environment Variables
 

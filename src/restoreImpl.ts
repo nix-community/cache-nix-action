@@ -5,6 +5,25 @@ import { restoreExtraCaches } from "./restoreExtraCaches";
 import { IStateProvider } from "./stateProvider";
 import * as utils from "./utils/actionUtils";
 
+export async function restoreWithKey(key: string, paths: string[]) {
+    core.info(`Restoring a cache with the key "${key}"...`);
+
+    core.info(
+        `::group::Logs while restoring. Errors are due to attempts to overwrite read-only paths.`
+    );
+
+    await utils.getCacheKey({
+        paths,
+        primaryKey: key,
+        restoreKeys: [],
+        lookupOnly: false
+    });
+
+    core.info(`::endgroup::`);
+
+    core.info(`Finished restoring a cache with the key "${key}"...`);
+}
+
 async function restoreImpl(
     stateProvider: IStateProvider
 ): Promise<string | undefined> {
@@ -16,12 +35,11 @@ async function restoreImpl(
 
         // Validate inputs, this can cause task failure
         if (!utils.isValidEvent()) {
-            utils.logWarning(
+            throw new Error(
                 `Event Validation Error: The event type ${
                     process.env[Events.Key]
                 } is not supported because it's not tied to a branch or tag ref.`
             );
-            return;
         }
 
         const primaryKey = core.getInput(Inputs.Key, { required: true });
@@ -29,56 +47,63 @@ async function restoreImpl(
 
         const restoreKeys = utils.getInputAsArray(Inputs.RestoreKeys);
         const cachePaths = utils.paths;
-        const enableCrossOsArchive = utils.getInputAsBool(
-            Inputs.EnableCrossOsArchive
-        );
         const failOnCacheMiss = utils.getInputAsBool(Inputs.FailOnCacheMiss);
-        const lookupOnly = utils.getInputAsBool(Inputs.LookupOnly);
-
-        core.info(`::group::Logs while restoring`);
-
-        let cacheKey = await utils.getCacheKey(
-            cachePaths,
-            primaryKey,
-            restoreKeys,
-            lookupOnly,
-            enableCrossOsArchive
-        );
-
-        core.info(`::endgroup::`);
-
         const restoreKeyHit = utils.getInputAsBool(Inputs.RestoreKeyHit);
 
-        const restoreKey = await utils.getCacheKey(
-            cachePaths,
-            primaryKey,
-            restoreKeys,
-            true,
-            enableCrossOsArchive
-        );
+        core.info(`Searching for a cache with the key "${primaryKey}"...`);
 
-        if (restoreKeyHit) {
-            cacheKey = restoreKey;
+        let cacheKey = await utils.getCacheKey({
+            paths: cachePaths,
+            primaryKey,
+            restoreKeys: [],
+            lookupOnly: true
+        });
+
+        if (cacheKey) {
+            await restoreWithKey(cacheKey, cachePaths);
+        } else {
+            core.info(
+                `
+                No cache with the key "${cacheKey}" found.
+                Searching for a cache using restore keys:
+                ${JSON.stringify(restoreKeys)}
+                `
+            );
+
+            const restoreKey = await utils.getCacheKey({
+                paths: cachePaths,
+                primaryKey: "",
+                restoreKeys,
+                lookupOnly: true
+            });
+
+            if (restoreKey) {
+                await restoreWithKey(restoreKey, cachePaths);
+            }
+
+            if (restoreKeyHit) {
+                cacheKey = restoreKey;
+            }
         }
 
         if (!cacheKey) {
             if (failOnCacheMiss) {
                 throw new Error(
-                    `Failed to restore cache entry. Exiting as fail-on-cache-miss is set. Input key: ${primaryKey}`
+                    `
+                    Failed to restore cache entry. 
+                    Exiting as fail-on-cache-miss is set. 
+                    Input key: ${primaryKey}
+                    `
                 );
             }
             core.info(
-                `Cache not found for input keys: ${JSON.stringify([
-                    primaryKey,
-                    ...restoreKeys
-                ])}`
+                `
+                Cache not found for input keys:
+                ${utils.stringify([primaryKey, ...restoreKeys])}
+                `
             );
 
-            await restoreExtraCaches(
-                cachePaths,
-                lookupOnly,
-                enableCrossOsArchive
-            );
+            await restoreExtraCaches();
 
             return;
         }
@@ -93,13 +118,10 @@ async function restoreImpl(
             ) || restoreKeyHit;
 
         core.setOutput(Outputs.CacheHit, isExactKeyMatch.toString());
-        if (lookupOnly) {
-            core.info(`Cache found and can be restored from key: ${cacheKey}`);
-        } else {
-            core.info(`Cache restored from key: ${cacheKey}`);
-        }
 
-        await restoreExtraCaches(cachePaths, lookupOnly, enableCrossOsArchive);
+        core.info(`Cache restored from key: ${cacheKey}`);
+
+        await restoreExtraCaches();
 
         return cacheKey;
     } catch (error: unknown) {
