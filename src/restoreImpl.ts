@@ -90,9 +90,8 @@ async function restoreImpl(
             if (failOnCacheMiss) {
                 throw new Error(
                     `
-                    Failed to restore cache entry. 
-                    Exiting as fail-on-cache-miss is set. 
-                    Input key: "${primaryKey}"
+                    Failed to restore a cache with the key "${primaryKey}".
+                    Exiting as ${Inputs.FailOnCacheMiss} is set. 
                     `
                 );
             }
