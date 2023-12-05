@@ -12,7 +12,7 @@ export async function restoreExtraCaches() {
 
     const token = core.getInput(Inputs.Token, { required: true });
 
-    core.info(
+    utils.info(
         `
         Restoring extra caches with keys:
         ${utils.stringify(extraRestoreKeys)}
@@ -21,7 +21,7 @@ export async function restoreExtraCaches() {
 
     const results = await utils.getCachesByKeys(token, extraRestoreKeys);
 
-    core.info(
+    utils.info(
         `
         Found ${results.length} cache(s):
         ${utils.stringify(results)}
@@ -31,7 +31,7 @@ export async function restoreExtraCaches() {
     const cachePaths = utils.paths;
 
     results.forEach(async cache => {
-        core.info(`Restoring a cache with the key ${cache.key}`);
+        utils.info(`Restoring a cache with the key ${cache.key}`);
 
         if (cache.key !== undefined) {
             const restoreKey = await utils.getCacheKey({
@@ -42,7 +42,7 @@ export async function restoreExtraCaches() {
             });
 
             if (restoreKey) {
-                core.info(`Restored a cache with the key ${cache.key}`);
+                utils.info(`Restored a cache with the key ${cache.key}`);
             }
         }
     });

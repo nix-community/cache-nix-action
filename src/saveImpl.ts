@@ -58,7 +58,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         const time = Date.now();
 
         if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
-            core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
+            utils.info(`Cache hit occurred on the primary key ${primaryKey}.`);
 
             const caches = await purgeCaches({
                 key: primaryKey,
@@ -67,7 +67,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             });
 
             if (caches.map(cache => cache.key).includes(primaryKey)) {
-                core.info(`Purging the cache with the key ${primaryKey}...`);
+                utils.info(`Purging the cache with the key ${primaryKey}...`);
 
                 const token = core.getInput(Inputs.Token, { required: true });
                 const octokit = getOctokit(token);
@@ -80,7 +80,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                     ref: github.context.ref
                 });
             } else {
-                core.info(
+                utils.info(
                     `The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`
                 );
 
@@ -92,14 +92,14 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
         await collectGarbage();
 
-        core.info(`Saving a new cache with the key ${primaryKey}...`);
+        utils.info(`Saving a new cache with the key ${primaryKey}...`);
 
         cacheId = await cache.saveCache(cachePaths, primaryKey, {
             uploadChunkSize: utils.getInputAsInt(Inputs.UploadChunkSize)
         });
 
         if (cacheId != -1) {
-            core.info(`Cache saved with the key ${primaryKey}.`);
+            utils.info(`Cache saved with the key ${primaryKey}.`);
 
             await purgeCaches({ key: primaryKey, lookupOnly: false, time });
         }

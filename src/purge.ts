@@ -19,7 +19,7 @@ async function purgeByTime({
 
     const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
 
-    core.info(
+    utils.info(
         `
         ${
             lookupOnly ? "Searching for" : "Purging"
@@ -36,7 +36,7 @@ async function purgeByTime({
         maxDate
     });
 
-    core.info(
+    utils.info(
         `
         Found ${caches.length} cache(s):
         ${utils.stringify(caches)}
@@ -57,7 +57,7 @@ async function purgeByTime({
             const atDate = new Date(at);
             const atDatePretty = atDate.toISOString();
             if (atDate < maxDate) {
-                core.info(
+                utils.info(
                     `Deleting the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`
                 );
 
@@ -69,7 +69,7 @@ async function purgeByTime({
                         cache_id: cache.id
                     });
                 } catch (error) {
-                    core.info(
+                    utils.info(
                         `
                         Failed to delete cache ${cache.key}
                         
@@ -78,7 +78,7 @@ async function purgeByTime({
                     );
                 }
             } else {
-                core.info(
+                utils.info(
                     `Skipping the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`
                 );
             }

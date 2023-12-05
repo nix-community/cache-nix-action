@@ -1,6 +1,7 @@
 import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import { dedent } from "ts-dedent";
 
 import { Inputs, RefKey } from "../constants";
 
@@ -192,3 +193,7 @@ export function getMaxDate({
 }
 
 export const stringify = (value: any) => JSON.stringify(value, null, 2);
+
+export const info = (message: string) => {
+    core.info(dedent(message));
+};

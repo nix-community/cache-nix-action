@@ -1,11 +1,10 @@
-import * as core from "@actions/core";
 import { exec } from "@actions/exec";
 
 import { Inputs } from "./constants";
 import * as utils from "./utils/actionUtils";
 
 export async function collectGarbage() {
-    core.info("Collecting garbage");
+    utils.info("Collecting garbage");
 
     await exec("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
 
