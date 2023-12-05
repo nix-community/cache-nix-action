@@ -49851,6 +49851,80 @@ var isArray = Array.isArray || function (xs) {
 
 /***/ }),
 
+/***/ 5281:
+/***/ ((module, exports) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true
+}));
+exports["default"] = void 0;
+var _default = createDedent({});
+exports["default"] = _default;
+function createDedent(options) {
+  dedent.withOptions = newOptions => createDedent({
+    ...options,
+    ...newOptions
+  });
+  return dedent;
+  function dedent(strings, ...values) {
+    const raw = typeof strings === "string" ? [strings] : strings.raw;
+    const {
+      escapeSpecialCharacters = Array.isArray(strings)
+    } = options;
+
+    // first, perform interpolation
+    let result = "";
+    for (let i = 0; i < raw.length; i++) {
+      let next = raw[i];
+      if (escapeSpecialCharacters) {
+        // handle escaped newlines, backticks, and interpolation characters
+        next = next.replace(/\\\n[ \t]*/g, "").replace(/\\`/g, "`").replace(/\\\$/g, "$").replace(/\\{/g, "{");
+      }
+      result += next;
+      if (i < values.length) {
+        // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+        result += values[i];
+      }
+    }
+
+    // now strip indentation
+    const lines = result.split("\n");
+    let mindent = null;
+    for (const l of lines) {
+      const m = l.match(/^(\s+)\S+/);
+      if (m) {
+        const indent = m[1].length;
+        if (!mindent) {
+          // this is the first indented line
+          mindent = indent;
+        } else {
+          mindent = Math.min(mindent, indent);
+        }
+      }
+    }
+    if (mindent !== null) {
+      const m = mindent; // appease TypeScript
+      result = lines
+      // https://github.com/typescript-eslint/typescript-eslint/issues/7140
+      // eslint-disable-next-line @typescript-eslint/prefer-string-starts-ends-with
+      .map(l => l[0] === " " || l[0] === "\t" ? l.slice(m) : l).join("\n");
+    }
+    return result
+    // dedent eats leading and trailing whitespace too
+    .trim()
+    // handle escaped newlines at the end to ensure they don't get stripped too
+    .replace(/\\n/g, "\n");
+  }
+}
+module.exports = exports.default;
+module.exports["default"] = exports.default;
+
+
+/***/ }),
+
 /***/ 8611:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -54825,55 +54899,6 @@ module.exports.toUnicode = function(domain_name, useSTD3) {
 
 module.exports.PROCESSING_OPTIONS = PROCESSING_OPTIONS;
 
-
-/***/ }),
-
-/***/ 3604:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.dedent = void 0;
-function dedent(templ) {
-    var values = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        values[_i - 1] = arguments[_i];
-    }
-    var strings = Array.from(typeof templ === 'string' ? [templ] : templ);
-    strings[strings.length - 1] = strings[strings.length - 1].replace(/\r?\n([\t ]*)$/, '');
-    var indentLengths = strings.reduce(function (arr, str) {
-        var matches = str.match(/\n([\t ]+|(?!\s).)/g);
-        if (matches) {
-            return arr.concat(matches.map(function (match) { var _a, _b; return (_b = (_a = match.match(/[\t ]/g)) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0; }));
-        }
-        return arr;
-    }, []);
-    if (indentLengths.length) {
-        var pattern_1 = new RegExp("\n[\t ]{" + Math.min.apply(Math, indentLengths) + "}", 'g');
-        strings = strings.map(function (str) { return str.replace(pattern_1, '\n'); });
-    }
-    strings[0] = strings[0].replace(/^\r?\n/, '');
-    var string = strings[0];
-    values.forEach(function (value, i) {
-        var endentations = string.match(/(?:^|\n)( *)$/);
-        var endentation = endentations ? endentations[1] : '';
-        var indentedValue = value;
-        if (typeof value === 'string' && value.includes('\n')) {
-            indentedValue = String(value)
-                .split('\n')
-                .map(function (str, i) {
-                return i === 0 ? str : "" + endentation + str;
-            })
-                .join('\n');
-        }
-        string += indentedValue + strings[i + 1];
-    });
-    return string;
-}
-exports.dedent = dedent;
-exports["default"] = dedent;
-//# sourceMappingURL=index.js.map
 
 /***/ }),
 
@@ -62947,12 +62972,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-const ts_dedent_1 = __nccwpck_require__(3604);
+const dedent_1 = __importDefault(__nccwpck_require__(5281));
 const constants_1 = __nccwpck_require__(9042);
 function isGhes() {
     const ghUrl = new URL(process.env["GITHUB_SERVER_URL"] || "https://github.com");
@@ -63079,7 +63107,7 @@ exports.getMaxDate = getMaxDate;
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
 const info = (message) => {
-    core.info((0, ts_dedent_1.dedent)(message));
+    core.info(dedent_1.default.withOptions({})(message));
 };
 exports.info = info;
 
