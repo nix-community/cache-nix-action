@@ -96,3 +96,7 @@ typings/
 .vscode/
 
 .direnv
+
+__pycache__
+
+table.md

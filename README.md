@@ -4,96 +4,64 @@ A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
-## What it can do
+## What it can do (main things)
 
-* Cache full Nix store into a single cache on `Linux` and `macOS` runners.
+* Work on `Linux` and `macOS` runners.
+* Cache full Nix store into a single cache.
 * Collect garbage in the store before saving.
 * Merge caches produced by several jobs.
-* After saving a new cache, remove old caches by creation or last access time.
+* Purge old caches by their creation or last access time.
+* Can be used instead of `actions/cache` if you set `nix: false` (see [Inputs](#inputs)).
 
 ## Approach
 
 1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) action makes `/nix/store` owned by an unpriviliged user.
-1. `cache-nix-action` restores `/nix`.
-   * When there's a cache hit, restoring `/nix/store` from a cache is faster than downloading multiple paths from binary caches.
-      * You can compare run times of jobs with and without store caching in [Actions](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml).
-      * Open a run and click on the time under `Total duration`.
 
-1. Optionally, `cache-nix-action` purges old caches.
-   * As Nix (flake) inputs may change, it's necessary to use fresher caches.
-   * Caches can be purged by `created` or `last accessed` time (see [Configuration](#configuration)).
+1. `cache-nix-action` tries to restore caches.
+
+1. Other job steps run.
+
+1. Optionally, `cache-nix-action` purges old caches by `created` or `last_accessed` time.
 
 1. Optionally, `cache-nix-action` collects garbage in the Nix store (see [Garbage Collection](#garbage-collection)).
-   * The store may contain useless paths from previous runs.
-   * This action allows to limit nix store size (see [Configuration](#configuration)).
 
-1. `cache-nix-action` saves a new cache when there's no cache hit.
-   * Limitations:
-      * Saving a cache takes time.
-      * There may be no cache hit after an old matching cache was purged.
+1. `cache-nix-action` saves a new cache when there's no cache hit after purging old caches.
+
+## Comparison with alternative approaches
+
+See [Caching Approaches](#caching-approaches).
 
 ## Limitations
 
-* `GitHub` allows only 10GB of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)).
-  * Can be overcome by merging similar caches (see [Merge caches](#merge-caches))
-* `cache-nix-action` restores and saves the whole `/nix` directory.
+* Always caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
+* `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
+  * [Purge old caches](#purge-old-caches)
+  * [Merge caches](#merge-caches)
 * `cache-nix-action` requires `nix-quick-install-action` (see [Approach](#approach)).
-* Store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
-* Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
+* Supports only `Linux` and `macOS` runners.
+* Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)). Workaround:
+  * The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
+* Caches are isolated between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)). Workaround:
+  * Provide caches on the default and base branches (for PRs).
 * When restoring, `cache-nix-action` writes cached Nix store paths into a read-only `/nix/store` of a runner.
   Some of these paths may already be present, so the action will show `File exists` errors and a warning that it failed to restore.
   It's OK.
-* It may be necessary to purge old caches (see [Purge old caches](#purge-old-caches)).
+* For `purge: true`, a workflow requires the permission `action: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
+* Purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
+* Purge time is calculated relative to the start of the `Save` phase of this action.
+* Purges caches by keys without considering their versions (see [Cache version](#cache-version)).
 
-See alternative [caching approaches](#caching-approaches).
+## Example steps
 
-See how you can [contribute](#contribute).
-
-## Configuration
-
-See [action.yaml](action.yml), [restore/action.yml](restore/action.yml), [save/action.yml](save/action.yml).
-
-This action inherits some [inputs](#inputs) and [outputs](#outputs) of `actions/cache`.
-
-### New inputs
-
-| `name`                    | `description`                                                                                                           | `required` | `default` | `needs`                |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------- | --------- | ---------------------- |
-| `gc-macos`                | When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.                             | `false`    | `false`   | `gc-macos: true`       |
-| `gc-max-store-size-macos` | Maximum Nix store size in bytes on `macOS` runners.                                                                     | `false`    |           |                        |
-| `gc-linux`                | When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.                             | `false`    | `false`   |                        |
-| `gc-max-store-size-linux` | Maximum Nix store size in bytes on `Linux` runners.                                                                     | `false`    |           | `gc-linux: true`       |
-| `purge`                   | When `true`, purge old caches before saving a new cache with a `key`.                                                   | `false`    | `false`   |                        |
-| `purge-keys`              | A newline-separated list of cache key prefixes used to purge caches. An empty list is equivalent to the `key` input.    | `false`    | `''`      | `purge: true`          |
-| `purge-accessed`          | When `true`, purge caches by their last access time.                                                                    | `false`    | `false`   | `purge: true`          |
-| `purge-accessed-max-age`  | Purge caches last accessed more than this number of seconds ago.                                                        | `false`    | `604800`  | `purge-accessed: true` |
-| `purge-created`           | When `true`, delete caches by their creation time.                                                                      | `false`    | `true`    | `purge: true`          |
-| `purge-created-max-age`   | Purge caches created more than this number of seconds ago.                                                              | `false`    | `604800`  | `purge-created: true`. |
-| `restore-key-hit`         | When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache. | `false`    | `false`   |                        |
-| `extra-restore-keys`      | A newline-separated list of key prefixes used for restoring multiple caches.                                            | `false`    | `''`      |                        |
-
-Note:
-
-* `cache-nix-action` purges only caches specific to a branch that has triggered a workflow.
-* `*-max-age` is relative to the time before saving a new cache.
-
-### Removed inputs
-
-The `cache-nix-action` doesn't provide the `path` input from the original [inputs](#inputs) of `actions/cache` due to [limitations](#limitations).
-Instead, the `cache-nix-action` caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths by default as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
-
-## Usage
-
-* This action **must** be used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
-* Maximum Nix store size on `Linux` runners will be `~1GB` due to `gc-max-store-size-linux: 1000000000`.
-  * If the store has a larger size, it will be garbage collected to reach this limit (See [Garbage collection parameters](#garbage-collection-parameters)).
+* Due to `gc-max-store-size-linux: 1073741824`, Nix store size on `Linux` runners will be reduced to `1GB` before trying to save a new cache.
+  * If the store has a larger size, it will be garbage collected to reach the (See [Garbage collection parameters](#garbage-collection-parameters)).
   * The `cache-nix-action` will print the Nix store size in the `Post` phase, so you can choose an optimal store size to avoid garbage collection.
-* On `macOS` runners, Nix store won't be garbage collected since `gc-macos: true` isn't set.
-* The `cache-nix-action` will find caches with a key prefix `cache-${{ matrix.os }}-`.
-  Among these caches, the `cache-nix-action` will delete caches created more than `42` seconds ago
+* On `macOS` runners, Nix store won't be garbage collected since `gc-max-store-size-macos` isn't set to a number.
+* Before trying to save a new cache, the `cache-nix-action` will search for caches with a key prefix `cache-${{ matrix.os }}-`.
+  Among these caches, due to `purge-created: 42` the `cache-nix-action` will delete caches created more than `42` seconds ago.
 
 ```yaml
-- uses: nixbuild/nix-quick-install-action@v25
+- uses: nixbuild/nix-quick-install-action@v26
   with:
     nix_conf: |
       substituters = https://cache.nixos.org/ https://nix-community.cachix.org
@@ -101,24 +69,33 @@ Instead, the `cache-nix-action` caches `/nix`, `~/.cache/nix`, `~root/.cache/nix
       keep-outputs = true
 
 - name: Restore and cache Nix store
-  uses: nix-community/cache-nix-action@v3
+  uses: nix-community/cache-nix-action@v5
   with:
-    key: cache-${{ matrix.os }}-${{ hashFiles('**/*.nix') }}
-    restore-keys: |
-      cache-${{ matrix.os }}-
+    primary-key: cache-nix-${{ matrix.os }}-${{ hashFiles('**/*.nix') }}
+    restore-prefixes-first-match: cache-nix-${{ matrix.os }}-
 
-    gc-linux: true
-    gc-max-store-size-linux: 1000000000
+    gc-max-store-size-linux: 1073741824
     
-    purge-caches: true
-    purge-key: cache-${{ matrix.os }}-
-    purge-created: true
-    purge-created-max-age: 42
+    purge: true
+    purge-prefixes: cache-${{ matrix.os }}-
+    purge-created: 42
 ```
 
 ### Example workflow
 
 See [ci.yaml](.github/workflows/ci.yaml).
+
+## Configuration
+
+See [action.yml](action.yml), [restore/action.yml](restore/action.yml), [save/action.yml](save/action.yml).
+
+### Inputs
+
+<table><tr><th>name</th><th>description</th><th>default</th><th>required</th></tr><tr><td><div><p><code>primary-key</code></p></div></td><td><div><ul><li>When a non-empty string, the action uses this key for restoring and saving a cache.</li><li>Otherwise, the action fails.</li></ul></div></td><td><div/></td><td><div><p><code>true</code></p></div></td></tr><tr><td><div><p><code>restore-prefixes-first-match</code></p></div></td><td><div><ul><li>When a newline-separated non-empty list of non-empty key prefixes, when there's a miss on the <code>primary-key</code>,   the action searches in this list for the first prefix for which there exists a cache   with a matching key and the action tries to restore that cache.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>restore-prefixes-all-matches</code></p></div></td><td><div><ul><li>When a newline-separated non-empty list of non-empty key prefixes, the action tries to restore   all caches whose keys match these prefixes.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>skip-restore-on-hit-primary-key</code></p></div></td><td><div><ul><li>Can have an effect only when <code>restore-prefixes-first-match</code> has no effect.</li><li>When <code>true</code>, when there's a hit on the <code>primary-key</code>, the action doesn't restore caches.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>false</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>fail-on</code></p></div></td><td><div><ul><li>Input form: <code>&lt;key type&gt;.&lt;result&gt;</code>.</li><li><code>&lt;key type&gt;</code> options: <code>primary</code>, <code>first-match</code>.</li><li><code>&lt;result&gt;</code> options: <code>miss</code>, <code>not-restored</code>.</li><li>When the input satisfies the input form, when the event described in the input happens, the action fails.</li><li>Example:</li><li>Input: <code>primary.not-restored</code>.</li><li>Event: a cache could not be restored via the <code>primary-key</code>.</li></ul></div></td><td><div/></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>nix</code></p></div></td><td><div><ul><li>When <code>true</code>, the action can do Nix-specific things.</li><li>Otherwise, the action doesn't do them.</li></ul></div></td><td><div><p><code>true</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>save</code></p></div></td><td><div><ul><li>When <code>true</code>, the action can save a cache with the <code>primary-key</code>.</li><li>Otherwise, the action can't save a cache.</li></ul></div></td><td><div><p><code>true</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>paths</code></p></div></td><td><div><ul><li>When <code>nix: true</code>, uses <code>["/nix", "~/.cache/nix", "~root/.cache/nix"]</code> as default paths. Otherwise, uses an empty list as default paths.</li><li>When a newline-separated non-empty list of non-empty path patterns (see <a href="https://github.com/actions/toolkit/tree/main/packages/glob"><code>@actions/glob</code></a> for supported patterns), the action appends it to default paths and uses the resulting list for restoring and saving caches.</li><li>Otherwise, the action uses default paths for restoring and saving caches.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>paths-macos</code></p></div></td><td><div><ul><li>Overrides <code>paths</code>.</li><li>Can have an effect only when on a <code>macOS</code> runner.</li><li>When <code>nix: true</code>, uses <code>["/nix", "~/.cache/nix", "~root/.cache/nix"]</code> as default paths. Otherwise, uses an empty list as default paths.</li><li>When a newline-separated non-empty list of non-empty path patterns (see <a href="https://github.com/actions/toolkit/tree/main/packages/glob"><code>@actions/glob</code></a> for supported patterns), the action appends it to default paths and uses the resulting list for restoring and saving caches.</li><li>Otherwise, the action uses default paths for restoring and saving caches.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>paths-linux</code></p></div></td><td><div><ul><li>Overrides <code>paths</code>.</li><li>Can have an effect only when on a <code>Linux</code> runner.</li><li>When <code>nix: true</code>, uses <code>["/nix", "~/.cache/nix", "~root/.cache/nix"]</code> as default paths. Otherwise, uses an empty list as default paths.</li><li>When a newline-separated non-empty list of non-empty path patterns (see <a href="https://github.com/actions/toolkit/tree/main/packages/glob"><code>@actions/glob</code></a> for supported patterns), the action appends it to default paths and uses the resulting list for restoring and saving caches.</li><li>Otherwise, the action uses default paths for restoring and saving caches.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>gc-max-store-size</code></p></div></td><td><div><ul><li>Can have an effect only when <code>nix: true</code>, <code>save: true</code>.</li><li>When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>gc-max-store-size-macos</code></p></div></td><td><div><ul><li>Can have an effect only when <code>nix: true</code>, <code>save: true</code>.</li><li>Overrides <code>gc-max-store-size</code>.</li><li>Can have an effect only when on a <code>macOS</code> runner.</li><li>When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>gc-max-store-size-linux</code></p></div></td><td><div><ul><li>Can have an effect only when <code>nix: true</code>, <code>save: true</code>.</li><li>Overrides <code>gc-max-store-size</code>.</li><li>Can have an effect only when on a <code>Linux</code> runner.</li><li>When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge</code></p></div></td><td><div><ul><li>When <code>true</code>, the action purges (possibly zero) caches.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>false</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge-overwrite</code></p></div></td><td><div><ul><li>Can have an effect only when <code>purge: true</code>.</li><li>When <code>always</code>, the action always purges cache with the <code>primary-key</code>.</li><li>When <code>never</code>, the action never purges cache with the <code>primary-key</code>.</li><li>Otherwise, the action purges old caches using purging criteria.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge-prefixes</code></p></div></td><td><div><ul><li>Can have an effect only when <code>purge: true</code>.</li><li>When a newline-separated non-empty list of non-empty cache key prefixes, the action collects all cache keys that match these prefixes.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge-last-accessed</code></p></div></td><td><div><ul><li>Can have an effect only when <code>purge: true</code>.</li><li>When a number, the action selects for purging caches last accessed more than this number of seconds ago relative to the start of the Save phase.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge-created</code></p></div></td><td><div><ul><li>Can have an effect only when <code>purge: true</code>.</li><li>When a number, the action selects for purging caches created more than this number of seconds ago relative to the start of the Save phase.</li><li>Otherwise, this input has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>upload-chunk-size</code></p></div></td><td><div><ul><li>When a number, the action uses it as the chunk size (in bytes) to split up large files during upload.</li><li>Otherwise, the action uses the default value <code>33554432</code> (32MB).</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>token</code></p></div></td><td><div><p>The action uses it to communicate with GitHub API.</p></div></td><td><div><p><code>${{ github.token }}</code></p></div></td><td><div><p><code>false</code></p></div></td></tr></table>
+
+### Outputs
+
+<table><tr><th>name</th><th>description</th></tr><tr><td><div><p><code>primary-key</code></p></div></td><td><div><ul><li>A string.</li><li>The <code>primary-key</code>.</li></ul></div></td></tr><tr><td><div><p><code>hit</code></p></div></td><td><div><ul><li>A boolean value.</li><li><code>true</code> when <code>hit-primary-key</code> is <code>true</code> or <code>hit-first-match</code> is <code>true</code>.</li><li><code>false</code> otherwise.</li></ul></div></td></tr><tr><td><div><p><code>hit-primary-key</code></p></div></td><td><div><ul><li>A boolean value.</li><li><code>true</code> when there was a hit on the <code>primary-key</code>.</li><li><code>false</code> otherwise.</li></ul></div></td></tr><tr><td><div><p><code>hit-first-match</code></p></div></td><td><div><ul><li>A boolean value.</li><li><code>true</code> when there was a hit on a key matching <code>restore-prefixes-first-match</code>.</li><li><code>false</code> otherwise.</li></ul></div></td></tr><tr><td><div><p><code>restored-key</code></p></div></td><td><div><ul><li>A string.</li><li>The key of a cache restored via the <code>primary-key</code> or via the <code>restore-prefixes-first-match</code>.</li><li>An empty string otherwise.</li></ul></div></td></tr><tr><td><div><p><code>restored-keys</code></p></div></td><td><div><ul><li>A possibly empty array of strings (JSON).</li><li>Keys of restored caches.</li><li>Example: <code>["key1", "key2"]</code>.</li></ul></div></td></tr></table>
 
 ### Troubleshooting
 
@@ -134,7 +111,7 @@ There are alternative approaches to garbage collection (see [Garbage collection]
 
 ### Purge old caches
 
-The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [New inputs](#new-inputs) and `compare-run-times` in [Example workflow](#example-workflow)).
+The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [Inputs](#inputs) and `compare-run-times` in [Example workflow](#example-workflow)).
 
 The [purge-cache](https://github.com/MyAlbum/purge-cache) action allows to remove caches based on their `last accessed` or `created` time without branch limitations.
 
@@ -142,24 +119,20 @@ Alternatively, you can use the [GitHub Actions Cache API](https://docs.github.co
 
 ### Merge caches
 
-`GitHub` evicts LRU caches when their total size exceeds `10GB` (see [Limitations](#limitations)).
+`GitHub` evicts least recently used caches when their total size exceeds `10GB` (see [Limitations](#limitations)).
 
-If you have multiple similar caches, you can merge them into a single cache and store just it to save space.
+If you have multiple similar caches produced on runners with **the same OS** (`Linux` or `macOS`), you can merge them into a single cache and store just it to save space.
 
 In short:
 
-1. Matrix jobs produce similar caches.
+1. Matrix jobs produce similar individual caches.
 1. The next job restores all of these individual caches, saves a common cache, and purges individual caches.
 1. On subsequent runs, matrix jobs use the common cache.
 
 See the `make-similar-caches` and `merge-similar-caches` jobs in the [example workflow](#example-workflow).
 
-Pros: if `N` individual caches are very similar, a common cache will take approximately `N` times less space.
-Cons: if caches aren't very similar, run time may increase due to a bigger common cache.
-
-### Get more space on a runner
-
-The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
+**Pros**: if `N` individual caches are very similar, a common cache will take approximately `N` times less space.
+**Cons**: if caches aren't very similar, run time may increase due to a bigger common cache.
 
 ## Caching approaches
 
@@ -175,26 +148,29 @@ These distances affect the restore and save speed.
 
 #### cache-nix-action
 
-Pros:
+**Pros**:
 
 * Free.
 * Uses `GitHub Actions Cache` and works fast.
 * Easy to set up.
 * Allows to save a store of at most a given size (see [Garbage collection parameters](#garbage-collection-parameters)).
 * Allows to save outputs from garbage collection (see [Garbage collection](#garbage-collection)).
+* When there's a cache hit, restoring from a GitHub Actions cache can be faster than downloading multiple paths from binary caches.
+  * You can compare run times of jobs with and without store caching in [Actions](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml).
+        * Open a run and click on the time under `Total duration`.
 
-Cons: see [Limitations](#limitations)
+**Cons**: see [Limitations](#limitations)
 
 #### magic-nix-cache-action
 
-Pros ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
+**Pros** ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
 
 * Free.
 * Uses `GitHub Actions Cache` and works fast.
 * Easy to set up.
 * Restores and saves paths selectively.
 
-Cons:
+**Cons**:
 
 * Collects telemetry ([link](https://github.com/DeterminateSystems/magic-nix-cache))
 * May trigger rate limit errors ([link](https://github.com/DeterminateSystems/magic-nix-cache#usage-notes)).
@@ -208,11 +184,11 @@ If used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-in
 
 If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#local-store):
 
-Pros:
+**Pros**:
 
 * Quick restore and save `/tmp/nix`.
 
-Cons:
+**Cons**:
 
 * Slow [nix copy](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
 
@@ -225,14 +201,14 @@ See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-bin
 * [cachix](https://www.cachix.org/)
 * [attic](https://github.com/zhaofengli/attic)
 
-Pros:
+**Pros**:
 
 * Restore and save paths selectively.
-* Provide LRU garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
+* Provide least recently used garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
 * Don't cache paths available from the NixOS cache ([cachix](https://docs.cachix.org/garbage-collection?highlight=upstream)).
 * Allow to share paths between projects ([cachix](https://docs.cachix.org/getting-started#using-binaries-with-nix)).
 
-Cons:
+**Cons**:
 
 * Have limited free storage ([cachix](https://www.cachix.org/pricing) gives 5GB for open-source projects).
 * Need good bandwidth for receiving and pushing paths over the Internet.
@@ -243,7 +219,7 @@ Cons:
 When restoring a Nix store from a cache, the store may contain old unnecessary paths.
 These paths should be removed sometimes to limit cache size and ensure the fastest restore/save steps.
 
-### GC approach 1
+### Garbage collection approach 1
 
 Produce a cache once, use it multiple times. Don't collect garbage.
 
@@ -258,7 +234,7 @@ Disadvantages:
   * The job at the second run restores the cache, produces a path `B`, and saves a cache. The cache has both `A` and `B`.
   * etc.
 
-### GC approach 2
+### Garbage collection approach 2
 
 Collect garbage before saving a cache.
 
@@ -270,7 +246,7 @@ Disadvantages:
 
 * No standard way to gc only old paths.
 
-### Save a path from GC
+### Save a path from garbage collection
 
 * Use `nix profile install` to save installables from garbage collection.
   * Get store paths of `inputs` via `nix flake archive` (see [comment](https://github.com/NixOS/nix/issues/4250#issuecomment-1146878407)).
@@ -280,22 +256,26 @@ Disadvantages:
 
 ### Garbage collection approaches
 
-* Use [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc) for cache eviction via `atime`
-* gc via gc roots [nix-cache-cut](https://github.com/astro/nix-cache-cut)
-* gc based on time [cache-gc](https://github.com/lheckemann/cache-gc)
+* Use [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc) for cache eviction via `atime`.
+* gc via gc roots [nix-cache-cut](https://github.com/astro/nix-cache-cut).
+* gc based on time [cache-gc](https://github.com/lheckemann/cache-gc).
 
 ## Contribute
 
-* Improve README
-* Report errors, suggest improvements in issues
+* Improve README.
+* Report errors, suggest improvements in issues.
 * Upgrade code.
   * Read about [JavaScript actions](https://docs.github.com/en/actions/creating-actions/about-custom-actions?learn=create_actions&learnProduct=actions#javascript-actions)
   * See main files:
     * [restoreImpl.ts](./src/restoreImpl.ts)
     * [saveImpl.ts](./src/saveImpl.ts)
-    * [acton.yml](./action.yml)
-    * [save/action.yml](./save/action.yml)
-    * [restore/action.yml](./restore/action.yml)
+* Upgrade docs.
+  * Edit [action.nix](./action.nix).
+  * Update `action.yml`-s and `README.md`-s:
+
+    ```console
+    nix run .#write
+    ```
 
 # Cache action
 
@@ -329,7 +309,6 @@ See ["Caching dependencies to speed up workflows"](https://docs.github.com/en/ac
 * Fix zstd not working for windows on gnu tar in issues.
 * Allowing users to provide a custom timeout as input for aborting download of a cache segment using an environment variable `SEGMENT_DOWNLOAD_TIMEOUT_MINS`. Default is 10 minutes.
 * New actions are available for granular control over caches - [restore](restore/action.yml) and [save](save/action.yml).
-* Support cross-os caching as an opt-in feature. See [Cross OS caching](./tips-and-workarounds.md#cross-os-cache) for more info.
 * Added option to fail job on cache miss. See [Exit workflow on cache miss](./restore/README.md#exit-workflow-on-cache-miss) for more info.
 * Fix zstd not being used after zstd version upgrade to 1.5.4 on hosted runners
 * Added option to lookup cache without downloading it.
@@ -347,24 +326,9 @@ If you are using this inside a container, a POSIX-compliant `tar` needs to be in
 
 If you are using a `self-hosted` Windows runner, `GNU tar` and `zstd` are required for [Cross-OS caching](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cross-os-cache) to work. They are also recommended to be installed in general so the performance is on par with `hosted` Windows runners.
 
-### Inputs
-
-* `key` - An explicit key for a cache entry. See [creating a cache key](#creating-a-cache-key).
-* `path` - A list of files, directories, and wildcard patterns to cache and restore. See [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns.
-* `restore-keys` - An ordered list of prefix-matched keys to use for restoring stale cache if no cache hit occurred for key.
-* `fail-on-cache-miss` - Fail the workflow if cache entry is not found. Default: `false`
-
 #### Environment Variables
 
 * `SEGMENT_DOWNLOAD_TIMEOUT_MINS` - Segment download timeout (in minutes, default `10`) to abort download of the segment if not completed in the defined number of minutes. [Read more](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cache-segment-restore-timeout)
-
-### Outputs
-
-* `cache-hit` - A boolean value to indicate an exact match was found for the key.
-
-    > **Note** `cache-hit` will only be set to `true` when a cache hit occurs for the exact `key` match. For a partial key match via `restore-keys` or a cache miss, it will be set to `false`.
-
-See [Skipping steps based on cache-hit](#skipping-steps-based-on-cache-hit) for info on using this output
 
 ### Cache scopes
 
@@ -604,16 +568,7 @@ There are a number of community practices/workarounds to fulfill specific requir
 * [Cache segment restore timeout](./tips-and-workarounds.md#cache-segment-restore-timeout)
 * [Update a cache](./tips-and-workarounds.md#update-a-cache)
 * [Use cache across feature branches](./tips-and-workarounds.md#use-cache-across-feature-branches)
-* [Cross OS cache](./tips-and-workarounds.md#cross-os-cache)
 * [Force deletion of caches overriding default cache eviction policy](./tips-and-workarounds.md#force-deletion-of-caches-overriding-default-cache-eviction-policy)
-
-### Windows environment variables
-
-Please note that Windows environment variables (like `%LocalAppData%`) will NOT be expanded by this action. Instead, prefer using `~` in your paths which will expand to the HOME directory. For example, instead of `%LocalAppData%`, use `~\AppData\Local`. For a list of supported default environment variables, see the [Learn GitHub Actions: Variables](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables) page.
-
-## Contributing
-
-We would love for you to contribute to `actions/cache`. Pull requests are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
 ## License
 
