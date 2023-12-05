@@ -9,7 +9,7 @@ export async function restoreWithKey(key: string, paths: string[]) {
     utils.info(`Restoring a cache with the key "${key}".`);
 
     utils.info(
-        `::group::Logs while restoring. Errors are due to attempts to overwrite read-only paths.`
+        `::group::Logs are hidden. Errors are due to attempts to overwrite read-only paths.`
     );
 
     await utils.getCacheKey({
