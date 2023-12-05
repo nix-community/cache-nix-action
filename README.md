@@ -154,8 +154,8 @@ In short:
 
 See the `make-similar-caches` and `merge-similar-caches` jobs in the [example workflow](#example-workflow).
 
-Pros: if `N` individual caches are very similar, a common cache will take approximately `N` times less space.
-Cons: if caches aren't very similar, run time may increase due to a bigger common cache.
+**Pros**: if `N` individual caches are very similar, a common cache will take approximately `N` times less space.
+**Cons**: if caches aren't very similar, run time may increase due to a bigger common cache.
 
 ### Get more space on a runner
 
@@ -175,7 +175,7 @@ These distances affect the restore and save speed.
 
 #### cache-nix-action
 
-Pros:
+**Pros**:
 
 * Free.
 * Uses `GitHub Actions Cache` and works fast.
@@ -183,18 +183,18 @@ Pros:
 * Allows to save a store of at most a given size (see [Garbage collection parameters](#garbage-collection-parameters)).
 * Allows to save outputs from garbage collection (see [Garbage collection](#garbage-collection)).
 
-Cons: see [Limitations](#limitations)
+**Cons**: see [Limitations](#limitations)
 
 #### magic-nix-cache-action
 
-Pros ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
+**Pros** ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
 
 * Free.
 * Uses `GitHub Actions Cache` and works fast.
 * Easy to set up.
 * Restores and saves paths selectively.
 
-Cons:
+**Cons**:
 
 * Collects telemetry ([link](https://github.com/DeterminateSystems/magic-nix-cache))
 * May trigger rate limit errors ([link](https://github.com/DeterminateSystems/magic-nix-cache#usage-notes)).
@@ -208,11 +208,11 @@ If used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-in
 
 If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#local-store):
 
-Pros:
+**Pros**:
 
 * Quick restore and save `/tmp/nix`.
 
-Cons:
+**Cons**:
 
 * Slow [nix copy](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
 
@@ -225,14 +225,14 @@ See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-bin
 * [cachix](https://www.cachix.org/)
 * [attic](https://github.com/zhaofengli/attic)
 
-Pros:
+**Pros**:
 
 * Restore and save paths selectively.
 * Provide LRU garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
 * Don't cache paths available from the NixOS cache ([cachix](https://docs.cachix.org/garbage-collection?highlight=upstream)).
 * Allow to share paths between projects ([cachix](https://docs.cachix.org/getting-started#using-binaries-with-nix)).
 
-Cons:
+**Cons**:
 
 * Have limited free storage ([cachix](https://www.cachix.org/pricing) gives 5GB for open-source projects).
 * Need good bandwidth for receiving and pushing paths over the Internet.
