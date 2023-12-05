@@ -11,7 +11,7 @@
           pkgs = inputs.nixpkgs.legacyPackages.${system};
           inherit (inputs.devshell.lib.${system}) mkCommands mkRunCommands mkRunCommandsDir mkShell;
 
-          tools = [ pkgs.nodejs_18 ];
+          tools = [ pkgs.nodejs_18 pkgs.poetry ];
 
           devShells.default = mkShell {
             packages = tools;
