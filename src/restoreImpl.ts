@@ -6,7 +6,7 @@ import { IStateProvider } from "./stateProvider";
 import * as utils from "./utils/actionUtils";
 
 export async function restoreWithKey(key: string, paths: string[]) {
-    utils.info(`Restoring a cache with the key "${key}"...`);
+    utils.info(`Restoring a cache with the key "${key}".`);
 
     utils.info(
         `::group::Logs while restoring. Errors are due to attempts to overwrite read-only paths.`
@@ -21,7 +21,7 @@ export async function restoreWithKey(key: string, paths: string[]) {
 
     utils.info(`::endgroup::`);
 
-    utils.info(`Finished restoring a cache with the key "${key}"...`);
+    utils.info(`Finished restoring a cache with the key "${key}".`);
 }
 
 async function restoreImpl(
@@ -50,7 +50,7 @@ async function restoreImpl(
         const failOnCacheMiss = utils.getInputAsBool(Inputs.FailOnCacheMiss);
         const restoreKeyHit = utils.getInputAsBool(Inputs.RestoreKeyHit);
 
-        utils.info(`Searching for a cache with the key "${primaryKey}"...`);
+        utils.info(`Searching for a cache with the key "${primaryKey}".`);
 
         let cacheKey = await utils.getCacheKey({
             paths: cachePaths,
@@ -64,7 +64,7 @@ async function restoreImpl(
         } else {
             utils.info(
                 `
-                No cache with the key "${cacheKey}" found.
+                No cache with the given primary key found.
                 Searching for a cache using restore keys:
                 ${JSON.stringify(restoreKeys)}
                 `
@@ -92,7 +92,7 @@ async function restoreImpl(
                     `
                     Failed to restore cache entry. 
                     Exiting as fail-on-cache-miss is set. 
-                    Input key: ${primaryKey}
+                    Input key: "${primaryKey}"
                     `
                 );
             }
@@ -119,7 +119,7 @@ async function restoreImpl(
 
         core.setOutput(Outputs.CacheHit, isExactKeyMatch.toString());
 
-        utils.info(`Cache restored from key: ${cacheKey}`);
+        utils.info(`Cache restored from key: "${cacheKey}"`);
 
         await restoreExtraCaches();
 

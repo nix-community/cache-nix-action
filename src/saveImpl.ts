@@ -58,7 +58,9 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         const time = Date.now();
 
         if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
-            utils.info(`Cache hit occurred on the primary key ${primaryKey}.`);
+            utils.info(
+                `Cache hit occurred on the primary key "${primaryKey}".`
+            );
 
             const caches = await purgeCaches({
                 key: primaryKey,
@@ -67,7 +69,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             });
 
             if (caches.map(cache => cache.key).includes(primaryKey)) {
-                utils.info(`Purging the cache with the key ${primaryKey}...`);
+                utils.info(`Purging the cache with the key "${primaryKey}".`);
 
                 const token = core.getInput(Inputs.Token, { required: true });
                 const octokit = getOctokit(token);
@@ -81,7 +83,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 });
             } else {
                 utils.info(
-                    `The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`
+                    `The cache with the key "${primaryKey}" won't be purged. Not saving a new cache.`
                 );
 
                 await purgeCaches({ key: primaryKey, lookupOnly: false, time });
@@ -92,14 +94,14 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
         await collectGarbage();
 
-        utils.info(`Saving a new cache with the key ${primaryKey}...`);
+        utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
         cacheId = await cache.saveCache(cachePaths, primaryKey, {
             uploadChunkSize: utils.getInputAsInt(Inputs.UploadChunkSize)
         });
 
         if (cacheId != -1) {
-            utils.info(`Cache saved with the key ${primaryKey}.`);
+            utils.info(`Cache saved with the key "${primaryKey}".`);
 
             await purgeCaches({ key: primaryKey, lookupOnly: false, time });
         }
