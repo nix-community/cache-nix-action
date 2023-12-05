@@ -21,7 +21,7 @@ export async function restoreWithKey(key: string, paths: string[]) {
 
     utils.info(`::endgroup::`);
 
-    utils.info(`Finished restoring a cache with the key "${key}".`);
+    utils.info(`Finished restoring the cache.`);
 }
 
 async function restoreImpl(
