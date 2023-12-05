@@ -54828,6 +54828,55 @@ module.exports.PROCESSING_OPTIONS = PROCESSING_OPTIONS;
 
 /***/ }),
 
+/***/ 3604:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dedent = void 0;
+function dedent(templ) {
+    var values = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        values[_i - 1] = arguments[_i];
+    }
+    var strings = Array.from(typeof templ === 'string' ? [templ] : templ);
+    strings[strings.length - 1] = strings[strings.length - 1].replace(/\r?\n([\t ]*)$/, '');
+    var indentLengths = strings.reduce(function (arr, str) {
+        var matches = str.match(/\n([\t ]+|(?!\s).)/g);
+        if (matches) {
+            return arr.concat(matches.map(function (match) { var _a, _b; return (_b = (_a = match.match(/[\t ]/g)) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0; }));
+        }
+        return arr;
+    }, []);
+    if (indentLengths.length) {
+        var pattern_1 = new RegExp("\n[\t ]{" + Math.min.apply(Math, indentLengths) + "}", 'g');
+        strings = strings.map(function (str) { return str.replace(pattern_1, '\n'); });
+    }
+    strings[0] = strings[0].replace(/^\r?\n/, '');
+    var string = strings[0];
+    values.forEach(function (value, i) {
+        var endentations = string.match(/(?:^|\n)( *)$/);
+        var endentation = endentations ? endentations[1] : '';
+        var indentedValue = value;
+        if (typeof value === 'string' && value.includes('\n')) {
+            indentedValue = String(value)
+                .split('\n')
+                .map(function (str, i) {
+                return i === 0 ? str : "" + endentation + str;
+            })
+                .join('\n');
+        }
+        string += indentedValue + strings[i + 1];
+    });
+    return string;
+}
+exports.dedent = dedent;
+exports["default"] = dedent;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
 /***/ 4294:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -62446,13 +62495,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.collectGarbage = void 0;
-const core = __importStar(__nccwpck_require__(2186));
 const exec_1 = __nccwpck_require__(1514);
 const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(6850));
 function collectGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info("Collecting garbage");
+        utils.info("Collecting garbage");
         yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
         const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? constants_1.Inputs.GCMacos : constants_1.Inputs.GCLinux);
         if (gcEnabled) {
@@ -62530,7 +62578,7 @@ function purgeByTime({ doUseLastAccessedTime, keys, lookupOnly, time }) {
     return __awaiter(this, void 0, void 0, function* () {
         const verb = doUseLastAccessedTime ? "last accessed" : "created";
         const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
-        core.info(`
+        utils.info(`
         ${lookupOnly ? "Searching for" : "Purging"} caches ${verb} before ${maxDate.toISOString()} and having keys:
         ${utils.stringify(keys)}
         `);
@@ -62540,7 +62588,7 @@ function purgeByTime({ doUseLastAccessedTime, keys, lookupOnly, time }) {
             doUseLastAccessedTime,
             maxDate
         });
-        core.info(`
+        utils.info(`
         Found ${caches.length} cache(s):
         ${utils.stringify(caches)}
         `);
@@ -62556,7 +62604,7 @@ function purgeByTime({ doUseLastAccessedTime, keys, lookupOnly, time }) {
                 const atDate = new Date(at);
                 const atDatePretty = atDate.toISOString();
                 if (atDate < maxDate) {
-                    core.info(`Deleting the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`);
+                    utils.info(`Deleting the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`);
                     try {
                         yield octokit.rest.actions.deleteActionsCacheById({
                             per_page: 100,
@@ -62566,7 +62614,7 @@ function purgeByTime({ doUseLastAccessedTime, keys, lookupOnly, time }) {
                         });
                     }
                     catch (error) {
-                        core.info(`
+                        utils.info(`
                         Failed to delete cache ${cache.key}
                         
                         ${error}
@@ -62574,7 +62622,7 @@ function purgeByTime({ doUseLastAccessedTime, keys, lookupOnly, time }) {
                     }
                 }
                 else {
-                    core.info(`Skipping the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`);
+                    utils.info(`Skipping the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`);
                 }
             }
         }));
@@ -62711,14 +62759,14 @@ function saveImpl(stateProvider) {
             });
             const time = Date.now();
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
-                core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
+                utils.info(`Cache hit occurred on the primary key ${primaryKey}.`);
                 const caches = yield (0, purge_1.purgeCaches)({
                     key: primaryKey,
                     lookupOnly: true,
                     time
                 });
                 if (caches.map(cache => cache.key).includes(primaryKey)) {
-                    core.info(`Purging the cache with the key ${primaryKey}...`);
+                    utils.info(`Purging the cache with the key ${primaryKey}...`);
                     const token = core.getInput(constants_1.Inputs.Token, { required: true });
                     const octokit = (0, github_1.getOctokit)(token);
                     octokit.rest.actions.deleteActionsCacheByKey({
@@ -62730,18 +62778,18 @@ function saveImpl(stateProvider) {
                     });
                 }
                 else {
-                    core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
+                    utils.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
                     yield (0, purge_1.purgeCaches)({ key: primaryKey, lookupOnly: false, time });
                     return;
                 }
             }
             yield (0, gc_1.collectGarbage)();
-            core.info(`Saving a new cache with the key ${primaryKey}...`);
+            utils.info(`Saving a new cache with the key ${primaryKey}...`);
             cacheId = yield cache.saveCache(cachePaths, primaryKey, {
                 uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize)
             });
             if (cacheId != -1) {
-                core.info(`Cache saved with the key ${primaryKey}.`);
+                utils.info(`Cache saved with the key ${primaryKey}.`);
                 yield (0, purge_1.purgeCaches)({ key: primaryKey, lookupOnly: false, time });
             }
         }
@@ -62927,10 +62975,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const ts_dedent_1 = __nccwpck_require__(3604);
 const constants_1 = __nccwpck_require__(9042);
 function isGhes() {
     const ghUrl = new URL(process.env["GITHUB_SERVER_URL"] || "https://github.com");
@@ -63056,6 +63105,10 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 exports.getMaxDate = getMaxDate;
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
+const info = (message) => {
+    core.info((0, ts_dedent_1.dedent)(message));
+};
+exports.info = info;
 
 
 /***/ }),

@@ -54828,6 +54828,55 @@ module.exports.PROCESSING_OPTIONS = PROCESSING_OPTIONS;
 
 /***/ }),
 
+/***/ 3604:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dedent = void 0;
+function dedent(templ) {
+    var values = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        values[_i - 1] = arguments[_i];
+    }
+    var strings = Array.from(typeof templ === 'string' ? [templ] : templ);
+    strings[strings.length - 1] = strings[strings.length - 1].replace(/\r?\n([\t ]*)$/, '');
+    var indentLengths = strings.reduce(function (arr, str) {
+        var matches = str.match(/\n([\t ]+|(?!\s).)/g);
+        if (matches) {
+            return arr.concat(matches.map(function (match) { var _a, _b; return (_b = (_a = match.match(/[\t ]/g)) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0; }));
+        }
+        return arr;
+    }, []);
+    if (indentLengths.length) {
+        var pattern_1 = new RegExp("\n[\t ]{" + Math.min.apply(Math, indentLengths) + "}", 'g');
+        strings = strings.map(function (str) { return str.replace(pattern_1, '\n'); });
+    }
+    strings[0] = strings[0].replace(/^\r?\n/, '');
+    var string = strings[0];
+    values.forEach(function (value, i) {
+        var endentations = string.match(/(?:^|\n)( *)$/);
+        var endentation = endentations ? endentations[1] : '';
+        var indentedValue = value;
+        if (typeof value === 'string' && value.includes('\n')) {
+            indentedValue = String(value)
+                .split('\n')
+                .map(function (str, i) {
+                return i === 0 ? str : "" + endentation + str;
+            })
+                .join('\n');
+        }
+        string += indentedValue + strings[i + 1];
+    });
+    return string;
+}
+exports.dedent = dedent;
+exports["default"] = dedent;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
 /***/ 4294:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -62456,18 +62505,18 @@ function restoreExtraCaches() {
             return;
         }
         const token = core.getInput(constants_1.Inputs.Token, { required: true });
-        core.info(`
+        utils.info(`
         Restoring extra caches with keys:
         ${utils.stringify(extraRestoreKeys)}
         `);
         const results = yield utils.getCachesByKeys(token, extraRestoreKeys);
-        core.info(`
+        utils.info(`
         Found ${results.length} cache(s):
         ${utils.stringify(results)}
         `);
         const cachePaths = utils.paths;
         results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
-            core.info(`Restoring a cache with the key ${cache.key}`);
+            utils.info(`Restoring a cache with the key ${cache.key}`);
             if (cache.key !== undefined) {
                 const restoreKey = yield utils.getCacheKey({
                     paths: cachePaths,
@@ -62476,7 +62525,7 @@ function restoreExtraCaches() {
                     lookupOnly: false
                 });
                 if (restoreKey) {
-                    core.info(`Restored a cache with the key ${cache.key}`);
+                    utils.info(`Restored a cache with the key ${cache.key}`);
                 }
             }
         }));
@@ -62532,16 +62581,16 @@ const restoreExtraCaches_1 = __nccwpck_require__(5084);
 const utils = __importStar(__nccwpck_require__(6850));
 function restoreWithKey(key, paths) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Restoring a cache with the key "${key}"...`);
-        core.info(`::group::Logs while restoring. Errors are due to attempts to overwrite read-only paths.`);
+        utils.info(`Restoring a cache with the key "${key}"...`);
+        utils.info(`::group::Logs while restoring. Errors are due to attempts to overwrite read-only paths.`);
         yield utils.getCacheKey({
             paths,
             primaryKey: key,
             restoreKeys: [],
             lookupOnly: false
         });
-        core.info(`::endgroup::`);
-        core.info(`Finished restoring a cache with the key "${key}"...`);
+        utils.info(`::endgroup::`);
+        utils.info(`Finished restoring a cache with the key "${key}"...`);
     });
 }
 exports.restoreWithKey = restoreWithKey;
@@ -62562,7 +62611,7 @@ function restoreImpl(stateProvider) {
             const cachePaths = utils.paths;
             const failOnCacheMiss = utils.getInputAsBool(constants_1.Inputs.FailOnCacheMiss);
             const restoreKeyHit = utils.getInputAsBool(constants_1.Inputs.RestoreKeyHit);
-            core.info(`Searching for a cache with the key "${primaryKey}"...`);
+            utils.info(`Searching for a cache with the key "${primaryKey}"...`);
             let cacheKey = yield utils.getCacheKey({
                 paths: cachePaths,
                 primaryKey,
@@ -62573,7 +62622,7 @@ function restoreImpl(stateProvider) {
                 yield restoreWithKey(cacheKey, cachePaths);
             }
             else {
-                core.info(`
+                utils.info(`
                 No cache with the key "${cacheKey}" found.
                 Searching for a cache using restore keys:
                 ${JSON.stringify(restoreKeys)}
@@ -62599,7 +62648,7 @@ function restoreImpl(stateProvider) {
                     Input key: ${primaryKey}
                     `);
                 }
-                core.info(`
+                utils.info(`
                 Cache not found for input keys:
                 ${utils.stringify([primaryKey, ...restoreKeys])}
                 `);
@@ -62610,7 +62659,7 @@ function restoreImpl(stateProvider) {
             stateProvider.setState(constants_1.State.CacheMatchedKey, cacheKey);
             const isExactKeyMatch = utils.isExactKeyMatch(core.getInput(constants_1.Inputs.Key, { required: true }), cacheKey) || restoreKeyHit;
             core.setOutput(constants_1.Outputs.CacheHit, isExactKeyMatch.toString());
-            core.info(`Cache restored from key: ${cacheKey}`);
+            utils.info(`Cache restored from key: ${cacheKey}`);
             yield (0, restoreExtraCaches_1.restoreExtraCaches)();
             return cacheKey;
         }
@@ -62768,10 +62817,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const ts_dedent_1 = __nccwpck_require__(3604);
 const constants_1 = __nccwpck_require__(9042);
 function isGhes() {
     const ghUrl = new URL(process.env["GITHUB_SERVER_URL"] || "https://github.com");
@@ -62897,6 +62947,10 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 exports.getMaxDate = getMaxDate;
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
+const info = (message) => {
+    core.info((0, ts_dedent_1.dedent)(message));
+};
+exports.info = info;
 
 
 /***/ }),
