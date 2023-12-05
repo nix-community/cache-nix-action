@@ -62621,7 +62621,7 @@ function restoreWithKey(key, paths) {
             lookupOnly: false
         });
         utils.info(`::endgroup::`);
-        utils.info(`Finished restoring a cache with the key "${key}".`);
+        utils.info(`Finished restoring the cache.`);
     });
 }
 exports.restoreWithKey = restoreWithKey;
@@ -62674,9 +62674,8 @@ function restoreImpl(stateProvider) {
             if (!cacheKey) {
                 if (failOnCacheMiss) {
                     throw new Error(`
-                    Failed to restore cache entry. 
-                    Exiting as fail-on-cache-miss is set. 
-                    Input key: "${primaryKey}"
+                    Failed to restore a cache with the key "${primaryKey}".
+                    Exiting as ${constants_1.Inputs.FailOnCacheMiss} is set. 
                     `);
                 }
                 utils.info(`
