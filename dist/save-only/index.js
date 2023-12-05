@@ -62370,9 +62370,7 @@ var Inputs;
     Inputs["Path"] = "path";
     Inputs["RestoreKeys"] = "restore-keys";
     Inputs["UploadChunkSize"] = "upload-chunk-size";
-    Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
-    Inputs["LookupOnly"] = "lookup-only";
     Inputs["RestoreKeyHit"] = "restore-key-hit";
     Inputs["ExtraRestoreKeys"] = "extra-restore-keys";
     Inputs["GCMacos"] = "gc-macos";
@@ -62456,7 +62454,7 @@ function collectGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
         core.info("Collecting garbage");
         yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
-        const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? constants_1.Inputs.GCMacos : constants_1.Inputs.GCLinux, { required: false });
+        const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? constants_1.Inputs.GCMacos : constants_1.Inputs.GCLinux);
         if (gcEnabled) {
             const maxStoreSize = utils.getInputAsInt(process.platform == "darwin"
                 ? constants_1.Inputs.GCMaxStoreSizeMacos
@@ -62528,34 +62526,37 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(6850));
-function setFailedWrongValue(input, value) {
-    core.setFailed(`Wrong value for the input '${input}': ${value}`);
-}
-function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
+function purgeByTime({ doUseLastAccessedTime, keys, lookupOnly, time }) {
     return __awaiter(this, void 0, void 0, function* () {
-        const verb = useAccessedTime ? "last accessed" : "created";
-        const inputMaxAge = useAccessedTime
-            ? constants_1.Inputs.PurgeAccessedMaxAge
-            : constants_1.Inputs.PurgeCreatedMaxAge;
-        const maxAge = core.getInput(inputMaxAge, { required: false });
-        const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
-        if (maxDate === null) {
-            setFailedWrongValue(inputMaxAge, maxAge);
-        }
-        core.info(`${lookupOnly ? "Searching for" : "Purging"} caches with keys ${JSON.stringify(keys)} ${verb} before ${maxDate.toISOString()}`);
-        const token = core.getInput(constants_1.Inputs.Token, { required: false });
-        const results = yield utils.getCachesByKeys(token, keys);
-        core.info(`Found ${results.length} cache(s)\n\n${JSON.stringify(results)}\n\n`);
+        const verb = doUseLastAccessedTime ? "last accessed" : "created";
+        const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
+        core.info(`
+        ${lookupOnly ? "Searching for" : "Purging"} caches ${verb} before ${maxDate.toISOString()} and having keys:
+        ${utils.stringify(keys)}
+        `);
+        const token = core.getInput(constants_1.Inputs.Token, { required: true });
+        const caches = utils.filterCachesByTime({
+            caches: yield utils.getCachesByKeys(token, keys),
+            doUseLastAccessedTime,
+            maxDate
+        });
+        core.info(`
+        Found ${caches.length} cache(s):
+        ${utils.stringify(caches)}
+        `);
         if (lookupOnly) {
-            return results;
+            return caches;
         }
         const octokit = github.getOctokit(token);
-        results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
-            const at = useAccessedTime ? cache.last_accessed_at : cache.created_at;
+        caches.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
+            const at = doUseLastAccessedTime
+                ? cache.last_accessed_at
+                : cache.created_at;
             if (at !== undefined && cache.id !== undefined) {
                 const atDate = new Date(at);
+                const atDatePretty = atDate.toISOString();
                 if (atDate < maxDate) {
-                    core.info(`Deleting cache with key '${cache.key}' ${verb} at ${at}`);
+                    core.info(`Deleting the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`);
                     try {
                         yield octokit.rest.actions.deleteActionsCacheById({
                             per_page: 100,
@@ -62565,21 +62566,25 @@ function purgeByTime(useAccessedTime, keys, lookupOnly, time) {
                         });
                     }
                     catch (error) {
-                        core.info(`Failed to delete cache ${cache.key}\n\n${error}`);
+                        core.info(`
+                        Failed to delete cache ${cache.key}
+                        
+                        ${error}
+                        `);
                     }
                 }
                 else {
-                    core.info(`Skipping cache ${cache.key}, ${verb} at ${atDate.toISOString()}`);
+                    core.info(`Skipping the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`);
                 }
             }
         }));
         return [];
     });
 }
-function purge(key, lookupOnly, time) {
+function purge({ key, lookupOnly, time }) {
     return __awaiter(this, void 0, void 0, function* () {
-        const accessed = core.getInput(constants_1.Inputs.PurgeAccessed, { required: false }) === "true";
-        const created = core.getInput(constants_1.Inputs.PurgeCreated, { required: false }) === "true";
+        const accessed = core.getInput(constants_1.Inputs.PurgeAccessed) === "true";
+        const created = core.getInput(constants_1.Inputs.PurgeCreated) === "true";
         let purgeKeys = utils.getInputAsArray(constants_1.Inputs.PurgeKeys);
         if (purgeKeys.length == 0) {
             purgeKeys.push(...[key]);
@@ -62588,10 +62593,20 @@ function purge(key, lookupOnly, time) {
         const results = [];
         if (accessed || created) {
             if (accessed) {
-                results.push(...(yield purgeByTime(true, purgeKeys, lookupOnly, time)));
+                results.push(...(yield purgeByTime({
+                    doUseLastAccessedTime: true,
+                    keys: purgeKeys,
+                    lookupOnly,
+                    time
+                })));
             }
             if (created) {
-                results.push(...(yield purgeByTime(false, purgeKeys, lookupOnly, time)));
+                results.push(...(yield purgeByTime({
+                    doUseLastAccessedTime: false,
+                    keys: purgeKeys,
+                    lookupOnly,
+                    time
+                })));
             }
         }
         else {
@@ -62600,12 +62615,12 @@ function purge(key, lookupOnly, time) {
         return results;
     });
 }
-function purgeCaches(key, lookupOnly, time) {
+function purgeCaches({ key, lookupOnly, time }) {
     return __awaiter(this, void 0, void 0, function* () {
         const purgeEnabled = utils.getInputAsBool(constants_1.Inputs.Purge);
         const results = [];
         if (purgeEnabled) {
-            results.push(...(yield purge(key, lookupOnly, time)));
+            results.push(...(yield purge({ key, lookupOnly, time })));
         }
         return results;
     });
@@ -62664,7 +62679,7 @@ const utils = __importStar(__nccwpck_require__(6850));
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
 // throw an uncaught exception.  Instead of failing this action, just warn.
-process.on("uncaughtException", e => utils.logWarning(e.message));
+process.on("uncaughtException", e => utils.logError(e.message));
 function saveImpl(stateProvider) {
     return __awaiter(this, void 0, void 0, function* () {
         let cacheId = -1;
@@ -62673,55 +62688,65 @@ function saveImpl(stateProvider) {
                 return;
             }
             if (!utils.isValidEvent()) {
-                utils.logWarning(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
-                return;
+                throw new Error(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
             }
             // If restore has stored a primary key in state, reuse that
             // Else re-evaluate from inputs
             const primaryKey = stateProvider.getState(constants_1.State.CachePrimaryKey) ||
                 core.getInput(constants_1.Inputs.Key);
-            if (!primaryKey) {
-                utils.logWarning(`Key is not specified.`);
-                return;
+            if (!primaryKey || primaryKey === "") {
+                throw new Error(`
+                Primary cache key not found.
+                You may want to specify it in your workflow file.
+                See "with.key" field at the step where you use this action.
+                `);
             }
             const cachePaths = utils.paths;
             const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
-            const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
-            // If matched restore key is same as primary key, then do not save cache
-            // NO-OP in case of SaveOnly action
-            const restoredKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, true, enableCrossOsArchive);
+            const restoredKey = yield utils.getCacheKey({
+                paths: cachePaths,
+                primaryKey,
+                restoreKeys,
+                lookupOnly: true
+            });
             const time = Date.now();
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}.`);
-                const caches = yield (0, purge_1.purgeCaches)(primaryKey, true, time);
+                const caches = yield (0, purge_1.purgeCaches)({
+                    key: primaryKey,
+                    lookupOnly: true,
+                    time
+                });
                 if (caches.map(cache => cache.key).includes(primaryKey)) {
-                    core.info(`The cache with the key ${primaryKey} will be purged. Saving a new cache.`);
+                    core.info(`Purging the cache with the key ${primaryKey}...`);
+                    const token = core.getInput(constants_1.Inputs.Token, { required: true });
+                    const octokit = (0, github_1.getOctokit)(token);
+                    octokit.rest.actions.deleteActionsCacheByKey({
+                        per_page: 100,
+                        owner: github.context.repo.owner,
+                        repo: github.context.repo.repo,
+                        key: primaryKey,
+                        ref: github.context.ref
+                    });
                 }
                 else {
                     core.info(`The cache with the key ${primaryKey} won't be purged. Not saving a new cache.`);
-                    yield (0, purge_1.purgeCaches)(primaryKey, false, time);
+                    yield (0, purge_1.purgeCaches)({ key: primaryKey, lookupOnly: false, time });
                     return;
                 }
             }
             yield (0, gc_1.collectGarbage)();
-            const token = core.getInput(constants_1.Inputs.Token, { required: false });
-            const octokit = (0, github_1.getOctokit)(token);
-            octokit.rest.actions.deleteActionsCacheByKey({
-                per_page: 100,
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                key: primaryKey
-            });
+            core.info(`Saving a new cache with the key ${primaryKey}...`);
             cacheId = yield cache.saveCache(cachePaths, primaryKey, {
                 uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize)
-            }, enableCrossOsArchive);
+            });
             if (cacheId != -1) {
-                core.info(`Cache saved with the key ${primaryKey}`);
-                yield (0, purge_1.purgeCaches)(primaryKey, false, time);
+                core.info(`Cache saved with the key ${primaryKey}.`);
+                yield (0, purge_1.purgeCaches)({ key: primaryKey, lookupOnly: false, time });
             }
         }
         catch (error) {
-            utils.logWarning(error.message);
+            core.setFailed(error.message);
         }
         return cacheId;
     });
@@ -62902,7 +62927,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
@@ -62924,6 +62949,11 @@ function logWarning(message) {
     core.info(`${warningPrefix}${message}`);
 }
 exports.logWarning = logWarning;
+function logError(message) {
+    const prefix = "[error]";
+    core.error(`${prefix} ${message}`);
+}
+exports.logError = logError;
 // Cache token authorized for all events that are tied to a ref
 // See GitHub Context https://help.github.com/actions/automating-your-workflow-with-github-actions/contexts-and-expression-syntax-for-github-actions#github-context
 function isValidEvent() {
@@ -62957,7 +62987,7 @@ function isCacheFeatureAvailable() {
     }
     if (isGhes()) {
         logWarning(`Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
-Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`);
+            Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`);
         return false;
     }
     logWarning("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
@@ -62965,17 +62995,17 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
 }
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 exports.paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
-function getCacheKey(paths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive) {
+function getCacheKey({ paths, primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield cache.restoreCache(
         // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-        paths.slice(), primaryKey, restoreKeys, { lookupOnly: lookupOnly }, enableCrossOsArchive);
+        paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false);
     });
 }
 exports.getCacheKey = getCacheKey;
 function getCachesByKeys(token, keys) {
     return __awaiter(this, void 0, void 0, function* () {
-        const results = [];
+        const caches = [];
         const octokit = github.getOctokit(token);
         for (let i = 0; i < keys.length; i += 1) {
             const key = keys[i];
@@ -62991,13 +63021,41 @@ function getCachesByKeys(token, keys) {
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
                 }
-                results.push(...cachesRequest.actions_caches);
+                caches.push(...cachesRequest.actions_caches);
             }
         }
-        return results;
+        return caches;
     });
 }
 exports.getCachesByKeys = getCachesByKeys;
+const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => caches.filter(cache => {
+    const at = doUseLastAccessedTime
+        ? cache.last_accessed_at
+        : cache.created_at;
+    if (at !== undefined && cache.id !== undefined) {
+        const atDate = new Date(at);
+        return atDate < maxDate;
+    }
+    else
+        return false;
+});
+exports.filterCachesByTime = filterCachesByTime;
+const mkMessageWrongValue = (input, value) => `Wrong value for the input '${input}': ${value}`;
+exports.mkMessageWrongValue = mkMessageWrongValue;
+function getMaxDate({ doUseLastAccessedTime, time }) {
+    const inputMaxAge = doUseLastAccessedTime
+        ? constants_1.Inputs.PurgeAccessedMaxAge
+        : constants_1.Inputs.PurgeCreatedMaxAge;
+    const maxAge = core.getInput(inputMaxAge, { required: false });
+    const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
+    if (maxDate === null) {
+        throw new Error((0, exports.mkMessageWrongValue)(inputMaxAge, maxAge));
+    }
+    return maxDate;
+}
+exports.getMaxDate = getMaxDate;
+const stringify = (value) => JSON.stringify(value, null, 2);
+exports.stringify = stringify;
 
 
 /***/ }),

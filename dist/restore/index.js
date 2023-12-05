@@ -62370,9 +62370,7 @@ var Inputs;
     Inputs["Path"] = "path";
     Inputs["RestoreKeys"] = "restore-keys";
     Inputs["UploadChunkSize"] = "upload-chunk-size";
-    Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
     Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
-    Inputs["LookupOnly"] = "lookup-only";
     Inputs["RestoreKeyHit"] = "restore-key-hit";
     Inputs["ExtraRestoreKeys"] = "extra-restore-keys";
     Inputs["GCMacos"] = "gc-macos";
@@ -62482,23 +62480,32 @@ exports.restoreExtraCaches = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(6850));
-function restoreExtraCaches(cachePaths, lookupOnly, enableCrossOsArchive) {
+function restoreExtraCaches() {
     return __awaiter(this, void 0, void 0, function* () {
         const extraRestoreKeys = utils.getInputAsArray(constants_1.Inputs.ExtraRestoreKeys);
         if (extraRestoreKeys.length == 0) {
             return;
         }
-        const token = core.getInput(constants_1.Inputs.Token, { required: false });
-        core.info(`Restoring extra caches with keys ${JSON.stringify(extraRestoreKeys)}.`);
+        const token = core.getInput(constants_1.Inputs.Token, { required: true });
+        core.info(`
+        Restoring extra caches with keys:
+        ${utils.stringify(extraRestoreKeys)}
+        `);
         const results = yield utils.getCachesByKeys(token, extraRestoreKeys);
-        core.info(`Found ${results.length} cache(s)\n${JSON.stringify(results)}\n\n`);
-        if (lookupOnly) {
-            return;
-        }
+        core.info(`
+        Found ${results.length} cache(s):
+        ${utils.stringify(results)}
+        `);
+        const cachePaths = utils.paths;
         results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
             core.info(`Restoring a cache with the key ${cache.key}`);
             if (cache.key !== undefined) {
-                const restoreKey = yield utils.getCacheKey(cachePaths, cache.key, [], false, enableCrossOsArchive);
+                const restoreKey = yield utils.getCacheKey({
+                    paths: cachePaths,
+                    primaryKey: cache.key,
+                    restoreKeys: [],
+                    lookupOnly: false
+                });
                 if (restoreKey) {
                     core.info(`Restored a cache with the key ${cache.key}`);
                 }
@@ -62549,10 +62556,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.restoreWithKey = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const constants_1 = __nccwpck_require__(9042);
 const restoreExtraCaches_1 = __nccwpck_require__(5084);
 const utils = __importStar(__nccwpck_require__(6850));
+function restoreWithKey(key, paths) {
+    return __awaiter(this, void 0, void 0, function* () {
+        core.info(`Restoring a cache with the key "${key}"...`);
+        core.info(`::group::Logs while restoring. Errors are due to attempts to overwrite read-only paths.`);
+        yield utils.getCacheKey({
+            paths,
+            primaryKey: key,
+            restoreKeys: [],
+            lookupOnly: false
+        });
+        core.info(`::endgroup::`);
+        core.info(`Finished restoring a cache with the key "${key}"...`);
+    });
+}
+exports.restoreWithKey = restoreWithKey;
 function restoreImpl(stateProvider) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -62562,46 +62585,64 @@ function restoreImpl(stateProvider) {
             }
             // Validate inputs, this can cause task failure
             if (!utils.isValidEvent()) {
-                utils.logWarning(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
-                return;
+                throw new Error(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
             }
             const primaryKey = core.getInput(constants_1.Inputs.Key, { required: true });
             stateProvider.setState(constants_1.State.CachePrimaryKey, primaryKey);
             const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
             const cachePaths = utils.paths;
-            const enableCrossOsArchive = utils.getInputAsBool(constants_1.Inputs.EnableCrossOsArchive);
             const failOnCacheMiss = utils.getInputAsBool(constants_1.Inputs.FailOnCacheMiss);
-            const lookupOnly = utils.getInputAsBool(constants_1.Inputs.LookupOnly);
-            core.info(`::group::Logs while restoring`);
-            let cacheKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive);
-            core.info(`::endgroup::`);
             const restoreKeyHit = utils.getInputAsBool(constants_1.Inputs.RestoreKeyHit);
-            const restoreKey = yield utils.getCacheKey(cachePaths, primaryKey, restoreKeys, true, enableCrossOsArchive);
-            if (restoreKeyHit) {
-                cacheKey = restoreKey;
+            core.info(`Searching for a cache with the key "${primaryKey}"...`);
+            let cacheKey = yield utils.getCacheKey({
+                paths: cachePaths,
+                primaryKey,
+                restoreKeys: [],
+                lookupOnly: true
+            });
+            if (cacheKey) {
+                yield restoreWithKey(cacheKey, cachePaths);
+            }
+            else {
+                core.info(`
+                No cache with the key "${cacheKey}" found.
+                Searching for a cache using restore keys:
+                ${JSON.stringify(restoreKeys)}
+                `);
+                const restoreKey = yield utils.getCacheKey({
+                    paths: cachePaths,
+                    primaryKey: "",
+                    restoreKeys,
+                    lookupOnly: true
+                });
+                if (restoreKey) {
+                    yield restoreWithKey(restoreKey, cachePaths);
+                }
+                if (restoreKeyHit) {
+                    cacheKey = restoreKey;
+                }
             }
             if (!cacheKey) {
                 if (failOnCacheMiss) {
-                    throw new Error(`Failed to restore cache entry. Exiting as fail-on-cache-miss is set. Input key: ${primaryKey}`);
+                    throw new Error(`
+                    Failed to restore cache entry. 
+                    Exiting as fail-on-cache-miss is set. 
+                    Input key: ${primaryKey}
+                    `);
                 }
-                core.info(`Cache not found for input keys: ${JSON.stringify([
-                    primaryKey,
-                    ...restoreKeys
-                ])}`);
-                yield (0, restoreExtraCaches_1.restoreExtraCaches)(cachePaths, lookupOnly, enableCrossOsArchive);
+                core.info(`
+                Cache not found for input keys:
+                ${utils.stringify([primaryKey, ...restoreKeys])}
+                `);
+                yield (0, restoreExtraCaches_1.restoreExtraCaches)();
                 return;
             }
             // Store the matched cache key in states
             stateProvider.setState(constants_1.State.CacheMatchedKey, cacheKey);
             const isExactKeyMatch = utils.isExactKeyMatch(core.getInput(constants_1.Inputs.Key, { required: true }), cacheKey) || restoreKeyHit;
             core.setOutput(constants_1.Outputs.CacheHit, isExactKeyMatch.toString());
-            if (lookupOnly) {
-                core.info(`Cache found and can be restored from key: ${cacheKey}`);
-            }
-            else {
-                core.info(`Cache restored from key: ${cacheKey}`);
-            }
-            yield (0, restoreExtraCaches_1.restoreExtraCaches)(cachePaths, lookupOnly, enableCrossOsArchive);
+            core.info(`Cache restored from key: ${cacheKey}`);
+            yield (0, restoreExtraCaches_1.restoreExtraCaches)();
             return cacheKey;
         }
         catch (error) {
@@ -62727,7 +62768,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
@@ -62749,6 +62790,11 @@ function logWarning(message) {
     core.info(`${warningPrefix}${message}`);
 }
 exports.logWarning = logWarning;
+function logError(message) {
+    const prefix = "[error]";
+    core.error(`${prefix} ${message}`);
+}
+exports.logError = logError;
 // Cache token authorized for all events that are tied to a ref
 // See GitHub Context https://help.github.com/actions/automating-your-workflow-with-github-actions/contexts-and-expression-syntax-for-github-actions#github-context
 function isValidEvent() {
@@ -62782,7 +62828,7 @@ function isCacheFeatureAvailable() {
     }
     if (isGhes()) {
         logWarning(`Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
-Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`);
+            Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`);
         return false;
     }
     logWarning("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
@@ -62790,17 +62836,17 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
 }
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 exports.paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
-function getCacheKey(paths, primaryKey, restoreKeys, lookupOnly, enableCrossOsArchive) {
+function getCacheKey({ paths, primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield cache.restoreCache(
         // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-        paths.slice(), primaryKey, restoreKeys, { lookupOnly: lookupOnly }, enableCrossOsArchive);
+        paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false);
     });
 }
 exports.getCacheKey = getCacheKey;
 function getCachesByKeys(token, keys) {
     return __awaiter(this, void 0, void 0, function* () {
-        const results = [];
+        const caches = [];
         const octokit = github.getOctokit(token);
         for (let i = 0; i < keys.length; i += 1) {
             const key = keys[i];
@@ -62816,13 +62862,41 @@ function getCachesByKeys(token, keys) {
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
                 }
-                results.push(...cachesRequest.actions_caches);
+                caches.push(...cachesRequest.actions_caches);
             }
         }
-        return results;
+        return caches;
     });
 }
 exports.getCachesByKeys = getCachesByKeys;
+const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => caches.filter(cache => {
+    const at = doUseLastAccessedTime
+        ? cache.last_accessed_at
+        : cache.created_at;
+    if (at !== undefined && cache.id !== undefined) {
+        const atDate = new Date(at);
+        return atDate < maxDate;
+    }
+    else
+        return false;
+});
+exports.filterCachesByTime = filterCachesByTime;
+const mkMessageWrongValue = (input, value) => `Wrong value for the input '${input}': ${value}`;
+exports.mkMessageWrongValue = mkMessageWrongValue;
+function getMaxDate({ doUseLastAccessedTime, time }) {
+    const inputMaxAge = doUseLastAccessedTime
+        ? constants_1.Inputs.PurgeAccessedMaxAge
+        : constants_1.Inputs.PurgeCreatedMaxAge;
+    const maxAge = core.getInput(inputMaxAge, { required: false });
+    const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
+    if (maxDate === null) {
+        throw new Error((0, exports.mkMessageWrongValue)(inputMaxAge, maxAge));
+    }
+    return maxDate;
+}
+exports.getMaxDate = getMaxDate;
+const stringify = (value) => JSON.stringify(value, null, 2);
+exports.stringify = stringify;
 
 
 /***/ }),
