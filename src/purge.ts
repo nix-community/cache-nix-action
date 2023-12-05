@@ -23,7 +23,7 @@ async function purgeByTime({
         `
         ${
             lookupOnly ? "Searching for" : "Purging"
-        } caches ${verb} before ${maxDate.toISOString()} and having keys:
+        } caches ${verb} before ${maxDate.toISOString()} and having key prefixes:
         ${utils.stringify(keys)}
         `
     );
