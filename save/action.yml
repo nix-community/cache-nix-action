@@ -1,52 +1,43 @@
 name: 'Save a cache'
-description: 'Save Cache artifacts like dependencies and build outputs to improve workflow execution time'
+description: 'Save Nix store using GitHub Actions cache to speed up workflows.'
 author: 'GitHub'
 inputs:
-  path:
-    description: 'A list of files, directories, and wildcard patterns to cache'
-    required: true
   key:
-    description: 'An explicit key for saving the cache'
+    description: 'The primary key for saving the cache.'
     required: true
+
   upload-chunk-size:
-    description: 'The chunk size used to split up large files during upload, in bytes'
-    required: false
+    description: 'The chunk size used to split up large files during upload, in bytes.'
+    # The original default value may be provided here (https://github.com/actions/cache/issues/1292)
+    # 32MB
+    default: '33554432'
   
-  gc-macos:
-    description: 'When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.'
-    default: 'false'
-  gc-max-store-size-macos:
-    description: 'Maximum Nix store size in bytes on `macOS` runners. Requires `gc-macos: true`.'
-  gc-linux:
-    description: 'When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.'
-    default: 'false'
-  gc-max-store-size-linux:
-    description: 'Maximum Nix store size in bytes on `Linux` runners. Requires `gc-linux: true`.'
+  max-store-size-macos:
+    description: 'When a number (of bytes) and on a `macOS` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache. When the input is not a number, does not collect garbage.'
+    default: ''
+  max-store-size-linux:
+    description: 'When a number (of bytes) and on a `Linux` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache. When the input is not a number, does not collect garbage.'
+    default: ''
   
   purge:
-    description: 'When `true`, purge old caches before saving a new cache with a `key`.'
+    description: 'When `true`, purges old caches. Otherwise, does not purge them.'
     default: 'false'
-  purge-keys:
-    description: 'A newline-separated list of cache key prefixes used to purge caches. An empty string is equivalent to the `key` input.'
-    required: false
+  purge-overwrite:
+    description: "When `always`, always purges old caches with the primary `key` before saving a new cache with the primary `key`. When `never`, never purges an old cache with the primary `key` and never saves a new cache with the primary `key`. Otherwise, saves a new cache with the primary `key` if after purging there is no old cache with the primary `key`."
     default: ''
-  purge-accessed:
-    description: 'When `true`, purge caches by `last accessed` time. Requires `purge: true`.'
-    default: 'false'
+  purge-keys:
+    description: 'When a newline-separated non-empty list of non-empty cache key prefixes, collects cache keys that match these prefixes.'
+    default: ''
   purge-accessed-max-age:
-    description: 'Purge caches accessed more than this number of seconds ago. Requires `purge-accessed: true`.'
-    default: '604800'
-  purge-created:
-    description: 'When `true`, purge caches by `created` time. Requires `purge: true`.'
-    default: 'true'
+    description: 'When a number, purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase. When not a number, this criterion is ignored.'
+    default: ''
   purge-created-max-age:
-    description: 'Purge caches created more than this number of seconds ago. Requires `purge-created: true`.'
-    default: '604800'
+    description: 'When a number, purges caches created more than this number of seconds ago relative to the start of the cache saving phase. When not a number, this criterion is ignored.'
+    default: ''
   
   token:
     description: 'Used to communicate with GitHub API.'
     default: ${{ github.token }}
-    required: true
 runs:
   using: 'node16'
   main: '../dist/save-only/index.js'

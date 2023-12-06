@@ -1,66 +1,63 @@
 name: 'Cache Nix store'
-description: 'Cache Nix store using GitHub Actions cache to speed up workflows.'
+description: 'Restore and save Nix store using GitHub Actions cache to speed up workflows.'
 author: 'GitHub'
 inputs:
   key:
-    description: 'An explicit key for restoring and saving the cache.'
+    description: 'The primary key for restoring and saving the cache.'
     required: true
-  restore-keys:
-    description: 'An ordered list of keys to use for restoring stale cache if no cache hit occurred for key. Note `cache-hit` returns `false` in this case. Use `restore-key-hit` to change this behavior.'
-  extra-restore-keys:
-    description: 'A newline-separated list of key prefixes used for restoring multiple caches.'
+  
+  restore-keys-first:
+    description: "When a newline-separated non-empty list of non-empty key prefixes and no cache hit occurred for the primary `key`, searches for the first prefix for which there exists a cache with a matching key and restores that cache. The output `cache-hit` returns `false` in this case. Use `restore-keys-first-hit` to change this behavior."
     default: ''
-  restore-key-hit:
-    description: "When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache."
+  restore-keys-first-hit:
+    description: 'When `true` and a cache was restored via `restore-keys-first`, the output `cache-hit` returns `true`. Otherwise, the output `cache-hit` returns `false`.'
     default: 'false'
+  
+  restore-keys-all:
+    description: 'When a newline-separated non-empty list of non-empty key prefixes, tries to restore all caches whose keys match these prefixes.'
+    default: ''
 
-  upload-chunk-size:
-    description: 'The chunk size used to split up large files during upload, in bytes.'
-  fail-on-cache-miss:
-    description: 'Fail the workflow if a cache entry is found neither via `key` nor via `restore-keys`.'
-    default: 'false'
-
-  gc-macos:
-    description: 'When `true`, enables on `macOS` runners Nix store garbage collection before saving a cache.'
-    default: 'false'
-  gc-max-store-size-macos:
-    description: 'Maximum Nix store size in bytes on `macOS` runners. Requires `gc-macos: true`.'
-  gc-linux:
-    description: 'When `true`, enables on `Linux` runners Nix store garbage collection before saving a cache.'
-    default: 'false'
-  gc-max-store-size-linux:
-    description: 'Maximum Nix store size in bytes on `Linux` runners. Requires `gc-linux: true`.'
+  max-store-size-macos:
+    description: 'When a number (of bytes) and on a `macOS` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache. When the input is not a number, does not collect garbage.'
+    default: ''
+  max-store-size-linux:
+    description: 'When a number (of bytes) and on a `Linux` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache. When the input is not a number, does not collect garbage.'
+    default: ''
   
   purge:
-    description: 'When `true`, purge old caches before saving a new cache with a `key`.'
+    description: 'When `true`, purges old caches. Otherwise, does not purge them.'
     default: 'false'
-  purge-keys:
-    description: 'A newline-separated list of cache key prefixes used to purge caches. An empty string is equivalent to the `key` input.'
+  purge-overwrite:
+    description: "When `always`, always purges old caches with the primary `key` before saving a new cache with the primary `key`. When `never`, never purges an old cache with the primary `key` and never saves a new cache with the primary `key`. Otherwise, saves a new cache with the primary `key` if after purging there is no old cache with the primary `key`."
     default: ''
-  purge-accessed:
-    description: 'When `true`, purge caches by `last accessed` time. Requires `purge: true`.'
-    default: 'false'
+  purge-keys:
+    description: 'When a newline-separated non-empty list of non-empty cache key prefixes, collects cache keys that match these prefixes.'
+    default: ''
   purge-accessed-max-age:
-    description: 'Purge caches accessed more than this number of seconds ago. Requires `purge-accessed: true`.'
-    default: '604800'
-  purge-created:
-    description: 'When `true`, purge caches by `created` time. Requires `purge: true`.'
-    default: 'true'
+    description: 'When a number, purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase. When not a number, this criterion is ignored.'
+    default: ''
   purge-created-max-age:
-    description: 'Purge caches created more than this number of seconds ago. Requires `purge-created: true`.'
-    default: '604800'
+    description: 'When a number, purges caches created more than this number of seconds ago relative to the start of the cache saving phase. When not a number, this criterion is ignored.'
+    default: ''
   
+  upload-chunk-size:
+    description: 'The chunk size used to split up large files during upload, in bytes.'
+    # The original default value may be provided here (https://github.com/actions/cache/issues/1292)
+    # 32MB
+    default: '33554432'
+  fail-on-cache-miss:
+    description: 'Fail the workflow if a cache entry is found neither via the primary `key`, nor via the `restore-keys-first`.'
+    default: 'false'
   token:
     description: 'Used to communicate with GitHub API.'
     default: ${{ github.token }}
-    required: true
 outputs:
   cache-hit:
-    description: 'A boolean value to indicate an exact match was found for the primary key.'
+    description: 'A boolean value that indicates whether a cache was restored successfully, either via the primary `key` or via the `restore-keys-first` if `restore-keys-first-hit` is set.'
   cache-primary-key:
-    description: 'A resolved cache key for which cache match was attempted'
+    description: 'The resolved primary `key`.'
   cache-matched-key:
-    description: 'Key of the cache that was restored, it could either be the primary key on cache-hit or a partial/complete match of one of the restore keys'
+    description: 'Key of the cache that was restored.'
 runs:
   using: 'node16'
   main: 'dist/restore/index.js'

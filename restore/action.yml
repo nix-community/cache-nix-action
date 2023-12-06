@@ -1,36 +1,33 @@
 name: 'Restore Cache'
-description: 'Restore Cache artifacts like dependencies and build outputs to improve workflow execution time'
+description: 'Restore Nix store using GitHub Actions cache to speed up workflows.'
 author: 'GitHub'
 inputs:
-  path:
-    description: 'A list of files, directories, and wildcard patterns to restore'
-    required: true
   key:
     description: 'An explicit key for restoring the cache'
     required: true
-  restore-keys:
-    description: 'An ordered list of keys to use for restoring stale cache if no cache hit occurred for key. Note `cache-hit` returns false in this case.'
-    required: false
-  extra-restore-keys:
-    description: 'A newline-separated list of key prefixes used for restoring multiple caches.'
+  
+  restore-keys-first:
+    description: "When a newline-separated non-empty list of non-empty key prefixes and no cache hit occurred for the primary `key`, searches for the first prefix for which there exists a cache with a matching key and restores that cache. The output `cache-hit` returns `false` in this case. Use `restore-keys-first-hit` to change this behavior."
     default: ''
-  restore-key-hit:
-    description: "When true, if a cache key matching `restore-keys` exists, it counts as a cache hit. Thus, a job won't save a new cache."
+  restore-keys-first-hit:
+    description: 'When `true` and a cache was restored via `restore-keys-first`, the output `cache-hit` returns `true`. Otherwise, the output `cache-hit` returns `false`.'
     default: 'false'
-    required: false
+  
+  restore-keys-all:
+    description: 'When a newline-separated non-empty list of non-empty key prefixes, tries to restore all caches whose keys match these prefixes.'
+    default: ''
 
   fail-on-cache-miss:
-    description: 'Fail the workflow if cache entry is not found'
+    description: 'Fail the workflow if a cache entry is found neither via the primary `key`, nor via the `restore-keys-first`.'
     default: 'false'
-    required: false
-
+  
 outputs:
   cache-hit:
-    description: 'A boolean value to indicate an exact match was found for the primary key'
+    description: 'A boolean value that indicates whether a cache was restored successfully, either via the primary `key` or via the `restore-keys-first` if `restore-keys-first-hit` was set.'
   cache-primary-key:
-    description: 'A resolved cache key for which cache match was attempted'
+    description: 'The resolved primary `key`.'
   cache-matched-key:
-    description: 'Key of the cache that was restored, it could either be the primary key on cache-hit or a partial/complete match of one of the restore keys'
+    description: 'Key of the cache that was restored.'
 runs:
   using: 'node16'
   main: '../dist/restore-only/index.js'
