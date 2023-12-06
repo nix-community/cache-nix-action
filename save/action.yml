@@ -3,38 +3,52 @@ description: 'Save Nix store using GitHub Actions cache to speed up workflows.'
 author: 'GitHub'
 inputs:
   key:
-    description: 'The primary key for saving the cache.'
+    description: 'The primary key for saving a cache.'
     required: true
-
-  upload-chunk-size:
-    description: 'The chunk size used to split up large files during upload, in bytes.'
-    # The original default value may be provided here (https://github.com/actions/cache/issues/1292)
-    # 32MB
-    default: '33554432'
   
-  max-store-size-macos:
-    description: 'When a number (of bytes) and on a `macOS` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache. When the input is not a number, does not collect garbage.'
+  gc-max-store-size-macos:
+    description: |
+      - When a number (of bytes) and on a `macOS` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
+      - Otherwise, doesn't collect garbage.
     default: ''
-  max-store-size-linux:
-    description: 'When a number (of bytes) and on a `Linux` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache. When the input is not a number, does not collect garbage.'
+  gc-max-store-size-linux:
+    description: |
+      - When a number (of bytes) and on a `Linux` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
+      - Otherwise, doesn't collect garbage.
     default: ''
   
   purge:
-    description: 'When `true`, purges old caches. Otherwise, does not purge them.'
+    description: |
+      - When `true`, purges old caches.
+      - Otherwise, doesn't purge them.
     default: 'false'
   purge-overwrite:
-    description: "When `always`, always purges old caches with the primary `key` before saving a new cache with the primary `key`. When `never`, never purges an old cache with the primary `key` and never saves a new cache with the primary `key`. Otherwise, saves a new cache with the primary `key` if after purging there is no old cache with the primary `key`."
+    description: |
+      - When `always`, always purges old caches with the primary `key` before saving a new cache with the primary `key`.
+      - When `never`, never purges an old cache with the primary `key` and never saves a new cache with the primary `key`.
+      - Otherwise, saves a new cache with the primary `key` if after purging there's no old cache with the primary `key`.
     default: ''
   purge-keys:
-    description: 'When a newline-separated non-empty list of non-empty cache key prefixes, collects cache keys that match these prefixes.'
+    description: |
+      - When a newline-separated non-empty list of non-empty cache key prefixes, collects for purging all cache keys that match these prefixes.
+      - Otherwise, doesn't collect keys.
     default: ''
   purge-accessed-max-age:
-    description: 'When a number, purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase. When not a number, this criterion is ignored.'
+    description: |
+      - When a number, purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase.
+      - Otherwise, has no effect on purging.
     default: ''
   purge-created-max-age:
-    description: 'When a number, purges caches created more than this number of seconds ago relative to the start of the cache saving phase. When not a number, this criterion is ignored.'
+    description: |
+      - When a number, purges caches created more than this number of seconds ago relative to the start of the cache saving phase.
+      - Otherwise, has no effect on purging.
     default: ''
   
+  upload-chunk-size:
+    description: 'When a number (of bytes), uses it as the chunk size to split up large files during upload, in bytes.'
+    # The original default value may be provided here (https://github.com/actions/cache/issues/1292)
+    # 32MB
+    default: '33554432'
   token:
     description: 'Used to communicate with GitHub API.'
     default: ${{ github.token }}
