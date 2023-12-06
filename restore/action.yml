@@ -33,13 +33,13 @@ inputs:
 
 outputs:
   cache-hit:
-    description: 'A boolean value that indicates whether a cache was restored successfully, either via the primary `key` or via the `restore-first-match-keys` if `restore-first-match-hit` was set.'
+    description: 'A boolean value. Indicates whether a cache was restored successfully, either via the primary `key` or via the `restore-first-match-keys` if `restore-first-match-hit` was set.'
   cache-primary-key:
-    description: 'The resolved primary `key`.'
-  cache-matched-key:
-    description: 'Key of the restored cache.'
-  caches-matched-keys:
-    description: 'Keys of restored caches.'
+    description: 'A string. The primary `key`.'
+  cache-restored-key:
+    description: 'A string. The key of a restored cache.'
+  caches-restored-keys:
+    description: 'An array of strings (JSON). Keys of restored caches.'
 runs:
   using: 'node16'
   main: '../dist/restore-only/index.js'
