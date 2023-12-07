@@ -33,7 +33,7 @@ See alternative [caching approaches](#caching-approaches).
 
 ## Limitations
 
-* `GitHub` allows only 10GB of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
+* `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
   * [Purge old caches](#purge-old-caches)
   * [Merge caches](#merge-caches)
 * `cache-nix-action` requires `nix-quick-install-action` (see [Approach](#approach)).
@@ -49,40 +49,17 @@ See alternative [caching approaches](#caching-approaches).
 * Purges caches scoped only to the branch that has triggered the current workflow.
 * Purge time is calculated relative to the start of the `save` part of this action.
 
-## Configuration
+## Example steps
 
-See [action.yaml](action.yml), [restore/action.yml](restore/action.yml), [save/action.yml](save/action.yml).
-
-### Inputs
-
-| `name`                   | `description`                                                                                                                                                                                                                                                                                                                                          | `required` | `default`             | `requires` |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- | ---------- |
-| `key`                    | The primary key for restoring and saving the cache.                                                                                                                                                                                                                                                                                                    | `true`     |                       |            |
-| `restore-keys`           | When a newline-separated non-empty list of non-empty key prefixes and no cache hit occurred for the primary `key`, finds the first prefix for which there exists a cache with a matching key and restores that cache. The output `cache-hit` returns `false` in this case. Use `restore-keys-hit` to change this behavior.                             | `false`    | `''`                  |            |
-| `restore-keys-hit`       | When `true` and a cache was restored via `restore-keys`, the output `cache-hit` returns `true`. Otherwise, the output `cache-hit` returns `false`.                                                                                                                                                                                                     | `false`    | `false`               |            |
-| `extra-restore-keys`     | When a newline-separated non-empty list of non-empty key prefixes, restores all caches whose keys match these prefixes.                                                                                                                                                                                                                                | `false`    | `''`                  |            |
-| `max-store-size-macos`   | When a number (of bytes) and on a `macOS` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache. When the input is not a number, does not collect garbage.                                                                                                                            | `false`    | `''`                  |            |
-| `max-store-size-linux`   | When a number (of bytes) and on a `Linux` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache. When the input is not a number, does not collect garbage.                                                                                                                            | `false`    | `''`                  |            |
-| `purge`                  | When `true`, purges old caches. Otherwise, does not purge them.                                                                                                                                                                                                                                                                                        | `false`    | `false`               |            |
-| `purge-overwrite`        | When `always`, always purges old caches with the primary `key` before saving a new cache with the primary `key`. When `never`, never purges an old cache with the primary `key` and never saves a new cache with the primary `key`. Otherwise, saves a new cache with the primary `key` if after purging there is no old cache with the primary `key`. | `false`    | `''`                  |            |
-| `purge-keys`             | When a newline-separated non-empty list of non-empty cache key prefixes, collects cache keys that match these prefixes.                                                                                                                                                                                                                                | `false`    | `''`                  |            |
-| `purge-accessed-max-age` | When a number, purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase. When not a number, this criterion is ignored.                                                                                                                                                                         | `false`    | `''`                  |            |
-| `purge-created-max-age`  | When a number, purges caches created more than this number of seconds ago relative to the start of the cache saving phase. When not a number, this criterion is ignored.                                                                                                                                                                               | `false`    | `''`                  |            |
-| `upload-chunk-size`      | The chunk size used to split up large files during upload, in bytes.                                                                                                                                                                                                                                                                                   | `false`    | `33554432`            |            |
-| `fail-on-cache-miss`     | Fail the workflow if a cache entry is found neither via the primary `key`, nor via the `restore-keys`.                                                                                                                                                                                                                                                 | `false`    | `false`               |            |
-| `token`                  | Used to communicate with GitHub API.                                                                                                                                                                                                                                                                                                                   | `false`    | `${{ github.token }}` |            |
-
-## Usage example
-
-* Maximum Nix store size on `Linux` runners will be `~1GB` due to `gc-max-store-size-linux: 1000000000`.
-  * If the store has a larger size, it will be garbage collected to reach this limit (See [Garbage collection parameters](#garbage-collection-parameters)).
+* Due to `gc-max-store-size-linux: 1073741824`, Nix store size on `Linux` runners will be reduced to `1GB` before trying to save a new cache.
+  * If the store has a larger size, it will be garbage collected to reach the (See [Garbage collection parameters](#garbage-collection-parameters)).
   * The `cache-nix-action` will print the Nix store size in the `Post` phase, so you can choose an optimal store size to avoid garbage collection.
-* On `macOS` runners, Nix store won't be garbage collected since `gc-macos: true` isn't set.
+* On `macOS` runners, Nix store won't be garbage collected since `gc-max-store-size-macos` isn't set to a number.
 * Before trying to save a new cache, the `cache-nix-action` will search for caches with a key prefix `cache-${{ matrix.os }}-`.
   Among these caches, the `cache-nix-action` will delete caches created more than `42` seconds ago.
 
 ```yaml
-- uses: nixbuild/nix-quick-install-action@v25
+- uses: nixbuild/nix-quick-install-action@v26
   with:
     nix_conf: |
       substituters = https://cache.nixos.org/ https://nix-community.cachix.org
@@ -96,18 +73,29 @@ See [action.yaml](action.yml), [restore/action.yml](restore/action.yml), [save/a
     restore-keys: |
       cache-${{ matrix.os }}-
 
-    gc-linux: true
-    gc-max-store-size-linux: 1000000000
+    gc-max-store-size-linux: 1073741824
     
     purge: true
     purge-keys: cache-${{ matrix.os }}-
-    purge-created: true
     purge-created-max-age: 42
 ```
 
 ### Example workflow
 
 See [ci.yaml](.github/workflows/ci.yaml).
+
+## Configuration
+
+See [action.yml](action.yml), [restore/action.yml](restore/action.yml), [save/action.yml](save/action.yml).
+
+### Inputs
+
+<table><tr><th>name</th><th>description</th><th>default</th><th>required</th></tr><tr><td><div><p><code>key</code></p></div></td><td><div><p>The primary key for restoring and saving a cache.</p></div></td><td><div/></td><td><div><p><code>true</code></p></div></td></tr><tr><td><div><p><code>paths</code></p></div></td><td><div><ul><li>When a newline-separated non-empty list of non-empty path regex expressions, appends them to [<code>/nix</code>, <code>~/.cache/nix</code>, <code>~root/.cache/nix</code>] and uses the resulting list for restoring and saving caches.</li><li>Otherwise, uses [<code>/nix</code>, <code>~/.cache/nix</code>, <code>~root/.cache/nix</code>] for restoring and saving caches.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>paths-macos</code></p></div></td><td><div><ul><li>Overrides <code>paths</code>.</li><li>Can have effect only on a <code>macOS</code> runner.</li><li>When a newline-separated non-empty list of non-empty path regex expressions, appends them to [<code>/nix</code>, <code>~/.cache/nix</code>, <code>~root/.cache/nix</code>] and uses the resulting list for restoring and saving caches.</li><li>Otherwise, uses [<code>/nix</code>, <code>~/.cache/nix</code>, <code>~root/.cache/nix</code>] for restoring and saving caches.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>paths-linux</code></p></div></td><td><div><ul><li>Overrides <code>paths</code>.</li><li>Can have effect only on a <code>Linux</code> runner.</li><li>When a newline-separated non-empty list of non-empty path regex expressions, appends them to [<code>/nix</code>, <code>~/.cache/nix</code>, <code>~root/.cache/nix</code>] and uses the resulting list for restoring and saving caches.</li><li>Otherwise, uses [<code>/nix</code>, <code>~/.cache/nix</code>, <code>~root/.cache/nix</code>] for restoring and saving caches.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>restore-first-match-keys</code></p></div></td><td><div><ul><li>When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the primary <code>key</code>, searches for the first prefix for which there exists a cache with a matching key and restores that cache.<ul><li>The output <code>cache-hit</code> returns <code>false</code> in this case.</li><li>Use <code>restore-first-match-hit</code> to change this behavior.</li></ul></li><li>Otherwise, has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>restore-first-match-hit</code></p></div></td><td><div><ul><li>Can have effect only if <code>restore-first-match-keys</code> has effect.</li><li>When <code>true</code>, if a cache was restored via <code>restore-first-match-keys</code>, the output <code>cache-hit</code> returns <code>true</code>.</li><li>Otherwise, the output <code>cache-hit</code> returns <code>false</code>.</li></ul></div></td><td><div><p><code>false</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>restore-all-matches-keys</code></p></div></td><td><div><ul><li>When a newline-separated non-empty list of non-empty key prefixes, tries to restore all caches whose keys match these prefixes.</li><li>Otherwise, has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>gc-max-store-size</code></p></div></td><td><div><ul><li>When a number, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.</li><li>Otherwise, has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>gc-max-store-size-macos</code></p></div></td><td><div><ul><li>Overrides 'gc-max-store-size'.</li><li>Can have effect only on a <code>macOS</code> runner.</li><li>When a number, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.</li><li>Otherwise, has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>gc-max-store-size-linux</code></p></div></td><td><div><ul><li>Overrides 'gc-max-store-size'.</li><li>Can have effect only on a <code>Linux</code> runner.</li><li>When a number, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.</li><li>Otherwise, has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge</code></p></div></td><td><div><ul><li>When <code>true</code>, purges (possibly zero) old caches.</li><li>Otherwise, has no effect.</li></ul></div></td><td><div><p><code>false</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge-overwrite</code></p></div></td><td><div><ul><li>Can have effect only if <code>purge: true</code>.</li><li>When <code>always</code>, always purges old cache(s) with the primary <code>key</code> before saving a new cache with the primary <code>key</code>.</li><li>When <code>never</code>, never purges old cache(s) with the primary <code>key</code> and never saves a new cache with the primary <code>key</code>.</li><li>Otherwise, purges old caches using purging criteria before saving a new cache with the primary <code>key</code>.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge-keys</code></p></div></td><td><div><ul><li>Can have effect only if <code>purge: true</code>.</li><li>When a newline-separated non-empty list of non-empty cache key prefixes, collects for purging all cache keys that match these prefixes.</li><li>Otherwise, has no effect.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge-accessed-max-age</code></p></div></td><td><div><ul><li>Can have effect only if <code>purge-keys</code> has effect.</li><li>When a number, purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase.</li><li>Otherwise, has no effect on purging.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>purge-created-max-age</code></p></div></td><td><div><ul><li>Can have effect only if <code>purge-keys</code> has effect.</li><li>When a number, purges caches created more than this number of seconds ago relative to the start of the Save phase.</li><li>Otherwise, has no effect on purging.</li></ul></div></td><td><div><p><code>''</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>upload-chunk-size</code></p></div></td><td><div><p>When a number, uses it as the chunk size (in bytes) to split up large files during upload.</p></div></td><td><div><p><code>33554432</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>fail-on-cache-miss</code></p></div></td><td><div><ul><li>When <code>true</code>, fails if a cache entry is found neither via the primary <code>key</code> nor via the <code>restore-first-match-keys</code>.</li><li>Otherwise, has no effect.</li></ul></div></td><td><div><p><code>false</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>lookup-only-on-key-hit</code></p></div></td><td><div><ul><li>When <code>true</code>, if a cache with the <code>key</code> exists, skips Restore and Save phases.  The output <code>cache-hit</code> returns <code>true</code>.  The outputs <code>cache-primary-key</code>, <code>cache-restored-key</code> return the primary <code>key</code>.</li><li>Otherwise, runs Restore and Save phases.</li></ul></div></td><td><div><p><code>false</code></p></div></td><td><div><p><code>false</code></p></div></td></tr><tr><td><div><p><code>token</code></p></div></td><td><div><p>Used to communicate with GitHub API.</p></div></td><td><div><p><code>${{ github.token }}</code></p></div></td><td><div><p><code>false</code></p></div></td></tr></table>
+
+
+### Outputs
+
+<table><tr><th>name</th><th>description</th></tr><tr><td><div><p><code>cache-hit</code></p></div></td><td><div><p>A boolean value. Indicates whether a cache was restored successfully, either via the primary <code>key</code> or via the <code>restore-first-match-keys</code> if <code>restore-first-match-hit</code> was set.</p></div></td></tr><tr><td><div><p><code>cache-primary-key</code></p></div></td><td><div><p>A string. The primary <code>key</code>.</p></div></td></tr><tr><td><div><p><code>cache-restored-key</code></p></div></td><td><div><p>A string. The key of a restored cache.</p></div></td></tr><tr><td><div><p><code>caches-restored-keys</code></p></div></td><td><div><p>An array of strings (JSON). Keys of restored caches.</p></div></td></tr></table>
 
 ### Troubleshooting
 
@@ -123,7 +111,7 @@ There are alternative approaches to garbage collection (see [Garbage collection]
 
 ### Purge old caches
 
-The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [New inputs](#new-inputs) and `compare-run-times` in [Example workflow](#example-workflow)).
+The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [Inputs](#inputs) and `compare-run-times` in [Example workflow](#example-workflow)).
 
 The [purge-cache](https://github.com/MyAlbum/purge-cache) action allows to remove caches based on their `last accessed` or `created` time without branch limitations.
 
@@ -137,7 +125,7 @@ If you have multiple similar caches produced on runners with **the same OS** (`L
 
 In short:
 
-1. Matrix jobs produce similar caches.
+1. Matrix jobs produce similar individual caches.
 1. The next job restores all of these individual caches, saves a common cache, and purges individual caches.
 1. On subsequent runs, matrix jobs use the common cache.
 
@@ -593,7 +581,6 @@ There are a number of community practices/workarounds to fulfill specific requir
 * [Update a cache](./tips-and-workarounds.md#update-a-cache)
 * [Use cache across feature branches](./tips-and-workarounds.md#use-cache-across-feature-branches)
 * [Force deletion of caches overriding default cache eviction policy](./tips-and-workarounds.md#force-deletion-of-caches-overriding-default-cache-eviction-policy)
-
 
 ## License
 
