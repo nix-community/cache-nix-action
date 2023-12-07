@@ -15,7 +15,6 @@
 
           devShells.default = mkShell {
             packages = tools;
-            bash.extra = "export NODE_OPTIONS=--openssl-legacy-provider";
             commands =
               mkCommands "tools" tools ++
               [
