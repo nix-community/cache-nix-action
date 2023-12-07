@@ -6,6 +6,26 @@ inputs:
     description: 'The primary key for restoring a cache.'
     required: true
   
+  paths:
+    description: |
+      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+    default: ''
+  paths-macos:
+    description: |
+      - Overrides `paths`.
+      - Can have effect only on a `macOS` runner.
+      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+    default: ''
+  paths-linux:
+    description: |
+      - Overrides `paths`.
+      - Can have effect only on a `Linux` runner.
+      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+    default: ''
+
   restore-first-match-keys:
     description: |
       - When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the primary `key`, searches for the first prefix for which there exists a cache with a matching key and restores that cache.
@@ -15,6 +35,7 @@ inputs:
     default: ''
   restore-first-match-hit:
     description: |
+      - Can have effect only if `restore-first-match-keys` has effect.
       - When `true`, if a cache was restored via `restore-first-match-keys`, the output `cache-hit` returns `true`.
       - Otherwise, the output `cache-hit` returns `false`.
     default: 'false'
@@ -27,8 +48,8 @@ inputs:
 
   fail-on-cache-miss:
     description: |
-      - When `true`, fail the workflow if a cache entry is found neither via the primary `key` nor via the `restore-first-match-keys`.
-      - Otherwise, has no effect on the action.
+      - When `true`, fails if a cache entry is found neither via the primary `key` nor via the `restore-first-match-keys`.
+      - Otherwise, has no effect.
     default: 'false'
 
 outputs:

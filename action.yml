@@ -6,6 +6,26 @@ inputs:
     description: 'The primary key for restoring and saving a cache.'
     required: true
   
+  paths:
+    description: |
+      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+    default: ''
+  paths-macos:
+    description: |
+      - Overrides `paths`.
+      - Can have effect only on a `macOS` runner.
+      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+    default: ''
+  paths-linux:
+    description: |
+      - Overrides `paths`.
+      - Can have effect only on a `Linux` runner.
+      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+    default: ''
+
   restore-first-match-keys:
     description: |
       - When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the primary `key`, searches for the first prefix for which there exists a cache with a matching key and restores that cache.
@@ -15,6 +35,7 @@ inputs:
     default: ''
   restore-first-match-hit:
     description: |
+      - Can have effect only if `restore-first-match-keys` has effect.
       - When `true`, if a cache was restored via `restore-first-match-keys`, the output `cache-hit` returns `true`.
       - Otherwise, the output `cache-hit` returns `false`.
     default: 'false'
@@ -25,62 +46,75 @@ inputs:
       - Otherwise, has no effect.
     default: ''
 
+  gc-max-store-size:
+    description: |
+      - When a number, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
+      - Otherwise, has no effect.
+    default: ''
   gc-max-store-size-macos:
     description: |
-      - When a number (of bytes) and on a `macOS` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
-      - Otherwise, doesn't collect garbage.
+      - Overrides 'gc-max-store-size'.
+      - Can have effect only on a `macOS` runner.
+      - When a number, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
+      - Otherwise, has no effect.
     default: ''
   gc-max-store-size-linux:
     description: |
-      - When a number (of bytes) and on a `Linux` runner, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
-      - Otherwise, doesn't collect garbage.
+      - Overrides 'gc-max-store-size'.
+      - Can have effect only on a `Linux` runner.
+      - When a number, collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
+      - Otherwise, has no effect.
     default: ''
   
   purge:
     description: |
-      - When `true`, purges old caches.
-      - Otherwise, doesn't purge them.
+      - When `true`, purges (possibly zero) old caches.
+      - Otherwise, has no effect.
     default: 'false'
   purge-overwrite:
     description: |
-      - When `always`, always purges old caches with the primary `key` before saving a new cache with the primary `key`.
-      - When `never`, never purges an old cache with the primary `key` and never saves a new cache with the primary `key`.
-      - Otherwise, saves a new cache with the primary `key` if after purging there's no old cache with the primary `key`.
+      - Can have effect only if `purge: true`.
+      - When `always`, always purges old cache(s) with the primary `key` before saving a new cache with the primary `key`.
+      - When `never`, never purges old cache(s) with the primary `key` and never saves a new cache with the primary `key`.
+      - Otherwise, purges old caches using purging criteria before saving a new cache with the primary `key`.
     default: ''
   purge-keys:
     description: |
+      - Can have effect only if `purge: true`.
       - When a newline-separated non-empty list of non-empty cache key prefixes, collects for purging all cache keys that match these prefixes.
-      - Otherwise, doesn't collect keys.
+      - Otherwise, has no effect.
     default: ''
   purge-accessed-max-age:
     description: |
+      - Can have effect only if `purge-keys` has effect.
       - When a number, purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase.
       - Otherwise, has no effect on purging.
     default: ''
   purge-created-max-age:
     description: |
-      - When a number, purges caches created more than this number of seconds ago relative to the start of the cache saving phase.
+      - Can have effect only if `purge-keys` has effect.
+      - When a number, purges caches created more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, has no effect on purging.
     default: ''
   
   upload-chunk-size:
-    description: 'When a number (of bytes), uses it as the chunk size to split up large files during upload, in bytes.'
+    description: 'When a number, uses it as the chunk size (in bytes) to split up large files during upload.'
     # The original default value may be provided here (https://github.com/actions/cache/issues/1292)
     # 32MB
     default: '33554432'
 
   fail-on-cache-miss:
     description: |
-      - When `true`, fail the workflow if a cache entry is found neither via the primary `key` nor via the `restore-first-match-keys`.
-      - Otherwise, has no effect on the action.
+      - When `true`, fails if a cache entry is found neither via the primary `key` nor via the `restore-first-match-keys`.
+      - Otherwise, has no effect.
     default: 'false'
 
   lookup-only-on-key-hit:
     description: |
-      - When `true`, if a cache with the `key` exists, skips restore and save phases.
+      - When `true`, if a cache with the `key` exists, skips Restore and Save phases.
         The output `cache-hit` returns `true`.
-        The outputs `cache-primary-key`, `cache-restored-key` return resolved `key`.
-      - Otherwise, runs restore and save phases.
+        The outputs `cache-primary-key`, `cache-restored-key` return the primary `key`.
+      - Otherwise, runs Restore and Save phases.
     default: 'false'
 
   token:
