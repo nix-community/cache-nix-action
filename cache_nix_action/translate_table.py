@@ -77,15 +77,21 @@ def main():
         action_yaml = yaml.safe_load(action.read())
 
         result = textwrap.dedent(
-            f"""
-            ### Inputs
-            
-            {convert_to_table(action_yaml['inputs'], is_inputs=True)}
-            
-            ### Outputs
-            
-            {convert_to_table(action_yaml['outputs'], is_inputs=False)}
-            """
+            "\n".join(
+                [
+                    f"""
+                    ### {heading}
+                    
+                    {convert_to_table(attrs, is_inputs=is_inputs)}
+                    """
+                    if (attrs := action_yaml.get(attr))
+                    else ""
+                    for attr, heading, is_inputs in [
+                        ["inputs", "Inputs", True],
+                        ["outputs", "Outputs", False],
+                    ]
+                ]
+            )
         )
 
     print(result)

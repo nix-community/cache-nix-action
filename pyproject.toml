@@ -13,6 +13,8 @@ types-pyyaml = "^6.0.12.12"
 lxml = "^4.9.3"
 markdown = "^3.5.1"
 
+[tool.poetry.scripts]
+translate_table = "cache_nix_action.translate_table:main"
 
 [build-system]
 requires = ["poetry-core"]
