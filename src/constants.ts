@@ -16,7 +16,7 @@ export enum Inputs {
     Purge = "purge", // Input for cache, save actions
     PurgeOverwrite = "purge-overwrite", // Input for cache, save actions
     PurgeKeys = "purge-keys", // Input for cache, save actions
-    PurgeAccessedMaxAge = "purge-accessed-max-age", // Input for cache, save actions
+    PurgeLastAccessedMaxAge = "purge-last-accessed-max-age", // Input for cache, save actions
     PurgeCreatedMaxAge = "purge-created-max-age", // Input for cache, save actions
 
     UploadChunkSize = "upload-chunk-size", // Input for cache, save actions
