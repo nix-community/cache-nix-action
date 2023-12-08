@@ -75,26 +75,26 @@ inputs:
     default: 'false'
   purge-overwrite:
     description: |
-      - Can have effect only if `purge: true`.
+      - Can have effect only when `purge` has effect.
       - When `always`, the action always purges old cache(s) with the primary `key` before saving a new cache with the primary `key`.
       - When `never`, the action never purges old cache(s) with the primary `key` and never saves a new cache with the primary `key`.
       - Otherwise, the action purges old caches using purging criteria before saving a new cache with the primary `key`.
     default: ''
   purge-keys:
     description: |
-      - Can have effect only if `purge: true`.
+      - Can have effect only when `purge` has effect.
       - When a newline-separated non-empty list of non-empty cache key prefixes, the action collects for purging all cache keys that match these prefixes.
       - Otherwise, this input has no effect.
     default: ''
-  purge-accessed-max-age:
+  purge-last-accessed-max-age:
     description: |
-      - Can have effect only if `purge-keys` has effect.
+      - Can have effect only when `purge-keys` has effect.
       - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase.
       - Otherwise, this input has no effect.
     default: ''
   purge-created-max-age:
     description: |
-      - Can have effect only if `purge-keys` has effect.
+      - Can have effect only when `purge-keys` has effect.
       - When a number, the action purges caches created more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
     default: ''
