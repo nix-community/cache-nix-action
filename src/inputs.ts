@@ -20,9 +20,6 @@ export const paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"].concat(
 export const restoreFirstMatchKeys = utils.getInputAsArray(
     Inputs.RestoreFirstMatchKeys
 );
-export const restoreFirstMatchHit = utils.getInputAsBool(
-    Inputs.RestoreFirstMatchHit
-);
 export const restoreAllMatchesKeys = utils.getInputAsArray(
     Inputs.RestoreAllMatchesKeys
 );
@@ -47,7 +44,7 @@ export const purgeOverwrite = (() => {
 
 export const purgeKeys = utils.getInputAsArray(Inputs.PurgeKeys);
 
-export const purgeAccessedMaxAge = utils.getInputAsInt(
+export const purgeLastAccessedMaxAge = utils.getInputAsInt(
     Inputs.PurgeLastAccessedMaxAge
 );
 
@@ -59,8 +56,8 @@ export const uploadChunkSize = utils.getInputAsInt(Inputs.UploadChunkSize);
 
 export const failOnCacheMiss = utils.getInputAsBool(Inputs.FailOnCacheMiss);
 
-export const lookupOnlyOnKeyHit = utils.getInputAsBool(
-    Inputs.LookupOnlyOnKeyHit
+export const lookupOnlyOnHitKey = utils.getInputAsBool(
+    Inputs.LookupOnlyOnHitKey
 );
 
 export const token = core.getInput(Inputs.Token, { required: true });
