@@ -6,7 +6,7 @@ export enum Inputs {
     PathsLinux = "paths-linux", // Input for cache, save, restore actions
 
     RestoreFirstMatchKeys = "restore-first-match-keys", // Input for cache, restore actions
-    RestoreFirstMatchHit = "restore-first-match-hit",
+    RestoreFirstMatchHit = "restore-first-match-hit", // Input for cache, restore actions
     RestoreAllMatchesKeys = "restore-all-matches-keys", // Input for cache, restore actions
 
     GCMaxStoreSize = "gc-max-store-size",
@@ -33,8 +33,8 @@ export enum Outputs {
 }
 
 export enum State {
-    CachePrimaryKey = "CACHE_KEY",
-    CacheMatchedKey = "CACHE_RESULT"
+    CachePrimaryKey = "CACHE_PRIMARY_KEY",
+    CacheRestoredKey = "CACHE_RESTORED_KEY"
 }
 
 export enum Events {
