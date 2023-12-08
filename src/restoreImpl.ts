@@ -1,35 +1,17 @@
 import * as core from "@actions/core";
 
 import { Events, Inputs, Outputs, State } from "./constants";
-import { restoreExtraCaches } from "./restoreExtraCaches";
+import * as inputs from "./inputs";
 import { IStateProvider } from "./stateProvider";
-import * as utils from "./utils/actionUtils";
-
-export async function restoreWithKey(key: string, paths: string[]) {
-    utils.info(`Restoring a cache with the key "${key}".`);
-
-    utils.info(
-        `::group::Logs are hidden. Errors are due to attempts to overwrite read-only paths.`
-    );
-
-    await utils.getCacheKey({
-        paths,
-        primaryKey: key,
-        restoreKeys: [],
-        lookupOnly: false
-    });
-
-    utils.info(`::endgroup::`);
-
-    utils.info(`Finished restoring the cache.`);
-}
+import * as utils from "./utils/action";
+import { restoreCaches, restoreWithKey } from "./utils/restore";
 
 async function restoreImpl(
     stateProvider: IStateProvider
 ): Promise<string | undefined> {
     try {
         if (!utils.isCacheFeatureAvailable()) {
-            core.setOutput(Outputs.CacheHit, "false");
+            core.setOutput(Outputs.CacheHit, false);
             return;
         }
 
@@ -42,87 +24,81 @@ async function restoreImpl(
             );
         }
 
-        const primaryKey = core.getInput(Inputs.Key, { required: true });
-        stateProvider.setState(State.CachePrimaryKey, primaryKey);
+        const keysRestored = await restoreCaches();
 
-        const restoreKeys = utils.getInputAsArray(Inputs.RestoreKeys);
-        const cachePaths = utils.paths;
-        const failOnCacheMiss = utils.getInputAsBool(Inputs.FailOnCacheMiss);
-        const restoreKeyHit = utils.getInputAsBool(Inputs.RestoreKeyHit);
+        const primaryKey = inputs.key;
+        stateProvider.setState(State.CachePrimaryKey, primaryKey);
 
         utils.info(`Searching for a cache with the key "${primaryKey}".`);
 
-        let cacheKey = await utils.getCacheKey({
-            paths: cachePaths,
+        const primaryKeyRestore = await utils.getCacheKey({
             primaryKey,
             restoreKeys: [],
             lookupOnly: true
         });
 
-        if (cacheKey) {
-            await restoreWithKey(cacheKey, cachePaths);
-        } else {
-            utils.info(
-                `
-                No cache with the given primary key found.
-                Searching for a cache using restore keys:
-                ${JSON.stringify(restoreKeys)}
-                `
-            );
+        let keyRestored: string | undefined = undefined;
 
-            const restoreKey = await utils.getCacheKey({
-                paths: cachePaths,
-                primaryKey: "",
-                restoreKeys,
-                lookupOnly: true
-            });
-
-            if (restoreKey) {
-                await restoreWithKey(restoreKey, cachePaths);
-            }
-
-            if (restoreKeyHit) {
-                cacheKey = restoreKey;
+        if (primaryKeyRestore) {
+            const primaryKeyRestored = await restoreWithKey(primaryKeyRestore);
+            if (primaryKeyRestored) {
+                keysRestored.push(...[primaryKeyRestored]);
+                keyRestored = primaryKeyRestored;
             }
         }
 
-        if (!cacheKey) {
-            if (failOnCacheMiss) {
+        if (!keyRestored) {
+            utils.info(
+                `
+                No cache with the given primary key found.
+                Searching for a cache using restore key prefixes:
+                
+                ${JSON.stringify(inputs.restoreFirstMatchKeys)}
+                `
+            );
+
+            const firstMatchKeyRestore = await utils.getCacheKey({
+                primaryKey: "",
+                restoreKeys: inputs.restoreFirstMatchKeys,
+                lookupOnly: true
+            });
+
+            if (firstMatchKeyRestore) {
+                const firstMatchKeyRestored = await restoreWithKey(
+                    firstMatchKeyRestore
+                );
+                if (firstMatchKeyRestored) {
+                    keysRestored.push(...[firstMatchKeyRestored]);
+                    if (inputs.restoreFirstMatchHit) {
+                        keyRestored = firstMatchKeyRestored;
+                    }
+                }
+            }
+        }
+
+        if (!keyRestored) {
+            if (inputs.failOnCacheMiss) {
                 throw new Error(
                     `
-                    Failed to restore a cache with the key "${primaryKey}".
                     Exiting as ${Inputs.FailOnCacheMiss} is set. 
                     `
                 );
             }
-            utils.info(
-                `
-                Cache not found for input keys:
-                ${utils.stringify([primaryKey, ...restoreKeys])}
-                `
-            );
+            utils.info(`Cache not found.`);
 
-            await restoreExtraCaches();
+            core.setOutput(Outputs.CachesRestoredKeys, keysRestored);
 
             return;
         }
 
         // Store the matched cache key in states
-        stateProvider.setState(State.CacheMatchedKey, cacheKey);
+        stateProvider.setState(State.CacheRestoredKey, keyRestored);
 
-        const isExactKeyMatch =
-            utils.isExactKeyMatch(
-                core.getInput(Inputs.Key, { required: true }),
-                cacheKey
-            ) || restoreKeyHit;
+        core.setOutput(Outputs.CacheHit, true);
+        core.setOutput(Outputs.CacheRestoredKey, keyRestored);
+        core.setOutput(Outputs.CachesRestoredKeys, keysRestored);
 
-        core.setOutput(Outputs.CacheHit, isExactKeyMatch.toString());
-
-        utils.info(`Cache restored from key: "${cacheKey}"`);
-
-        await restoreExtraCaches();
-
-        return cacheKey;
+        return keyRestored;
     } catch (error: unknown) {
         core.setFailed((error as Error).message);
     }
