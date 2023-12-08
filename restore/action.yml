@@ -75,7 +75,7 @@ outputs:
   restored-key:
     description: |
       - A string.
-      - The key of a cache restored via the primary `key` or via the `restore-first-match-keys` if `restore-first-match-hit` was set.
+      - The key of a cache restored via the primary `key` or via the `restore-first-match-keys`.
       - An empty string otherwise.
   
   restored-keys:
