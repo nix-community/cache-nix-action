@@ -30,18 +30,9 @@ inputs:
 
   restore-first-match-keys:
     description: |
-      - When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the primary `key`, the action searches for the first prefix for which there exists a cache with a matching key and restores that cache.
-          - The output `cache-hit` returns `false` in this case.
-          - Use `restore-first-match-hit` to change this behavior.
+      - When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the primary `key`, the action searches for the first prefix for which there exists a cache with a matching key and tries to restore that cache.
       - Otherwise, this input has no effect.
     default: ''
-  restore-first-match-hit:
-    description: |
-      - Can have effect only if `restore-first-match-keys` has effect.
-      - When `true`, if a cache was restored via `restore-first-match-keys`, the output `cache-hit` returns `true`.
-      - Otherwise, the output `cache-hit` returns `false`.
-    default: 'false'
-
   restore-all-matches-keys:
     description: |
       - When a newline-separated non-empty list of non-empty key prefixes, the action tries to restore all caches whose keys match these prefixes.
@@ -89,7 +80,7 @@ inputs:
   purge-last-accessed-max-age:
     description: |
       - Can have effect only when `purge-keys` has effect.
-      - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase.
+      - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
     default: ''
   purge-created-max-age:
@@ -111,11 +102,9 @@ inputs:
       - Otherwise, this input has no effect.
     default: 'false'
 
-  lookup-only-on-key-hit:
+  lookup-only-on-hit-key:
     description: |
       - When `true`, if a cache with the primary `key` exists, the action skips Restore and Save phases.
-        The output `cache-hit` returns `true`.
-        The outputs `cache-primary-key`, `cache-restored-key` return the primary `key`.
       - Otherwise, the action runs Restore and Save phases.
     default: 'false'
 
@@ -123,23 +112,38 @@ inputs:
     description: The action uses it to communicate with GitHub API.
     default: ${{ github.token }}
 outputs:
-  cache-hit:
-    description: |
-      - A boolean value.
-      - Indicates whether a cache was restored successfully via the primary `key` or via the `restore-first-match-keys` if `restore-first-match-hit` was set.'
-  cache-primary-key:
+  key:
     description: |
       - A string.
       - The primary `key`.
-  cache-restored-key:
+  
+  hit:
+    description: |
+      - A boolean value.
+      - `true` when `hit-key` is `true` or `first-match` is `true`.
+      - `false` otherwise.
+  hit-key:
+    description: |
+      - A boolean value.
+      - `true` when a cache was found via the primary `key`.
+      - `false` otherwise.
+  hit-first-match:
+    description: |
+      - A boolean value.
+      - `true` when a cache was found via the `restore-first-match-keys`.
+      - `false` otherwise.
+  
+  restored-key:
     description: |
       - A string.
       - The key of a cache restored via the primary `key` or via the `restore-first-match-keys` if `restore-first-match-hit` was set.
-      - Otherwise, empty string.
-  caches-restored-keys:
+      - An empty string otherwise.
+  
+  restored-keys:
     description: |
-      - An array of strings (JSON).
+      - A possibly empty array of strings (JSON).
       - Keys of restored caches.
+      - Example: `["key1", "key2"]`.
 
 runs:
   using: 'node16'

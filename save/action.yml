@@ -10,22 +10,22 @@ inputs:
   
   paths:
     description: |
-      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
+      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for saving caches.
     default: ''
   paths-macos:
     description: |
       - Overrides `paths`.
       - Can have effect only on a `macOS` runner.
-      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
+      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for saving caches.
     default: ''
   paths-linux:
     description: |
       - Overrides `paths`.
       - Can have effect only on a `Linux` runner.
-      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
+      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for saving caches.
     default: ''
 
   gc-max-store-size:
@@ -69,7 +69,7 @@ inputs:
   purge-last-accessed-max-age:
     description: |
       - Can have effect only when `purge-keys` has effect.
-      - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the cache saving phase.
+      - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
     default: ''
   purge-created-max-age:
