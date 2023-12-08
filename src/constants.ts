@@ -6,7 +6,6 @@ export enum Inputs {
     PathsLinux = "paths-linux", // Input for cache, save, restore actions
 
     RestoreFirstMatchKeys = "restore-first-match-keys", // Input for cache, restore actions
-    RestoreFirstMatchHit = "restore-first-match-hit", // Input for cache, restore actions
     RestoreAllMatchesKeys = "restore-all-matches-keys", // Input for cache, restore actions
 
     GCMaxStoreSize = "gc-max-store-size",
@@ -21,15 +20,19 @@ export enum Inputs {
 
     UploadChunkSize = "upload-chunk-size", // Input for cache, save actions
     FailOnCacheMiss = "fail-on-cache-miss", // Input for cache, restore actions
-    LookupOnlyOnKeyHit = "lookup-only-on-key-hit", // Input for cache, restore, save actions
+    LookupOnlyOnHitKey = "lookup-only-on-hit-key", // Input for cache, restore, save actions
     Token = "token" // Input for cache, save actions
 }
 
 export enum Outputs {
-    CacheHit = "cache-hit", // Output from cache, restore actions
-    CachePrimaryKey = "cache-primary-key", // Output from cache, restore actions
-    CacheRestoredKey = "cache-restored-key", // Output from cache, restore actions
-    CachesRestoredKeys = "caches-restored-keys" // Output from cache, restore actions
+    Key = "key",
+
+    Hit = "hit", // Output from cache, restore actions
+    HitKey = "hit-key", // Output from cache, restore actions
+    HitFirstMatch = "hit-first-match", // Output from cache, restore actions
+
+    RestoredKey = "restored-key", // Output from cache, restore actions
+    RestoredKeys = "restored-keys" // Output from cache, restore actions
 }
 
 export enum State {
