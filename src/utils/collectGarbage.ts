@@ -1,32 +1,21 @@
 import { exec } from "@actions/exec";
 
-import { Inputs } from "./constants";
-import * as utils from "./utils/actionUtils";
+import * as inputs from "../inputs";
+import * as utils from "./action";
 
 export async function collectGarbage() {
-    utils.info("Collecting garbage");
-
-    await exec("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
-
-    const gcEnabled = utils.getInputAsBool(
-        process.platform == "darwin" ? Inputs.GCMacos : Inputs.GCLinux
-    );
-
-    if (gcEnabled) {
-        const maxStoreSize = utils.getInputAsInt(
-            process.platform == "darwin"
-                ? Inputs.GCMaxStoreSizeMacos
-                : Inputs.GCMaxStoreSizeLinux,
-            { required: true }
-        );
+    if (inputs.gcMaxStoreSize) {
+        utils.info("Collecting garbage.");
 
         await exec("bash", [
             "-c",
             `
+                sudo rm -rf /nix/.[!.]* /nix/..?*
+
                 STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"
                 printf "Current store size in bytes: $STORE_SIZE\\n"
 
-                MAX_STORE_SIZE=${maxStoreSize}
+                MAX_STORE_SIZE=${inputs.gcMaxStoreSize}
                 
                 if (( STORE_SIZE > MAX_STORE_SIZE )); then
                     (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
