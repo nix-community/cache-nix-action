@@ -4,6 +4,7 @@ import * as github from "@actions/github";
 import dedent from "dedent";
 
 import { Inputs, RefKey } from "../constants";
+import * as inputs from "../inputs";
 
 export function isGhes(): boolean {
     const ghUrl = new URL(
@@ -86,22 +87,18 @@ export function isCacheFeatureAvailable(): boolean {
     return false;
 }
 
-export const paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
-
 export async function getCacheKey({
-    paths,
     primaryKey,
     restoreKeys,
     lookupOnly
 }: {
-    paths: string[];
     primaryKey: string;
     restoreKeys: string[];
     lookupOnly: boolean;
 }) {
     return await cache.restoreCache(
         // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-        paths.slice(),
+        inputs.paths.slice(),
         primaryKey,
         restoreKeys,
         { lookupOnly },
@@ -119,10 +116,8 @@ export interface Cache {
     size_in_bytes?: number | undefined;
 }
 
-export async function getCachesByKeys(token: string, keys: string[]) {
+export async function getCachesByKeys(keys: string[]) {
     const caches: Cache[] = [];
-
-    const octokit = github.getOctokit(token);
 
     for (let i = 0; i < keys.length; i += 1) {
         const key = keys[i];
@@ -161,7 +156,7 @@ export const filterCachesByTime = ({
         const at = doUseLastAccessedTime
             ? cache.last_accessed_at
             : cache.created_at;
-        if (at !== undefined && cache.id !== undefined) {
+        if (at !== undefined && cache.key !== undefined) {
             const atDate = new Date(at);
             return atDate < maxDate;
         } else return false;
@@ -194,6 +189,10 @@ export function getMaxDate({
 
 export const stringify = (value: any) => JSON.stringify(value, null, 2);
 
-export const info = (message: string) => {
+export function info(message: string) {
     core.info(dedent.withOptions({})(message));
-};
+}
+
+export const octokit = github.getOctokit(inputs.token);
+
+export const isLinux = process.platform === "linux";
