@@ -82,8 +82,7 @@ def main():
                     f"""
                     ### {heading}
                     
-                    {convert_to_table(attrs, is_inputs=is_inputs)}
-                    """
+                    {convert_to_table(attrs, is_inputs=is_inputs)}"""
                     if (attrs := action_yaml.get(attr))
                     else ""
                     for attr, heading, is_inputs in [
@@ -94,7 +93,7 @@ def main():
             )
         )
 
-    print(result)
+    print(f"{result}\n")
 
 
 if __name__ == "__main__":
