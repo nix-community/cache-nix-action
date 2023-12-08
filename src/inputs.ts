@@ -48,7 +48,7 @@ export const purgeOverwrite = (() => {
 export const purgeKeys = utils.getInputAsArray(Inputs.PurgeKeys);
 
 export const purgeAccessedMaxAge = utils.getInputAsInt(
-    Inputs.PurgeAccessedMaxAge
+    Inputs.PurgeLastAccessedMaxAge
 );
 
 export const purgeCreatedMaxAge = utils.getInputAsInt(
