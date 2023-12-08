@@ -3,35 +3,37 @@ description: 'Restore Nix store using GitHub Actions cache to speed up workflows
 author: 'GitHub'
 inputs:
   key:
-    description: 'The primary key for restoring a cache.'
+    description: |
+      - When non-empty string, the action uses this key for restoring a cache.
+      - Otherwise, the action fails.
     required: true
   
   paths:
     description: |
-      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
     default: ''
   paths-macos:
     description: |
       - Overrides `paths`.
       - Can have effect only on a `macOS` runner.
-      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
     default: ''
   paths-linux:
     description: |
       - Overrides `paths`.
       - Can have effect only on a `Linux` runner.
-      - When a newline-separated non-empty list of non-empty path regex expressions, appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
+      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
     default: ''
 
   restore-first-match-keys:
     description: |
-      - When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the primary `key`, searches for the first prefix for which there exists a cache with a matching key and restores that cache.
+      - When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the primary `key`, the action searches for the first prefix for which there exists a cache with a matching key and restores that cache.
           - The output `cache-hit` returns `false` in this case.
           - Use `restore-first-match-hit` to change this behavior.
-      - Otherwise, has no effect.
+      - Otherwise, this input has no effect.
     default: ''
   restore-first-match-hit:
     description: |
@@ -42,25 +44,35 @@ inputs:
 
   restore-all-matches-keys:
     description: |
-      - When a newline-separated non-empty list of non-empty key prefixes, tries to restore all caches whose keys match these prefixes.
-      - Otherwise, has no effect.
+      - When a newline-separated non-empty list of non-empty key prefixes, the action tries to restore all caches whose keys match these prefixes.
+      - Otherwise, this input has no effect.
     default: ''
 
   fail-on-cache-miss:
     description: |
-      - When `true`, fails if a cache entry is found neither via the primary `key` nor via the `restore-first-match-keys`.
-      - Otherwise, has no effect.
+      - When `true`, the action fails if a cache entry is found neither via the primary `key` nor via the `restore-first-match-keys`.
+      - Otherwise, this input has no effect.
     default: 'false'
 
 outputs:
   cache-hit:
-    description: 'A boolean value. Indicates whether a cache was restored successfully, either via the primary `key` or via the `restore-first-match-keys` if `restore-first-match-hit` was set.'
+    description: |
+      - A boolean value.
+      - Indicates whether a cache was restored successfully via the primary `key` or via the `restore-first-match-keys` if `restore-first-match-hit` was set.'
   cache-primary-key:
-    description: 'A string. The primary `key`.'
+    description: |
+      - A string.
+      - The primary `key`.
   cache-restored-key:
-    description: 'A string. The key of a restored cache.'
+    description: |
+      - A string.
+      - The key of a cache restored via the primary `key` or via the `restore-first-match-keys` if `restore-first-match-hit` was set.
+      - Otherwise, empty string.
   caches-restored-keys:
-    description: 'An array of strings (JSON). Keys of restored caches.'
+    description: |
+      - An array of strings (JSON).
+      - Keys of restored caches.
+
 runs:
   using: 'node16'
   main: '../dist/restore-only/index.js'
