@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 
 import { Inputs } from "./constants";
-import * as utils from "./utils/actionUtils";
+import * as utils from "./utils/action";
 
 export const key = core.getInput(Inputs.Key, { required: true });
 
