@@ -10,8 +10,13 @@ async function restoreImpl(
     stateProvider: IStateProvider
 ): Promise<string | undefined> {
     try {
+        core.setOutput(Outputs.Hit, false);
+        core.setOutput(Outputs.HitKey, false);
+        core.setOutput(Outputs.HitFirstMatch, false);
+        core.setOutput(Outputs.RestoredKey, false);
+        core.setOutput(Outputs.RestoredKeys, []);
+
         if (!utils.isCacheFeatureAvailable()) {
-            core.setOutput(Outputs.CacheHit, false);
             return;
         }
 
@@ -24,30 +29,31 @@ async function restoreImpl(
             );
         }
 
-        const keysRestored = await restoreCaches();
+        const restoredKeys = await restoreCaches();
 
         const primaryKey = inputs.key;
         stateProvider.setState(State.CachePrimaryKey, primaryKey);
 
         utils.info(`Searching for a cache with the key "${primaryKey}".`);
 
-        const primaryKeyRestore = await utils.getCacheKey({
-            primaryKey,
-            restoreKeys: [],
-            lookupOnly: true
-        });
+        let restoredKey: string | undefined;
 
-        let keyRestored: string | undefined = undefined;
-
-        if (primaryKeyRestore) {
-            const primaryKeyRestored = await restoreWithKey(primaryKeyRestore);
-            if (primaryKeyRestored) {
-                keysRestored.push(...[primaryKeyRestored]);
-                keyRestored = primaryKeyRestored;
+        {
+            const foundKey = await utils.getCacheKey({
+                primaryKey,
+                restoreKeys: [],
+                lookupOnly: true
+            });
+            if (foundKey) {
+                restoredKey = await restoreWithKey(primaryKey);
+                if (restoredKey) {
+                    restoredKeys.push(...[restoredKey]);
+                    core.setOutput(Outputs.HitKey, true);
+                }
             }
         }
 
-        if (!keyRestored) {
+        if (!restoredKey) {
             utils.info(
                 `
                 No cache with the given primary key found.
@@ -57,48 +63,40 @@ async function restoreImpl(
                 `
             );
 
-            const firstMatchKeyRestore = await utils.getCacheKey({
+            const foundKey = await utils.getCacheKey({
                 primaryKey: "",
                 restoreKeys: inputs.restoreFirstMatchKeys,
                 lookupOnly: true
             });
 
-            if (firstMatchKeyRestore) {
-                const firstMatchKeyRestored = await restoreWithKey(
-                    firstMatchKeyRestore
-                );
-                if (firstMatchKeyRestored) {
-                    keysRestored.push(...[firstMatchKeyRestored]);
-                    if (inputs.restoreFirstMatchHit) {
-                        keyRestored = firstMatchKeyRestored;
-                    }
+            if (foundKey) {
+                restoredKey = await restoreWithKey(foundKey);
+                if (restoredKey) {
+                    restoredKeys.push(...[restoredKey]);
+                    core.setOutput(Outputs.HitFirstMatch, true);
                 }
             }
         }
 
-        if (!keyRestored) {
+        if (!restoredKey) {
             if (inputs.failOnCacheMiss) {
-                throw new Error(
-                    `
-                    Exiting as ${Inputs.FailOnCacheMiss} is set. 
-                    `
-                );
+                throw new Error(`Exiting as ${Inputs.FailOnCacheMiss} is set.`);
             }
-            utils.info(`Cache not found.`);
+            utils.warning(`Cache not found.`);
 
-            core.setOutput(Outputs.CachesRestoredKeys, keysRestored);
+            core.setOutput(Outputs.RestoredKeys, restoredKeys);
 
             return;
         }
 
         // Store the matched cache key in states
-        stateProvider.setState(State.CacheRestoredKey, keyRestored);
+        stateProvider.setState(State.CacheRestoredKey, restoredKey);
 
-        core.setOutput(Outputs.CacheHit, true);
-        core.setOutput(Outputs.CacheRestoredKey, keyRestored);
-        core.setOutput(Outputs.CachesRestoredKeys, keysRestored);
+        core.setOutput(Outputs.Hit, true);
+        core.setOutput(Outputs.RestoredKey, restoredKey);
+        core.setOutput(Outputs.RestoredKeys, restoredKeys);
 
-        return keyRestored;
+        return restoredKey;
     } catch (error: unknown) {
         core.setFailed((error as Error).message);
     }
