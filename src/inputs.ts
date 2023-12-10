@@ -5,11 +5,11 @@ import * as utils from "./utils/action";
 
 export const primaryKey = core.getInput(Inputs.PrimaryKey, { required: true });
 
-export const prefixesFirstMatch = utils.getInputAsArray(
-    Inputs.PrefixesFirstMatch
+export const restorePrefixesFirstMatch = utils.getInputAsArray(
+    Inputs.RestorePrefixesFirstMatch
 );
-export const prefixesAllMatches = utils.getInputAsArray(
-    Inputs.PrefixesAllMatches
+export const restorePrefixesAllMatches = utils.getInputAsArray(
+    Inputs.RestorePrefixesAllMatches
 );
 
 export const skipRestoreOnHitPrimaryKey = utils.getInputAsBool(

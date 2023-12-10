@@ -8,14 +8,14 @@ inputs:
       - Otherwise, the action fails.
     required: true
   
-  prefixes-first-match:
+  restore-prefixes-first-match:
     description: |
       - When a newline-separated non-empty list of non-empty key prefixes, when there's a miss on the `primary-key`, 
         the action searches in this list for the first prefix for which there exists a cache 
         with a matching key and the action tries to restore that cache.
       - Otherwise, this input has no effect.
     default: ""
-  prefixes-all-matches:
+  restore-prefixes-all-matches:
     description: |
       - When a newline-separated non-empty list of non-empty key prefixes, the action tries to restore 
         all caches whose keys match these prefixes.
@@ -24,7 +24,7 @@ inputs:
 
   skip-restore-on-hit-primary-key:
     description: |
-      - Can have an effect only when `prefixes-first-match` has no effect.
+      - Can have an effect only when `restore-prefixes-first-match` has no effect.
       - When `true`, when there's a hit on the `primary-key`, the action doesn't restore caches.
       - Otherwise, this input has no effect.
     default: "false"
@@ -79,13 +79,13 @@ outputs:
   hit-first-match:
     description: |
       - A boolean value.
-      - `true` when there was a hit on a key matching `prefixes-first-match`.
+      - `true` when there was a hit on a key matching `restore-prefixes-first-match`.
       - `false` otherwise.
 
   restored-key:
     description: |
       - A string.
-      - The key of a cache restored via the `primary-key` or via the `prefixes-first-match`.
+      - The key of a cache restored via the `primary-key` or via the `restore-prefixes-first-match`.
       - An empty string otherwise.
 
   restored-keys:

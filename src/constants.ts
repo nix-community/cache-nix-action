@@ -1,7 +1,8 @@
 export enum Inputs {
     PrimaryKey = "primary-key", // Input for cache, restore, save action
-    PrefixesFirstMatch = "prefixes-first-match", // Input for cache, restore actions
-    PrefixesAllMatches = "prefixes-all-matches", // Input for cache, restore actions
+
+    RestorePrefixesFirstMatch = "restore-prefixes-first-match", // Input for cache, restore actions
+    RestorePrefixesAllMatches = "restore-prefixes-all-matches", // Input for cache, restore actions
 
     SkipRestoreOnHitPrimaryKey = "skip-restore-on-primary-key-hit", // Input for cache, restore, actions
 

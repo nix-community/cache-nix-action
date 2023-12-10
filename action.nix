@@ -40,7 +40,7 @@ let
 
   gc-max-store-size = "gc-max-store-size";
   primary-key = "primary-key";
-  prefixes-first-match = "prefixes-first-match";
+  restore-prefixes-first-match = "restore-prefixes-first-match";
   hit-primary-key = "hit-primary-key";
   hit-first-match = "hit-first-match";
 in
@@ -58,14 +58,14 @@ in
       ${
         if target == "cache" || target == "restore" then 
         ''
-        ${prefixes-first-match}:
+        ${restore-prefixes-first-match}:
             description: |
               - ${whenListOf} key prefixes, when there's a miss on the ${q primary-key}, 
                 the action searches in this list for the first prefix for which there exists a cache 
                 with a matching key and the action tries to restore that cache.
               - Otherwise, this input has no effect.
             default: ""
-          prefixes-all-matches:
+          restore-prefixes-all-matches:
             description: |
               - ${whenListOf} key prefixes, the action tries to restore 
                 all caches whose keys match these prefixes.
@@ -74,7 +74,7 @@ in
         
           skip-restore-on-hit-primary-key:
             description: |
-              - Can have an effect only when ${q prefixes-first-match} has no effect.
+              - Can have an effect only when ${q restore-prefixes-first-match} has no effect.
               - When `true`, when there's a hit on the ${q primary-key}, the action doesn't restore caches.
               - Otherwise, this input has no effect.
             default: "false"
@@ -200,13 +200,13 @@ in
       ${hit-first-match}:
         description: |
           - A boolean value.
-          - `true` when there was a hit on a key matching ${q prefixes-first-match}.
+          - `true` when there was a hit on a key matching ${q restore-prefixes-first-match}.
           - `false` otherwise.
     
       restored-key:
         description: |
           - A string.
-          - The key of a cache restored via the ${q primary-key} or via the ${q prefixes-first-match}.
+          - The key of a cache restored via the ${q primary-key} or via the ${q restore-prefixes-first-match}.
           - An empty string otherwise.
     
       restored-keys:

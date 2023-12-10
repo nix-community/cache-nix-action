@@ -89,15 +89,15 @@ async function restoreImpl(
         ) {
             utils.info(
                 `
-                Searching for a cache using the "${Inputs.PrefixesFirstMatch}":
+                Searching for a cache using the "${Inputs.RestorePrefixesFirstMatch}":
                 
-                ${JSON.stringify(inputs.prefixesFirstMatch)}
+                ${JSON.stringify(inputs.restorePrefixesFirstMatch)}
                 `
             );
 
             const foundKey = await utils.getCacheKey({
                 primaryKey: "",
-                restoreKeys: inputs.prefixesFirstMatch,
+                restoreKeys: inputs.restorePrefixesFirstMatch,
                 lookupOnly: true
             });
 
@@ -111,7 +111,7 @@ async function restoreImpl(
 
             if (foundKey) {
                 utils.info(
-                    `Found a cache using the "${Inputs.PrefixesFirstMatch}".`
+                    `Found a cache using the "${Inputs.RestorePrefixesFirstMatch}".`
                 );
                 core.setOutput(Outputs.HitFirstMatch, true);
 
