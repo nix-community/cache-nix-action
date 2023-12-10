@@ -1,13 +1,12 @@
 import * as cache from "@actions/cache";
 import * as core from "@actions/core";
-import { getOctokit } from "@actions/github";
-import * as github from "@actions/github";
 
 import { Events, Inputs, State } from "./constants";
-import { collectGarbage } from "./gc";
-import { purgeCaches } from "./purge";
+import * as inputs from "./inputs";
 import { type IStateProvider } from "./stateProvider";
-import * as utils from "./utils/actionUtils";
+import * as utils from "./utils/action";
+import { collectGarbage } from "./utils/collectGarbage";
+import { purgeCacheByKey, purgeCachesByTime } from "./utils/purge";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
@@ -15,7 +14,8 @@ import * as utils from "./utils/actionUtils";
 process.on("uncaughtException", e => utils.logError(e.message));
 
 async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
-    let cacheId = -1;
+    const cacheId = -1;
+    const time = Date.now();
     try {
         if (!utils.isCacheFeatureAvailable()) {
             return;
@@ -32,78 +32,66 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         // If restore has stored a primary key in state, reuse that
         // Else re-evaluate from inputs
         const primaryKey =
-            stateProvider.getState(State.CachePrimaryKey) ||
-            core.getInput(Inputs.Key);
+            stateProvider.getState(State.CachePrimaryKey) || inputs.key;
 
-        if (!primaryKey || primaryKey === "") {
-            throw new Error(
-                `
-                Primary cache key not found.
-                You may want to specify it in your workflow file.
-                See "with.key" field at the step where you use this action.
-                `
-            );
-        }
-
-        const cachePaths = utils.paths;
-        const restoreKeys = utils.getInputAsArray(Inputs.RestoreKeys);
-
-        const restoredKey = await utils.getCacheKey({
-            paths: cachePaths,
-            primaryKey,
-            restoreKeys,
-            lookupOnly: true
-        });
-
-        const time = Date.now();
-
-        if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
+        // Purge caches using the primary key
+        {
             utils.info(
-                `Cache hit occurred on the primary key "${primaryKey}".`
+                `Searching for a cache using the primary key "${primaryKey}".`
             );
-
-            const caches = await purgeCaches({
-                key: primaryKey,
-                lookupOnly: true,
-                time
+            const foundKey = await utils.getCacheKey({
+                primaryKey,
+                restoreKeys: [],
+                lookupOnly: true
             });
 
-            if (caches.map(cache => cache.key).includes(primaryKey)) {
-                utils.info(`Purging the cache with the key "${primaryKey}".`);
+            if (utils.isExactKeyMatch(primaryKey, foundKey)) {
+                utils.info(`Cache hit occurred on the "${Inputs.PrimaryKey}".`);
+            }
 
-                const token = core.getInput(Inputs.Token, { required: true });
-                const octokit = getOctokit(token);
+            if (inputs.purge) {
+                if (inputs.purgeOverwrite == "always") {
+                    await purgeCacheByKey(primaryKey);
+                }
 
-                octokit.rest.actions.deleteActionsCacheByKey({
-                    per_page: 100,
-                    owner: github.context.repo.owner,
-                    repo: github.context.repo.repo,
-                    key: primaryKey,
-                    ref: github.context.ref
+                await purgeCachesByTime({
+                    primaryKey,
+                    time,
+                    keys: [primaryKey]
                 });
-            } else {
-                utils.info(
-                    `The cache with the key "${primaryKey}" won't be purged. Not saving a new cache.`
-                );
-
-                await purgeCaches({ key: primaryKey, lookupOnly: false, time });
-
-                return;
             }
         }
 
-        await collectGarbage();
+        // Save a cache using the primary key
+        {
+            const foundKey = await utils.getCacheKey({
+                primaryKey,
+                restoreKeys: [],
+                lookupOnly: true
+            });
 
-        utils.info(`Saving a new cache with the key "${primaryKey}".`);
+            if (!foundKey) {
+                await collectGarbage();
 
-        cacheId = await cache.saveCache(cachePaths, primaryKey, {
-            uploadChunkSize: utils.getInputAsInt(Inputs.UploadChunkSize)
-        });
+                utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
-        if (cacheId != -1) {
-            utils.info(`Cache saved with the key "${primaryKey}".`);
+                await cache.saveCache(inputs.paths, primaryKey, {
+                    uploadChunkSize: inputs.uploadChunkSize
+                });
 
-            await purgeCaches({ key: primaryKey, lookupOnly: false, time });
+                utils.info(`Cache saved with the key "${primaryKey}".`);
+            }
+        }
+
+        // Purge other caches
+        // This runs last so that in case of cache saving errors
+        //  the action can be re-run with other caches
+        if (inputs.purge) {
+            await purgeCachesByTime({
+                primaryKey,
+                time,
+                keys: inputs.purgeKeys
+            });
         }
     } catch (error: unknown) {
         core.setFailed((error as Error).message);
