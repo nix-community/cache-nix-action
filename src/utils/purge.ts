@@ -1,10 +1,13 @@
 import * as github from "@actions/github";
 
+import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 
-export async function purgeCacheByKey(key: string) {
+export async function purgeCacheByKey(key: string, message?: string) {
     try {
+        utils.info(`Purging the cache with the key "${key}" ${message}.`);
+
         await utils.octokit.rest.actions.deleteActionsCacheByKey({
             per_page: 100,
             owner: github.context.repo.owner,
@@ -15,7 +18,7 @@ export async function purgeCacheByKey(key: string) {
     } catch (error) {
         utils.info(
             `
-            Failed to delete the cache with the key "${key}".
+            Failed to delete the cache.
             
             ${error}
             `
@@ -23,36 +26,59 @@ export async function purgeCacheByKey(key: string) {
     }
 }
 
+export const filterCachesByTime = ({
+    caches,
+    doUseLastAccessedTime,
+    maxDate
+}: {
+    caches: utils.Cache[];
+    doUseLastAccessedTime: boolean;
+    maxDate: Date;
+}) =>
+    caches.filter(cache => {
+        const at = doUseLastAccessedTime
+            ? cache.last_accessed_at
+            : cache.created_at;
+        if (at !== undefined && cache.key !== undefined) {
+            const atDate = new Date(at);
+            return atDate < maxDate;
+        } else return false;
+    });
+
 async function purgeByTime({
+    primaryKey,
     doUseLastAccessedTime,
     keys,
-    lookupOnly,
     time
 }: {
+    primaryKey: string;
     doUseLastAccessedTime: boolean;
     keys: string[];
-    lookupOnly: boolean;
     time: number;
-}): Promise<utils.Cache[]> {
+}): Promise<void> {
     const verb = doUseLastAccessedTime ? "last accessed" : "created";
 
     const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
 
     utils.info(
         `
-        ${
-            lookupOnly ? "Searching for" : "Purging"
-        } caches ${verb} before ${maxDate.toISOString()} and having key prefixes:
+        Purging caches ${verb} before ${maxDate.toISOString()} and having key prefixes:
         
         ${utils.stringify(keys)}
         `
     );
 
-    const caches = utils.filterCachesByTime({
+    const caches = filterCachesByTime({
         caches: await utils.getCachesByKeys(keys),
         doUseLastAccessedTime,
         maxDate
     });
+
+    if (inputs.purgeOverwrite == "never") {
+        `The cache with the key "${primaryKey}" will be excluded because of "${Inputs.PurgeOverwrite}: never".`;
+
+        caches.filter(x => x.key != primaryKey);
+    }
 
     utils.info(
         `
@@ -62,11 +88,7 @@ async function purgeByTime({
         `
     );
 
-    if (lookupOnly) {
-        return caches;
-    }
-
-    caches.forEach(async cache => {
+    for (const cache of caches) {
         const at = doUseLastAccessedTime
             ? cache.last_accessed_at
             : cache.created_at;
@@ -74,83 +96,39 @@ async function purgeByTime({
             const atDate = new Date(at);
             const atDatePretty = atDate.toISOString();
             if (atDate < maxDate) {
-                utils.info(
-                    `Deleting the cache with the key '${cache.key}' and ${verb} at ${atDatePretty}`
+                await purgeCacheByKey(
+                    cache.key,
+                    ` and ${verb} at ${atDatePretty}`
                 );
-
-                await purgeCacheByKey(cache.key);
             } else {
                 utils.info(
-                    `Skipping the cache with the key '${cache.key}' and ${verb} at ${atDatePretty}`
+                    `Skipping the cache with the key "${cache.key}" and ${verb} at ${atDatePretty}`
                 );
             }
         }
-    });
-
-    return [];
+    }
 }
 
-async function purge({
-    key,
-    lookupOnly,
-    time
+export async function purgeCachesByTime({
+    primaryKey,
+    time,
+    keys
 }: {
-    key: string;
-    lookupOnly: boolean;
+    primaryKey: string;
     time: number;
-}): Promise<utils.Cache[]> {
-    const purgeOverwrite = inputs.purgeOverwrite;
+    keys: string[];
+}): Promise<void> {
+    // TODO https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
+    const purgeKeys = keys.slice().filter(key => key.trim().length > 0);
 
-    // TODO
-    let purgeKeys = inputs.purgeKeys.slice();
-
-    if (purgeOverwrite == "default") {
-        purgeKeys.push(...[key]);
-    }
-
-    purgeKeys = inputs.purgeKeys.filter(key => key.trim().length > 0);
-
-    const results: utils.Cache[] = [];
-
-    if (inputs.purgeAccessedMaxAge) {
-        results.push(
-            ...(await purgeByTime({
-                doUseLastAccessedTime: true,
+    for (const flag of [true, false]) {
+        if (flag ? inputs.purgeLastAccessedMaxAge : inputs.purgeCreatedMaxAge) {
+            await purgeByTime({
+                primaryKey,
+                doUseLastAccessedTime: flag,
                 keys: purgeKeys,
-                lookupOnly,
                 time
-            }))
-        );
+            });
+        }
     }
-
-    if (inputs.purgeCreatedMaxAge) {
-        results.push(
-            ...(await purgeByTime({
-                doUseLastAccessedTime: false,
-                keys: purgeKeys,
-                lookupOnly,
-                time
-            }))
-        );
-    }
-
-    return results;
-}
-
-export async function purgeCaches({
-    key,
-    lookupOnly,
-    time
-}: {
-    key: string;
-    lookupOnly: boolean;
-    time: number;
-}): Promise<utils.Cache[]> {
-    const results: utils.Cache[] = [];
-
-    if (inputs.purge) {
-        results.push(...(await purge({ key, lookupOnly, time })));
-    }
-
-    return results;
 }
