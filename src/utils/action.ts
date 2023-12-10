@@ -24,7 +24,7 @@ export function isExactKeyMatch(key: string, cacheKey?: string): boolean {
 
 export function logWarning(message: string): void {
     const warningPrefix = "[warning]";
-    core.info(`${warningPrefix}${message}`);
+    core.warning(`${warningPrefix} ${message}`);
 }
 
 export function logError(message: string): void {
@@ -33,7 +33,7 @@ export function logError(message: string): void {
 }
 
 // Cache token authorized for all events that are tied to a ref
-// See GitHub Context https://help.github.com/actions/automating-your-workflow-with-github-actions/contexts-and-expression-syntax-for-github-actions#github-context
+// See GitHub Context https://docs.github.com/en/actions/learn-github-actions/contexts
 export function isValidEvent(): boolean {
     return RefKey in process.env && Boolean(process.env[RefKey]);
 }
@@ -74,15 +74,18 @@ export function isCacheFeatureAvailable(): boolean {
     }
 
     if (isGhes()) {
-        logWarning(
+        logError(
             `Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
             Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`
         );
         return false;
     }
 
-    logWarning(
-        "An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions."
+    logError(
+        `
+        Actions cache service is unavailable.
+        Please check https://www.githubstatus.com/ for any ongoing issue in Actions.
+        `
     );
     return false;
 }
@@ -116,6 +119,8 @@ export interface Cache {
     size_in_bytes?: number | undefined;
 }
 
+export const octokit = github.getOctokit(inputs.token);
+
 export async function getCachesByKeys(keys: string[]) {
     const caches: Cache[] = [];
 
@@ -143,27 +148,8 @@ export async function getCachesByKeys(keys: string[]) {
     return caches;
 }
 
-export const filterCachesByTime = ({
-    caches,
-    doUseLastAccessedTime,
-    maxDate
-}: {
-    caches: Cache[];
-    doUseLastAccessedTime: boolean;
-    maxDate: Date;
-}) =>
-    caches.filter(cache => {
-        const at = doUseLastAccessedTime
-            ? cache.last_accessed_at
-            : cache.created_at;
-        if (at !== undefined && cache.key !== undefined) {
-            const atDate = new Date(at);
-            return atDate < maxDate;
-        } else return false;
-    });
-
 export const mkMessageWrongValue = (input: string, value: string) =>
-    `Wrong value for the input '${input}': ${value}`;
+    `Wrong value for the input "${input}": ${value}`;
 
 export function getMaxDate({
     doUseLastAccessedTime,
@@ -173,7 +159,7 @@ export function getMaxDate({
     time: number;
 }) {
     const inputMaxAge = doUseLastAccessedTime
-        ? Inputs.PurgeAccessedMaxAge
+        ? Inputs.PurgeLastAccessedMaxAge
         : Inputs.PurgeCreatedMaxAge;
 
     const maxAge = core.getInput(inputMaxAge, { required: false });
@@ -189,10 +175,10 @@ export function getMaxDate({
 
 export const stringify = (value: any) => JSON.stringify(value, null, 2);
 
-export function info(message: string) {
-    core.info(dedent.withOptions({})(message));
-}
+const myDedent = dedent.withOptions({});
 
-export const octokit = github.getOctokit(inputs.token);
+export const info = (message: string) => core.info(myDedent(message));
+
+export const warning = (message: string) => core.warning(myDedent(message));
 
 export const isLinux = process.platform === "linux";
