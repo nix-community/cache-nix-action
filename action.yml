@@ -2,12 +2,40 @@ name: 'Cache Nix store'
 description: 'Restore and save Nix store using GitHub Actions cache to speed up workflows.'
 author: 'GitHub'
 inputs:
-  key:
+  primary-key:
     description: |
       - When non-empty string, the action uses this key for restoring and saving a cache.
       - Otherwise, the action fails.
     required: true
-  
+
+  restore-first-match-keys:
+    description: |
+      - When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the `primary-key`, the action searches for the first prefix for which there exists a cache with a matching key and tries to restore that cache.
+      - Otherwise, this input has no effect.
+    default: ''
+  restore-all-matches-keys:
+    description: |
+      - When a newline-separated non-empty list of non-empty key prefixes, the action tries to restore all caches whose keys match these prefixes.
+      - Otherwise, this input has no effect.
+    default: ''
+
+  skip-restore-on-primary-key-hit:
+    description: |
+      - Can have an effect only when `first-match-keys` has no effect.
+      - When `true`, if there is a hit on the `primary-key`, the action doesn't restore caches.
+      - Otherwise, this input has no effect.
+    default: 'false'
+
+  fail-on:
+    description: |
+      - Input form: `<key type>.<result>`.
+      - `<key type>` options: `primary`, `first-match`.
+      - `<result>` options: `miss`, `not-restored`.
+      - When the input satisfies the input form, the action fails when the event described in the input happens.
+      - Example:
+        - Input: `primary.not-restored`.
+        - Event: a cache could not be restored via the `primary-key`.
+
   paths:
     description: |
       - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
@@ -16,27 +44,16 @@ inputs:
   paths-macos:
     description: |
       - Overrides `paths`.
-      - Can have effect only on a `macOS` runner.
+      - Can have an effect only on a `macOS` runner.
       - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
       - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
     default: ''
   paths-linux:
     description: |
       - Overrides `paths`.
-      - Can have effect only on a `Linux` runner.
+      - Can have an effect only on a `Linux` runner.
       - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
       - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
-    default: ''
-
-  restore-first-match-keys:
-    description: |
-      - When a newline-separated non-empty list of non-empty key prefixes, if no cache hit occurred for the primary `key`, the action searches for the first prefix for which there exists a cache with a matching key and tries to restore that cache.
-      - Otherwise, this input has no effect.
-    default: ''
-  restore-all-matches-keys:
-    description: |
-      - When a newline-separated non-empty list of non-empty key prefixes, the action tries to restore all caches whose keys match these prefixes.
-      - Otherwise, this input has no effect.
     default: ''
 
   gc-max-store-size:
@@ -47,45 +64,45 @@ inputs:
   gc-max-store-size-macos:
     description: |
       - Overrides 'gc-max-store-size'.
-      - Can have effect only on a `macOS` runner.
+      - Can have an effect only on a `macOS` runner.
       - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
       - Otherwise, this input has no effect.
     default: ''
   gc-max-store-size-linux:
     description: |
       - Overrides 'gc-max-store-size'.
-      - Can have effect only on a `Linux` runner.
+      - Can have an effect only on a `Linux` runner.
       - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
       - Otherwise, this input has no effect.
     default: ''
   
   purge:
     description: |
-      - When `true`, purges (possibly zero) old caches.
+      - When `true`, the action purges (possibly zero) old caches.
       - Otherwise, this input has no effect.
     default: 'false'
   purge-overwrite:
     description: |
-      - Can have effect only when `purge` has effect.
-      - When `always`, the action always purges old cache(s) with the primary `key` before saving a new cache with the primary `key`.
-      - When `never`, the action never purges old cache(s) with the primary `key` and never saves a new cache with the primary `key`.
-      - Otherwise, the action purges old caches using purging criteria before saving a new cache with the primary `key`.
+      - Can have an effect only when `purge` has effect.
+      - When `always`, the action always purges old cache(s) with the `primary-key` before saving a new cache with the `primary-key`.
+      - When `never`, the action never purges old cache(s) with the `primary-key` and never saves a new cache with the `primary-key`.
+      - Otherwise, the action purges old caches using purging criteria before saving a new cache with the `primary-key`.
     default: ''
   purge-keys:
     description: |
-      - Can have effect only when `purge` has effect.
+      - Can have an effect only when `purge` has effect.
       - When a newline-separated non-empty list of non-empty cache key prefixes, the action collects for purging all cache keys that match these prefixes.
       - Otherwise, this input has no effect.
     default: ''
   purge-last-accessed-max-age:
     description: |
-      - Can have effect only when `purge-keys` has effect.
+      - Can have an effect only when `purge-keys` has effect.
       - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
     default: ''
   purge-created-max-age:
     description: |
-      - Can have effect only when `purge-keys` has effect.
+      - Can have an effect only when `purge-keys` has effect.
       - When a number, the action purges caches created more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
     default: ''
@@ -96,26 +113,14 @@ inputs:
     # 32MB
     default: '33554432'
 
-  fail-on-cache-miss:
-    description: |
-      - When `true`, the action fails if a cache entry is found neither via the primary `key` nor via the `restore-first-match-keys`.
-      - Otherwise, this input has no effect.
-    default: 'false'
-
-  lookup-only-on-hit-key:
-    description: |
-      - When `true`, if a cache with the primary `key` exists, the action skips Restore and Save phases.
-      - Otherwise, the action runs Restore and Save phases.
-    default: 'false'
-
   token:
     description: The action uses it to communicate with GitHub API.
     default: ${{ github.token }}
 outputs:
-  key:
+  primary-key:
     description: |
       - A string.
-      - The primary `key`.
+      - The `primary-key`.
   
   hit:
     description: |
@@ -125,7 +130,7 @@ outputs:
   hit-key:
     description: |
       - A boolean value.
-      - `true` when a cache was found via the primary `key`.
+      - `true` when a cache was found via the `primary-key`.
       - `false` otherwise.
   hit-first-match:
     description: |
@@ -136,7 +141,7 @@ outputs:
   restored-key:
     description: |
       - A string.
-      - The key of a cache restored via the primary `key` or via the `restore-first-match-keys`.
+      - The key of a cache restored via the `primary-key` or via the `restore-first-match-keys`.
       - An empty string otherwise.
   
   restored-keys:
