@@ -27,7 +27,7 @@ let
   q = txt: "`${txt}`";
   whenListOf = "When a newline-separated non-empty list of non-empty";
   pathsDefault = "[`/nix`, `~/.cache/nix`, `~root/.cache/nix`]";
-  pathsWhen = ''${whenListOf} path regex expressions, the action appends it to ${pathsDefault} and uses the resulting list for ${specific.actions} caches.'';
+  pathsWhen = ''${whenListOf} path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to ${pathsDefault} and uses the resulting list for ${specific.actions} caches.'';
   pathsOtherwise = ''Otherwise, the action uses ${pathsDefault} for ${specific.actions} caches.'';
   effectOnlyOn = platform: ''Can have an effect only when on a ${q platform} runner.'';
   effectOnlyOnLinux = effectOnlyOn "Linux";
