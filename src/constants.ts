@@ -1,12 +1,15 @@
 export enum Inputs {
-    Key = "key", // Input for cache, restore, save action
+    PrimaryKey = "primary-key", // Input for cache, restore, save action
+    RestoreFirstMatchKeyPrefixes = "restore-first-match-key-prefixes", // Input for cache, restore actions
+    RestoreAllMatchesKeyPrefixes = "restore-all-matches-key-prefixes", // Input for cache, restore actions
+
+    SkipRestoreOnPrimaryKeyHit = "skip-restore-on-primary-key-hit", // Input for cache, restore, actions
+
+    FailOn = "fail-on", // Input for cache, restore actions
 
     Paths = "paths", // Input for cache, save, restore actions
     PathsMacos = "paths-macos", // Input for cache, save, restore actions
     PathsLinux = "paths-linux", // Input for cache, save, restore actions
-
-    RestoreFirstMatchKeys = "restore-first-match-keys", // Input for cache, restore actions
-    RestoreAllMatchesKeys = "restore-all-matches-keys", // Input for cache, restore actions
 
     GCMaxStoreSize = "gc-max-store-size",
     GCMaxStoreSizeMacos = "gc-max-store-size-macos", // Input for cache, save actions
@@ -19,8 +22,6 @@ export enum Inputs {
     PurgeCreatedMaxAge = "purge-created-max-age", // Input for cache, save actions
 
     UploadChunkSize = "upload-chunk-size", // Input for cache, save actions
-    FailOnCacheMiss = "fail-on-cache-miss", // Input for cache, restore actions
-    LookupOnlyOnHitKey = "lookup-only-on-hit-key", // Input for cache, restore, save actions
     Token = "token" // Input for cache, save actions
 }
 
