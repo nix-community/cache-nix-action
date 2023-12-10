@@ -39,7 +39,7 @@ export const filterCachesByTime = ({
         const at = doUseLastAccessedTime
             ? cache.last_accessed_at
             : cache.created_at;
-        if (at !== undefined && cache.key !== undefined) {
+        if (at && cache.key) {
             const atDate = new Date(at);
             return atDate < maxDate;
         } else return false;
@@ -106,17 +106,17 @@ async function purgeByTime({
         const at = doUseLastAccessedTime
             ? cache.last_accessed_at
             : cache.created_at;
-        if (at !== undefined && cache.key !== undefined) {
+        if (at && cache.key) {
             const atDate = new Date(at);
             const atDatePretty = atDate.toISOString();
-            const message = `the cache ${verb} at ${atDatePretty} and having the key "${cache.key}".`;
-            if (atDate < maxDate) {
-                await purgeCacheByKey(cache.key, `Purging ${message}`);
-            } else {
-                utils.info(`Skipping ${message}`);
-            }
+            await purgeCacheByKey(
+                cache.key,
+                `Purging the cache ${verb} at ${atDatePretty} and having the key "${cache.key}".`
+            );
         }
     }
+
+    utils.info(`Finished purging cache(s).`);
 }
 
 export async function purgeCachesByTime({

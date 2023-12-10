@@ -45,7 +45,7 @@ async function restoreImpl(
         const errorNotRestored = errorNot("could be restored");
 
         {
-            const primaryKey = inputs.key;
+            const primaryKey = inputs.primaryKey;
             stateProvider.setState(State.CachePrimaryKey, primaryKey);
 
             utils.info(`Searching for a cache with the key "${primaryKey}".`);

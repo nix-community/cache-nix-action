@@ -5,6 +5,7 @@ import dedent from "dedent";
 
 import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
+import * as utils from "../utils/action";
 
 export function isGhes(): boolean {
     const ghUrl = new URL(
@@ -141,7 +142,9 @@ export async function getCachesByKeys(keys: string[]) {
                 break;
             }
 
-            caches.push(...cachesRequest.actions_caches);
+            if (utils.isExactKeyMatch(inputs.primaryKey, key)) {
+                caches.push(...cachesRequest.actions_caches);
+            }
         }
     }
 

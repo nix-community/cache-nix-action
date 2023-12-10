@@ -25,5 +25,7 @@ export async function collectGarbage() {
                 fi
                 `
         ]);
+
+        utils.info("Finished collecting garbage.");
     }
 }

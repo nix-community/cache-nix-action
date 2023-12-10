@@ -32,13 +32,29 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         // If restore has stored a primary key in state, reuse that
         // Else re-evaluate from inputs
         const primaryKey =
-            stateProvider.getState(State.CachePrimaryKey) || inputs.key;
+            stateProvider.getState(State.CachePrimaryKey) || inputs.primaryKey;
 
-        // Purge caches using the primary key
+        if (inputs.purge) {
+            if (inputs.purgeOverwrite == "always") {
+                await purgeCacheByKey(
+                    primaryKey,
+                    `Purging the cache with the key "${primaryKey}" because of "${Inputs.PurgeOverwrite}: always".`
+                );
+            } else {
+                await purgeCachesByTime({
+                    primaryKey,
+                    time,
+                    prefixes: []
+                });
+            }
+        }
+
+        // Save a cache using the primary key
         {
             utils.info(
                 `Searching for a cache using the primary key "${primaryKey}".`
             );
+
             const foundKey = await utils.getCacheKey({
                 primaryKey,
                 restoreKeys: [],
@@ -46,43 +62,23 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             });
 
             if (utils.isExactKeyMatch(primaryKey, foundKey)) {
-                utils.info(`Cache hit occurred on the "${Inputs.PrimaryKey}".`);
-            }
-
-            if (inputs.purge) {
-                if (inputs.purgeOverwrite == "always") {
-                    await purgeCacheByKey(
-                        primaryKey,
-                        `Purging the cache with the key "${primaryKey}" because of "${Inputs.PurgeOverwrite}: always".`
-                    );
-                } else {
-                    await purgeCachesByTime({
-                        primaryKey,
-                        time,
-                        prefixes: []
-                    });
-                }
-            }
-        }
-
-        // Save a cache using the primary key
-        {
-            const foundKey = await utils.getCacheKey({
-                primaryKey,
-                restoreKeys: [],
-                lookupOnly: true
-            });
-
-            if (!foundKey) {
+                utils.info(
+                    `
+                    Cache hit occurred on the "${Inputs.PrimaryKey}".
+                    Not saving a new cache.
+                    `
+                );
+            } else {
                 await collectGarbage();
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
+                // can throw
                 await cache.saveCache(inputs.paths, primaryKey, {
                     uploadChunkSize: inputs.uploadChunkSize
                 });
 
-                utils.info(`Cache saved with the key "${primaryKey}".`);
+                utils.info(`Saved a new cache.`);
             }
         }
 

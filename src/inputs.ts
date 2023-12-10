@@ -3,7 +3,7 @@ import * as core from "@actions/core";
 import { Inputs } from "./constants";
 import * as utils from "./utils/action";
 
-export const key = core.getInput(Inputs.PrimaryKey, { required: true });
+export const primaryKey = core.getInput(Inputs.PrimaryKey, { required: true });
 
 export const prefixesFirstMatch = utils.getInputAsArray(
     Inputs.PrefixesFirstMatch
