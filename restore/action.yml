@@ -39,24 +39,33 @@ inputs:
         - Input: `primary.not-restored`.
         - Event: a cache could not be restored via the `primary-key`.
 
+  nix:
+    description: |
+      - When `true`, the action can do Nix-specific things.
+      - Otherwise, the action doesn't do them.
+    default: "true"
+
   paths:
     description: |
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to `["/nix", "~/.cache/nix", "~root/.cache/nix"]` and uses the resulting list for restoring caches.
-      - Otherwise, the action uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` for restoring caches.
+      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
+      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for restoring caches.
+      - Otherwise, the action uses default paths for restoring caches.
     default: ""
   paths-macos:
     description: |
       - Overrides `paths`.
       - Can have an effect only when on a `macOS` runner.
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to `["/nix", "~/.cache/nix", "~root/.cache/nix"]` and uses the resulting list for restoring caches.
-      - Otherwise, the action uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` for restoring caches.
+      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
+      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for restoring caches.
+      - Otherwise, the action uses default paths for restoring caches.
     default: ""
   paths-linux:
     description: |
       - Overrides `paths`.
       - Can have an effect only when on a `Linux` runner.
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to `["/nix", "~/.cache/nix", "~root/.cache/nix"]` and uses the resulting list for restoring caches.
-      - Otherwise, the action uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` for restoring caches.
+      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
+      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for restoring caches.
+      - Otherwise, the action uses default paths for restoring caches.
     default: ""
 
   

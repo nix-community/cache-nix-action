@@ -5,10 +5,10 @@ let
       description = "Restore and save";
       actions = "restoring and saving";
       main = "dist/restore/index.js";
-      post = 
-      ''
-      post: "dist/save/index.js"
-        post-if: success()'';
+      post =
+        ''
+          post: "dist/save/index.js"
+            post-if: success()'';
     };
     save = {
       description = "Save";
@@ -27,17 +27,25 @@ let
   q = txt: "`${txt}`";
   whenListOf = "When a newline-separated non-empty list of non-empty";
   pathsDefault = ''`["/nix", "~/.cache/nix", "~root/.cache/nix"]`'';
-  pathsWhen = ''${whenListOf} path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to ${pathsDefault} and uses the resulting list for ${specific.actions} caches.'';
-  pathsOtherwise = ''Otherwise, the action uses ${pathsDefault} for ${specific.actions} caches.'';
+  nixTrue = q "nix: true";
+  
+  pathsDefaultWhenNix = ''When ${nixTrue}, uses ${pathsDefault} as default paths. Otherwise, uses an empty list as default paths.'';
+  pathsWhen = ''${whenListOf} path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for ${specific.actions} caches.'';
+  pathsOtherwise = ''Otherwise, the action uses default paths for ${specific.actions} caches.'';
+  
   effectOnlyOn = platform: ''Can have an effect only when on a ${q platform} runner.'';
   effectOnlyOnLinux = effectOnlyOn "Linux";
   effectOnlyOnMacOS = effectOnlyOn "macOS";
-  effectWhen = input: "Can have an effect only when ${q input} has effect.";
+  effectOnlyWhenHasEffect = input: "Can have an effect only when ${q input} has effect.";
+  effectOnlyWhenNixEnabled = "Can have an effect only when ${q "nix: true"}.";
+  
+  noEffectOtherwise = ''Otherwise, this input has no effect.'';
+  
   gcWhen = ''When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.'';
-  inputNoEffect = ''Otherwise, this input has no effect.'';
+  
   overrides = input: "Overrides ${q input}.";
-  paths = "paths";
 
+  paths = "paths";
   gc-max-store-size = "gc-max-store-size";
   primary-key = "primary-key";
   restore-prefixes-first-match = "restore-prefixes-first-match";
@@ -91,8 +99,15 @@ in
         else ""
       }
 
+      nix:
+        description: |
+          - When `true`, the action can do Nix-specific things.
+          - Otherwise, the action doesn't do them.
+        default: "true"
+
       ${paths}:
         description: |
+          - ${pathsDefaultWhenNix}
           - ${pathsWhen}
           - ${pathsOtherwise}
         default: ""
@@ -100,6 +115,7 @@ in
         description: |
           - ${overrides paths}
           - ${effectOnlyOnMacOS}
+          - ${pathsDefaultWhenNix}
           - ${pathsWhen}
           - ${pathsOtherwise}
         default: ""
@@ -107,62 +123,66 @@ in
         description: |
           - ${overrides paths}
           - ${effectOnlyOnLinux}
+          - ${pathsDefaultWhenNix}
           - ${pathsWhen}
           - ${pathsOtherwise}
         default: ""
-    
+
       ${
         if target == "cache" || target == "save" then 
   ''
     ${gc-max-store-size}:
         description: |
+          - ${effectOnlyWhenNixEnabled}
           - ${gcWhen}
-          - ${inputNoEffect}
+          - ${noEffectOtherwise}
         default: ""
       ${gc-max-store-size}-macos:
         description: |
+          - ${effectOnlyWhenNixEnabled}
           - ${overrides gc-max-store-size}
           - ${effectOnlyOnMacOS}
           - ${gcWhen}
-          - ${inputNoEffect}
+          - ${noEffectOtherwise}
         default: ""
       ${gc-max-store-size}-linux:
         description: |
+          - ${effectOnlyWhenNixEnabled}
           - ${overrides gc-max-store-size}
           - ${effectOnlyOnLinux}
           - ${gcWhen}
-          - ${inputNoEffect}
+          - ${noEffectOtherwise}
         default: ""
     
       purge:
         description: |
           - When `true`, the action purges (possibly zero) old caches.
-          - ${inputNoEffect}
+          - ${noEffectOtherwise}
         default: "false"
       purge-overwrite:
         description: |
-          - ${effectWhen "purge"}
+          - ${effectOnlyWhenHasEffect "purge"}
           - When `always`, the action always purges old cache(s) with the ${q primary-key} and saves a new cache with the ${q primary-key}.
           - When `never`, the action never purges old cache(s) with the ${q primary-key} and saves a new cache when there's a miss on the ${q primary-key}.
           - Otherwise, the action purges old caches using purging criteria and saves a new cache when there's a miss on the ${q primary-key}.
         default: ""
       purge-prefixes:
         description: |
-          - ${effectWhen "purge"}
+          - ${effectOnlyWhenHasEffect "purge"}
           - ${whenListOf} cache key prefixes, the action collects for purging all cache keys that match these prefixes.
-          - ${inputNoEffect}
+          - ${noEffectOtherwise}
         default: ""
       purge-last-accessed:
         description: |
-          - ${effectWhen "purge-prefixes"}
+          - ${effectOnlyWhenHasEffect "purge-prefixes"}
           - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the Save phase.
-          - ${inputNoEffect}
+          - ${noEffectOtherwise}
         default: ""
       purge-created:
         description: |
-          - ${effectWhen "purge-prefixes"}
+          - ${effectOnlyWhenHasEffect "purge-prefixes"}
           - When a number, the action purges caches created more than this number of seconds ago relative to the start of the Save phase.
-          - ${inputNoEffect}
+          - ${noEffectOtherwise}
         default: ""
     
       upload-chunk-size:

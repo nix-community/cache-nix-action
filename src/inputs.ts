@@ -41,7 +41,11 @@ export const failOn: FailOn | undefined = (() => {
     }
 })();
 
-export const paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"].concat(
+export const nix = utils.getInputAsBool(Inputs.Nix);
+
+export const paths = (
+    nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []
+).concat(
     (() => {
         const paths = utils.getInputAsArray(Inputs.Paths);
         const pathsPlatform = utils.getInputAsArray(
@@ -53,13 +57,19 @@ export const paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"].concat(
     })()
 );
 
-export const gcMaxStoreSize = (() => {
-    const gcMaxStoreSize = utils.getInputAsInt(Inputs.GCMaxStoreSize);
-    const gcMaxStoreSizePlatform = utils.getInputAsInt(
-        utils.isLinux ? Inputs.GCMaxStoreSizeLinux : Inputs.GCMaxStoreSizeMacos
-    );
-    return gcMaxStoreSizePlatform ? gcMaxStoreSizePlatform : gcMaxStoreSize;
-})();
+export const gcMaxStoreSize = nix
+    ? (() => {
+          const gcMaxStoreSize = utils.getInputAsInt(Inputs.GCMaxStoreSize);
+          const gcMaxStoreSizePlatform = utils.getInputAsInt(
+              utils.isLinux
+                  ? Inputs.GCMaxStoreSizeLinux
+                  : Inputs.GCMaxStoreSizeMacos
+          );
+          return gcMaxStoreSizePlatform
+              ? gcMaxStoreSizePlatform
+              : gcMaxStoreSize;
+      })()
+    : undefined;
 
 export const purge = utils.getInputAsBool(Inputs.Purge);
 

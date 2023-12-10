@@ -8,6 +8,8 @@ export enum Inputs {
 
     FailOn = "fail-on", // Input for cache, restore actions
 
+    Nix = "nix",
+
     Paths = "paths", // Input for cache, save, restore actions
     PathsMacos = "paths-macos", // Input for cache, save, restore actions
     PathsLinux = "paths-linux", // Input for cache, save, restore actions

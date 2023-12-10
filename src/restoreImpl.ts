@@ -89,7 +89,9 @@ async function restoreImpl(
         ) {
             utils.info(
                 `
-                Searching for a cache using the "${Inputs.RestorePrefixesFirstMatch}":
+                Searching for a cache using the "${
+                    Inputs.RestorePrefixesFirstMatch
+                }":
                 
                 ${JSON.stringify(inputs.restorePrefixesFirstMatch)}
                 `
