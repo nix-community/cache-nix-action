@@ -29,65 +29,107 @@ async function restoreImpl(
             );
         }
 
-        const restoredKeys = await restoreCaches();
-
-        const primaryKey = inputs.key;
-        stateProvider.setState(State.CachePrimaryKey, primaryKey);
-
-        utils.info(`Searching for a cache with the key "${primaryKey}".`);
-
         let restoredKey: string | undefined;
+        let lookedUpKey: string | undefined;
+        const restoredKeys: string[] = [];
+
+        const errorNot = (message: string) =>
+            new Error(
+                `
+                No cache with the given key ${message}.
+                Exiting as the input "${Inputs.FailOn}" is set.
+                `
+            );
+
+        const errorNotFound = errorNot("was found");
+        const errorNotRestored = errorNot("could be restored");
 
         {
-            const foundKey = await utils.getCacheKey({
+            const primaryKey = inputs.key;
+            stateProvider.setState(State.CachePrimaryKey, primaryKey);
+            utils.info(`Searching for a cache with the key "${primaryKey}".`);
+            const lookedUpKey = await utils.getCacheKey({
                 primaryKey,
                 restoreKeys: [],
                 lookupOnly: true
             });
-            if (foundKey) {
-                restoredKey = await restoreWithKey(primaryKey);
-                if (restoredKey) {
-                    restoredKeys.push(...[restoredKey]);
-                    core.setOutput(Outputs.HitKey, true);
+
+            if (
+                !lookedUpKey &&
+                inputs.failOn?.keyType == "primary" &&
+                inputs.failOn?.result == "miss"
+            ) {
+                throw errorNotFound;
+            }
+
+            if (utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
+                utils.info(
+                    `Found a cache with the given "${Inputs.PrimaryKey}"'.`
+                );
+
+                if (!inputs.skipRestoreOnPrimaryKeyHit) {
+                    restoredKey = await restoreWithKey(primaryKey);
+                    if (restoredKey) {
+                        restoredKeys.push(...[restoredKey]);
+                        core.setOutput(Outputs.HitKey, true);
+                    } else if (
+                        inputs.failOn?.keyType == "primary" &&
+                        inputs.failOn?.result == "not-restored"
+                    ) {
+                        throw errorNotRestored;
+                    }
                 }
             }
         }
 
-        if (!restoredKey) {
+        if (
+            !restoredKey &&
+            !(inputs.skipRestoreOnPrimaryKeyHit && lookedUpKey)
+        ) {
             utils.info(
                 `
-                No cache with the given primary key found.
-                Searching for a cache using restore key prefixes:
+                Searching for a cache using the "${
+                    Inputs.RestoreFirstMatchKeyPrefixes
+                }":
                 
-                ${JSON.stringify(inputs.restoreFirstMatchKeys)}
+                ${JSON.stringify(inputs.restoreFirstMatchKeyPrefixes)}
                 `
             );
 
             const foundKey = await utils.getCacheKey({
                 primaryKey: "",
-                restoreKeys: inputs.restoreFirstMatchKeys,
+                restoreKeys: inputs.restoreFirstMatchKeyPrefixes,
                 lookupOnly: true
             });
 
+            if (
+                !foundKey &&
+                inputs.failOn?.keyType == "first-match" &&
+                inputs.failOn.result == "miss"
+            ) {
+                throw errorNotFound;
+            }
+
             if (foundKey) {
+                utils.info(
+                    `Found a cache using the "${Inputs.RestoreFirstMatchKeyPrefixes}".`
+                );
                 restoredKey = await restoreWithKey(foundKey);
                 if (restoredKey) {
                     restoredKeys.push(...[restoredKey]);
                     core.setOutput(Outputs.HitFirstMatch, true);
+                } else if (
+                    inputs.failOn?.keyType == "first-match" &&
+                    inputs.failOn?.result == "not-restored"
+                ) {
+                    throw errorNotRestored;
                 }
             }
         }
 
-        if (!restoredKey) {
-            if (inputs.failOnCacheMiss) {
-                throw new Error(`Exiting as ${Inputs.FailOnCacheMiss} is set.`);
-            }
-            utils.warning(`Cache not found.`);
+        restoredKeys.push(...(await restoreCaches()));
 
-            core.setOutput(Outputs.RestoredKeys, restoredKeys);
-
-            return;
-        }
+        restoredKey ||= "";
 
         // Store the matched cache key in states
         stateProvider.setState(State.CacheRestoredKey, restoredKey);
