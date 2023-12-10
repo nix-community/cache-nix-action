@@ -6,7 +6,7 @@ import * as utils from "./action";
 
 export async function purgeCacheByKey(key: string, message?: string) {
     try {
-        utils.info(`Purging the cache with the key "${key}" ${message}.`);
+        utils.info(message || "");
 
         await utils.octokit.rest.actions.deleteActionsCacheByKey({
             per_page: 100,
@@ -48,36 +48,50 @@ export const filterCachesByTime = ({
 async function purgeByTime({
     primaryKey,
     doUseLastAccessedTime,
-    keys,
+    prefixes,
     time
 }: {
     primaryKey: string;
     doUseLastAccessedTime: boolean;
-    keys: string[];
+    prefixes: string[];
     time: number;
 }): Promise<void> {
     const verb = doUseLastAccessedTime ? "last accessed" : "created";
 
     const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
 
-    utils.info(
-        `
-        Purging caches ${verb} before ${maxDate.toISOString()} and having key prefixes:
-        
-        ${utils.stringify(keys)}
-        `
-    );
+    let caches: utils.Cache[] = [];
 
-    const caches = filterCachesByTime({
-        caches: await utils.getCachesByKeys(keys),
-        doUseLastAccessedTime,
-        maxDate
-    });
+    if (prefixes.length > 0) {
+        utils.info(
+            `
+            Purging cache(s) ${verb} before ${maxDate.toISOString()} and having key prefixes:
+            
+            ${utils.stringify(prefixes)}
+            `
+        );
+
+        caches = filterCachesByTime({
+            caches: await utils.getCachesByKeys(prefixes),
+            doUseLastAccessedTime,
+            maxDate
+        });
+    } else {
+        utils.info(
+            `Purging cache(s) ${verb} before ${maxDate.toISOString()} and having the key "${primaryKey}".`
+        );
+
+        caches = filterCachesByTime({
+            caches: await utils.getCachesByKeys([primaryKey]),
+            doUseLastAccessedTime,
+            maxDate
+        }).filter(x => utils.isExactKeyMatch(primaryKey, x.key));
+    }
 
     if (inputs.purgeOverwrite == "never") {
-        `The cache with the key "${primaryKey}" will be excluded because of "${Inputs.PurgeOverwrite}: never".`;
+        `The cache with the key "${primaryKey}" will be skipped because of "${Inputs.PurgeOverwrite}: never".`;
 
-        caches.filter(x => x.key != primaryKey);
+        caches.filter(x => !utils.isExactKeyMatch(primaryKey, x.key));
     }
 
     utils.info(
@@ -95,15 +109,11 @@ async function purgeByTime({
         if (at !== undefined && cache.key !== undefined) {
             const atDate = new Date(at);
             const atDatePretty = atDate.toISOString();
+            const message = `the cache ${verb} at ${atDatePretty} and having the key "${cache.key}".`;
             if (atDate < maxDate) {
-                await purgeCacheByKey(
-                    cache.key,
-                    ` and ${verb} at ${atDatePretty}`
-                );
+                await purgeCacheByKey(cache.key, `Purging ${message}`);
             } else {
-                utils.info(
-                    `Skipping the cache with the key "${cache.key}" and ${verb} at ${atDatePretty}`
-                );
+                utils.info(`Skipping ${message}`);
             }
         }
     }
@@ -112,21 +122,20 @@ async function purgeByTime({
 export async function purgeCachesByTime({
     primaryKey,
     time,
-    keys
+    prefixes
 }: {
     primaryKey: string;
     time: number;
-    keys: string[];
+    prefixes: string[];
 }): Promise<void> {
     // TODO https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-    const purgeKeys = keys.slice().filter(key => key.trim().length > 0);
 
     for (const flag of [true, false]) {
-        if (flag ? inputs.purgeLastAccessedMaxAge : inputs.purgeCreatedMaxAge) {
+        if (flag ? inputs.purgeLastAccessed : inputs.purgeCreatedMaxAge) {
             await purgeByTime({
                 primaryKey,
                 doUseLastAccessedTime: flag,
-                keys: purgeKeys,
+                prefixes: prefixes.slice(),
                 time
             });
         }

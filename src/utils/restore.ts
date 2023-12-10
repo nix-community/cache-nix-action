@@ -28,21 +28,19 @@ export async function restoreWithKey(key: string) {
 export async function restoreCaches() {
     const restoredCaches: string[] = [];
 
-    if (inputs.restoreAllMatchesKeyPrefixes.length == 0) {
+    if (inputs.prefixesAllMatches.length == 0) {
         return restoredCaches;
     }
 
     utils.info(
         `
-        Searching for caches using the "${Inputs.RestoreAllMatchesKeyPrefixes}":
+        Searching for caches using the "${Inputs.PrefixesAllMatches}":
         
-        ${utils.stringify(inputs.restoreAllMatchesKeyPrefixes)}
+        ${utils.stringify(inputs.prefixesAllMatches)}
         `
     );
 
-    const caches = await utils.getCachesByKeys(
-        inputs.restoreAllMatchesKeyPrefixes
-    );
+    const caches = await utils.getCachesByKeys(inputs.prefixesAllMatches);
 
     utils.info(
         `

@@ -11,7 +11,7 @@ async function restoreImpl(
 ): Promise<string | undefined> {
     try {
         core.setOutput(Outputs.Hit, false);
-        core.setOutput(Outputs.HitKey, false);
+        core.setOutput(Outputs.HitPrimary, false);
         core.setOutput(Outputs.HitFirstMatch, false);
         core.setOutput(Outputs.RestoredKey, false);
         core.setOutput(Outputs.RestoredKeys, []);
@@ -47,8 +47,9 @@ async function restoreImpl(
         {
             const primaryKey = inputs.key;
             stateProvider.setState(State.CachePrimaryKey, primaryKey);
+
             utils.info(`Searching for a cache with the key "${primaryKey}".`);
-            const lookedUpKey = await utils.getCacheKey({
+            lookedUpKey = await utils.getCacheKey({
                 primaryKey,
                 restoreKeys: [],
                 lookupOnly: true
@@ -62,16 +63,16 @@ async function restoreImpl(
                 throw errorNotFound;
             }
 
-            if (utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
+            if (lookedUpKey && utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
                 utils.info(
-                    `Found a cache with the given "${Inputs.PrimaryKey}"'.`
+                    `Found a cache with the given "${Inputs.PrimaryKey}".`
                 );
+                core.setOutput(Outputs.HitPrimary, true);
 
-                if (!inputs.skipRestoreOnPrimaryKeyHit) {
+                if (!inputs.skipRestoreOnHitPrimaryKey) {
                     restoredKey = await restoreWithKey(primaryKey);
                     if (restoredKey) {
                         restoredKeys.push(...[restoredKey]);
-                        core.setOutput(Outputs.HitKey, true);
                     } else if (
                         inputs.failOn?.keyType == "primary" &&
                         inputs.failOn?.result == "not-restored"
@@ -84,21 +85,19 @@ async function restoreImpl(
 
         if (
             !restoredKey &&
-            !(inputs.skipRestoreOnPrimaryKeyHit && lookedUpKey)
+            !(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)
         ) {
             utils.info(
                 `
-                Searching for a cache using the "${
-                    Inputs.RestoreFirstMatchKeyPrefixes
-                }":
+                Searching for a cache using the "${Inputs.PrefixesFirstMatch}":
                 
-                ${JSON.stringify(inputs.restoreFirstMatchKeyPrefixes)}
+                ${JSON.stringify(inputs.prefixesFirstMatch)}
                 `
             );
 
             const foundKey = await utils.getCacheKey({
                 primaryKey: "",
-                restoreKeys: inputs.restoreFirstMatchKeyPrefixes,
+                restoreKeys: inputs.prefixesFirstMatch,
                 lookupOnly: true
             });
 
@@ -112,12 +111,13 @@ async function restoreImpl(
 
             if (foundKey) {
                 utils.info(
-                    `Found a cache using the "${Inputs.RestoreFirstMatchKeyPrefixes}".`
+                    `Found a cache using the "${Inputs.PrefixesFirstMatch}".`
                 );
+                core.setOutput(Outputs.HitFirstMatch, true);
+
                 restoredKey = await restoreWithKey(foundKey);
                 if (restoredKey) {
                     restoredKeys.push(...[restoredKey]);
-                    core.setOutput(Outputs.HitFirstMatch, true);
                 } else if (
                     inputs.failOn?.keyType == "first-match" &&
                     inputs.failOn?.result == "not-restored"
@@ -127,7 +127,9 @@ async function restoreImpl(
             }
         }
 
-        restoredKeys.push(...(await restoreCaches()));
+        if (!(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)) {
+            restoredKeys.push(...(await restoreCaches()));
+        }
 
         restoredKey ||= "";
 

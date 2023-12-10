@@ -51,14 +51,17 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
             if (inputs.purge) {
                 if (inputs.purgeOverwrite == "always") {
-                    await purgeCacheByKey(primaryKey);
+                    await purgeCacheByKey(
+                        primaryKey,
+                        `Purging the cache with the key "${primaryKey}" because of "${Inputs.PurgeOverwrite}: always".`
+                    );
+                } else {
+                    await purgeCachesByTime({
+                        primaryKey,
+                        time,
+                        prefixes: []
+                    });
                 }
-
-                await purgeCachesByTime({
-                    primaryKey,
-                    time,
-                    keys: [primaryKey]
-                });
             }
         }
 
@@ -90,7 +93,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             await purgeCachesByTime({
                 primaryKey,
                 time,
-                keys: inputs.purgeKeys
+                prefixes: inputs.purgePrefixes
             });
         }
     } catch (error: unknown) {

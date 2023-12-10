@@ -1,9 +1,9 @@
 export enum Inputs {
     PrimaryKey = "primary-key", // Input for cache, restore, save action
-    RestoreFirstMatchKeyPrefixes = "restore-first-match-key-prefixes", // Input for cache, restore actions
-    RestoreAllMatchesKeyPrefixes = "restore-all-matches-key-prefixes", // Input for cache, restore actions
+    PrefixesFirstMatch = "prefixes-first-match", // Input for cache, restore actions
+    PrefixesAllMatches = "prefixes-all-matches", // Input for cache, restore actions
 
-    SkipRestoreOnPrimaryKeyHit = "skip-restore-on-primary-key-hit", // Input for cache, restore, actions
+    SkipRestoreOnHitPrimaryKey = "skip-restore-on-primary-key-hit", // Input for cache, restore, actions
 
     FailOn = "fail-on", // Input for cache, restore actions
 
@@ -17,19 +17,19 @@ export enum Inputs {
 
     Purge = "purge", // Input for cache, save actions
     PurgeOverwrite = "purge-overwrite", // Input for cache, save actions
-    PurgeKeys = "purge-keys", // Input for cache, save actions
-    PurgeLastAccessedMaxAge = "purge-last-accessed-max-age", // Input for cache, save actions
-    PurgeCreatedMaxAge = "purge-created-max-age", // Input for cache, save actions
+    PurgePrefixes = "purge-prefixes", // Input for cache, save actions
+    PurgeLastAccessed = "purge-last-accessed", // Input for cache, save actions
+    PurgeCreated = "purge-created", // Input for cache, save actions
 
     UploadChunkSize = "upload-chunk-size", // Input for cache, save actions
     Token = "token" // Input for cache, save actions
 }
 
 export enum Outputs {
-    Key = "key",
+    PrimaryKey = "primary-key",
 
     Hit = "hit", // Output from cache, restore actions
-    HitKey = "hit-key", // Output from cache, restore actions
+    HitPrimary = "hit-primary", // Output from cache, restore actions
     HitFirstMatch = "hit-first-match", // Output from cache, restore actions
 
     RestoredKey = "restored-key", // Output from cache, restore actions
