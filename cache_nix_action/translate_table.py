@@ -4,8 +4,7 @@ import yaml
 from lxml.etree import tostring, fromstring
 from lxml.builder import E
 import markdown
-import argparse
-import textwrap
+from pathlib import Path
 
 
 def convert_to_table(attrs, is_inputs=True):
@@ -64,36 +63,35 @@ def convert_to_table(attrs, is_inputs=True):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert `action.yaml` to HTML tables."
-    )
+    actions = [
+        ["save/action.yml", False],
+        ["restore/action.yml", True],
+        ["action.yml", True],
+    ]
 
-    parser.add_argument("path", help="path to `action.yaml`")
+    for path, has_outputs in actions:
+        dir = Path(path).parent
+        readme_md = dir / "README.md"
+        with open(path, "r") as action:
+            action_yaml = yaml.safe_load(action.read())
 
-    args = parser.parse_args()
+        with open(readme_md, "r") as readme:
+            readme_lines = readme.readlines()
 
-    result = None
-    with open(args.path, "r") as action:
-        action_yaml = yaml.safe_load(action.read())
+        for i, line in enumerate(readme_lines):
+            for attr, heading, is_inputs in [
+                ["inputs", "Inputs", True],
+                ["outputs", "Outputs", False],
+            ]:
+                if line.find(f"### {heading}") != -1 and not (
+                    heading == "Outputs" and not has_outputs
+                ):
+                    readme_lines[i + 2] = convert_to_table(
+                        action_yaml.get(attr), is_inputs=is_inputs
+                    ) + "\n"
 
-        result = textwrap.dedent(
-            "\n".join(
-                [
-                    f"""
-                    ### {heading}
-                    
-                    {convert_to_table(attrs, is_inputs=is_inputs)}"""
-                    if (attrs := action_yaml.get(attr))
-                    else ""
-                    for attr, heading, is_inputs in [
-                        ["inputs", "Inputs", True],
-                        ["outputs", "Outputs", False],
-                    ]
-                ]
-            )
-        )
-
-    print(result.strip(), end="")
+        with open(readme_md, "w") as readme:
+            readme.writelines(readme_lines)
 
 
 if __name__ == "__main__":

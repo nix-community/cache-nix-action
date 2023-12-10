@@ -20,17 +20,13 @@
             writeCache = writeYAML "cache" "action.yml" (import ./action.nix { target = "cache"; });
             write = {
               runtimeInputs = [ pkgs.poetry ];
-              text =
-                let translate = "poetry run translate_table"; in
-                ''
-                  ${getExe packages.writeSave}
-                  ${getExe packages.writeRestore}
-                  ${getExe packages.writeCache}
+              text = ''
+                ${getExe packages.writeSave}
+                ${getExe packages.writeRestore}
+                ${getExe packages.writeCache}
 
-                  ${translate} action.yml > table.md
-                  ${translate} save/action.yml > save/table.md
-                  ${translate} restore/action.yml > restore/table.md
-                '';
+                poetry run translate_table
+              '';
 
               description = "write action.yml-s and tables for README-s";
             };
