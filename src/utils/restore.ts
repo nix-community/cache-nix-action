@@ -1,3 +1,4 @@
+import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 
@@ -27,19 +28,21 @@ export async function restoreWithKey(key: string) {
 export async function restoreCaches() {
     const restoredCaches: string[] = [];
 
-    if (inputs.restoreAllMatchesKeys.length == 0) {
+    if (inputs.restoreAllMatchesKeyPrefixes.length == 0) {
         return restoredCaches;
     }
 
     utils.info(
         `
-        Restoring cache(s) with key(s):
+        Searching for caches using the "${Inputs.RestoreAllMatchesKeyPrefixes}":
         
-        ${utils.stringify(inputs.restoreAllMatchesKeys)}
+        ${utils.stringify(inputs.restoreAllMatchesKeyPrefixes)}
         `
     );
 
-    const caches = await utils.getCachesByKeys(inputs.restoreAllMatchesKeys);
+    const caches = await utils.getCachesByKeys(
+        inputs.restoreAllMatchesKeyPrefixes
+    );
 
     utils.info(
         `
@@ -49,14 +52,14 @@ export async function restoreCaches() {
         `
     );
 
-    caches.forEach(async cache => {
+    for (const cache of caches) {
         if (cache.key) {
             const cacheKey = await restoreWithKey(cache.key);
             if (cacheKey) {
                 restoredCaches.push(...[cacheKey]);
             }
         }
-    });
+    }
 
     return restoredCaches;
 }
