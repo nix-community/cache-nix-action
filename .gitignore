@@ -98,3 +98,5 @@ typings/
 .direnv
 
 __pycache__
+
+table.md
