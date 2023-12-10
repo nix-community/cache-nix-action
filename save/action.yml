@@ -1,97 +1,102 @@
-name: 'Save a cache'
-description: 'Save Nix store using GitHub Actions cache to speed up workflows.'
-author: 'GitHub'
+name: "Save Nix store"
+description: "Save Nix store using GitHub Actions cache to speed up workflows."
+author: "GitHub"
 inputs:
-  key:
+  primary-key:
     description: |
-      - When non-empty string, the action uses this key for saving a cache.
+      - When a non-empty string, the action uses this key for saving a cache.
       - Otherwise, the action fails.
     required: true
   
+  
+
   paths:
     description: |
-      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends it to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
       - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for saving caches.
-    default: ''
+    default: ""
   paths-macos:
     description: |
       - Overrides `paths`.
-      - Can have an effect only on a `macOS` runner.
-      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
+      - Can have an effect only when on a `macOS` runner.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends it to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
       - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for saving caches.
-    default: ''
+    default: ""
   paths-linux:
     description: |
       - Overrides `paths`.
-      - Can have an effect only on a `Linux` runner.
-      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends them to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
+      - Can have an effect only when on a `Linux` runner.
+      - When a newline-separated non-empty list of non-empty path regex expressions, the action appends it to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for saving caches.
       - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for saving caches.
-    default: ''
+    default: ""
 
   gc-max-store-size:
     description: |
       - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
       - Otherwise, this input has no effect.
-    default: ''
+    default: ""
   gc-max-store-size-macos:
     description: |
-      - Overrides 'gc-max-store-size'.
-      - Can have an effect only on a `macOS` runner.
+      - Overrides `gc-max-store-size`.
+      - Can have an effect only when on a `macOS` runner.
       - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
       - Otherwise, this input has no effect.
-    default: ''
+    default: ""
   gc-max-store-size-linux:
     description: |
-      - Overrides 'gc-max-store-size'.
-      - Can have an effect only on a `Linux` runner.
+      - Overrides `gc-max-store-size`.
+      - Can have an effect only when on a `Linux` runner.
       - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
       - Otherwise, this input has no effect.
-    default: ''
-  
+    default: ""
+
   purge:
     description: |
       - When `true`, the action purges (possibly zero) old caches.
       - Otherwise, this input has no effect.
-    default: 'false'
+    default: "false"
   purge-overwrite:
     description: |
       - Can have an effect only when `purge` has effect.
-      - When `always`, the action always purges old cache(s) with the `primary-key` before saving a new cache with the `primary-key`.
-      - When `never`, the action never purges old cache(s) with the `primary-key` and never saves a new cache with the `primary-key`.
-      - Otherwise, the action purges old caches using purging criteria before saving a new cache with the `primary-key`.
-    default: ''
-  purge-keys:
+      - When `always`, the action always purges old cache(s) with the `primary-key` and saves a new cache with the `primary-key`.
+      - When `never`, the action never purges old cache(s) with the `primary-key` and saves a new cache when there's a miss on the `primary-key`.
+      - Otherwise, the action purges old caches using purging criteria and saves a new cache when there's a miss on the `primary-key`.
+    default: ""
+  purge-prefixes:
     description: |
       - Can have an effect only when `purge` has effect.
       - When a newline-separated non-empty list of non-empty cache key prefixes, the action collects for purging all cache keys that match these prefixes.
       - Otherwise, this input has no effect.
-    default: ''
-  purge-last-accessed-max-age:
+    default: ""
+  purge-last-accessed:
     description: |
-      - Can have an effect only when `purge-keys` has effect.
+      - Can have an effect only when `purge-prefixes` has effect.
       - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
-    default: ''
-  purge-created-max-age:
+    default: ""
+  purge-created:
     description: |
-      - Can have an effect only when `purge-keys` has effect.
+      - Can have an effect only when `purge-prefixes` has effect.
       - When a number, the action purges caches created more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
-    default: ''
-  
+    default: ""
+
   upload-chunk-size:
-    description: 'When a number, the action uses it as the chunk size (in bytes) to split up large files during upload.'
     # The original default value may be provided here (https://github.com/actions/cache/issues/1292)
     # 32MB
-    default: '33554432'
+    description: |
+      - When a number, the action uses it as the chunk size (in bytes) to split up large files during upload.
+      - Otherwise, the action uses the default value `33554432` (32MB).
+    default: ""
 
   token:
     description: The action uses it to communicate with GitHub API.
     default: ${{ github.token }}
 
 runs:
-  using: 'node16'
-  main: '../dist/save-only/index.js'
+  using: "node16"
+  main: "../dist/save-only/index.js"
+  
 branding:
-  icon: 'archive'
-  color: 'gray-dark'
+  icon: "archive"
+  color: "gray-dark"

@@ -45,7 +45,7 @@ let
   hit-first-match = "hit-first-match";
 in
 ''
-    name: "Cache Nix store"
+    name: "${specific.description} Nix store"
     description: "${specific.description} Nix store using GitHub Actions cache to speed up workflows."
     author: "GitHub"
     inputs:
@@ -62,7 +62,7 @@ in
             description: |
               - ${whenListOf} key prefixes, when there's a miss on the ${q primary-key}, 
                 the action searches in this list for the first prefix for which there exists a cache 
-                with a matching key and tries to restore that cache.
+                with a matching key and the action tries to restore that cache.
               - Otherwise, this input has no effect.
             default: ""
         
@@ -196,12 +196,12 @@ in
       ${hit-primary}:
         description: |
           - A boolean value.
-          - `true` when a cache was found (not restored) via the ${q primary-key}.
+          - `true` when there was a hit on the ${q primary-key}.
           - `false` otherwise.
       ${hit-first-match}:
         description: |
           - A boolean value.
-          - `true` when a cache was found (not restored) via the ${q prefixes-first-match}.
+          - `true` when there was a hit on a key matching ${q prefixes-first-match}.
           - `false` otherwise.
     
       restored-key:
