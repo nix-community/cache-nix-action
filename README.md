@@ -118,7 +118,7 @@ Alternatively, you can use the [GitHub Actions Cache API](https://docs.github.co
 
 ### Merge caches
 
-`GitHub` evicts LRU caches when their total size exceeds `10GB` (see [Limitations](#limitations)).
+`GitHub` evicts least recently used caches when their total size exceeds `10GB` (see [Limitations](#limitations)).
 
 If you have multiple similar caches produced on runners with **the same OS** (`Linux` or `macOS`), you can merge them into a single cache and store just it to save space.
 
@@ -203,7 +203,7 @@ See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-bin
 **Pros**:
 
 * Restore and save paths selectively.
-* Provide LRU garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
+* Provide least recently used garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
 * Don't cache paths available from the NixOS cache ([cachix](https://docs.cachix.org/garbage-collection?highlight=upstream)).
 * Allow to share paths between projects ([cachix](https://docs.cachix.org/getting-started#using-binaries-with-nix)).
 
@@ -218,7 +218,7 @@ See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-bin
 When restoring a Nix store from a cache, the store may contain old unnecessary paths.
 These paths should be removed sometimes to limit cache size and ensure the fastest restore/save steps.
 
-### GC approach 1
+### Garbage collection approach 1
 
 Produce a cache once, use it multiple times. Don't collect garbage.
 
@@ -233,7 +233,7 @@ Disadvantages:
   * The job at the second run restores the cache, produces a path `B`, and saves a cache. The cache has both `A` and `B`.
   * etc.
 
-### GC approach 2
+### Garbage collection approach 2
 
 Collect garbage before saving a cache.
 
@@ -245,7 +245,7 @@ Disadvantages:
 
 * No standard way to gc only old paths.
 
-### Save a path from GC
+### Save a path from garbage collection
 
 * Use `nix profile install` to save installables from garbage collection.
   * Get store paths of `inputs` via `nix flake archive` (see [comment](https://github.com/NixOS/nix/issues/4250#issuecomment-1146878407)).
@@ -255,22 +255,26 @@ Disadvantages:
 
 ### Garbage collection approaches
 
-* Use [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc) for cache eviction via `atime`
-* gc via gc roots [nix-cache-cut](https://github.com/astro/nix-cache-cut)
-* gc based on time [cache-gc](https://github.com/lheckemann/cache-gc)
+* Use [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc) for cache eviction via `atime`.
+* gc via gc roots [nix-cache-cut](https://github.com/astro/nix-cache-cut).
+* gc based on time [cache-gc](https://github.com/lheckemann/cache-gc).
 
 ## Contribute
 
-* Improve README
-* Report errors, suggest improvements in issues
-* Upgrade code and documentation.
+* Improve README.
+* Report errors, suggest improvements in issues.
+* Upgrade code.
   * Read about [JavaScript actions](https://docs.github.com/en/actions/creating-actions/about-custom-actions?learn=create_actions&learnProduct=actions#javascript-actions)
   * See main files:
     * [restoreImpl.ts](./src/restoreImpl.ts)
     * [saveImpl.ts](./src/saveImpl.ts)
-    * [acton.yml](./action.yml)
-    * [save/action.yml](./save/action.yml)
-    * [restore/action.yml](./restore/action.yml)
+* Upgrade docs.
+  * Edit [action.nix](./action.nix).
+  * Update `action.yml`-s and `README.md`-s:
+
+    ```console
+    nix run .#write
+    ```
 
 # Cache action
 
