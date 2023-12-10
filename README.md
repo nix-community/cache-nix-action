@@ -4,12 +4,14 @@ A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
-## What it can do
+## What it can do (main things)
 
-* Cache full Nix store into a single cache on `Linux` and `macOS` runners.
+* Work on `Linux` and `macOS` runners.
+* Cache full Nix store into a single cache.
 * Collect garbage in the store before saving.
 * Merge caches produced by several jobs.
-* After saving a new cache, remove old caches by creation or last access time.
+* Purge old caches by their creation or last access time.
+* Can be used instead of `actions/cache` if you set `nix: false` (see [Inputs](#inputs)).
 
 ## Approach
 
@@ -56,7 +58,7 @@ See [Caching Approaches](#caching-approaches).
   * The `cache-nix-action` will print the Nix store size in the `Post` phase, so you can choose an optimal store size to avoid garbage collection.
 * On `macOS` runners, Nix store won't be garbage collected since `gc-max-store-size-macos` isn't set to a number.
 * Before trying to save a new cache, the `cache-nix-action` will search for caches with a key prefix `cache-${{ matrix.os }}-`.
-  Among these caches, the `cache-nix-action` will delete caches created more than `42` seconds ago.
+  Among these caches, due to `purge-created: 42` the `cache-nix-action` will delete caches created more than `42` seconds ago.
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v26
@@ -69,15 +71,14 @@ See [Caching Approaches](#caching-approaches).
 - name: Restore and cache Nix store
   uses: nix-community/cache-nix-action@v5
   with:
-    key: cache-${{ matrix.os }}-${{ hashFiles('**/*.nix') }}
-    restore-keys: |
-      cache-${{ matrix.os }}-
+    primary-key: cache-nix-${{ matrix.os }}-${{ hashFiles('**/*.nix') }}
+    restore-prefixes-first-match: cache-nix-${{ matrix.os }}-
 
     gc-max-store-size-linux: 1073741824
     
     purge: true
-    purge-keys: cache-${{ matrix.os }}-
-    purge-created-max-age: 42
+    purge-prefixes: cache-${{ matrix.os }}-
+    purge-created: 42
 ```
 
 ### Example workflow
