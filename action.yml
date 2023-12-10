@@ -15,7 +15,6 @@ inputs:
         with a matching key and the action tries to restore that cache.
       - Otherwise, this input has no effect.
     default: ""
-
   prefixes-all-matches:
     description: |
       - When a newline-separated non-empty list of non-empty key prefixes, the action tries to restore 
@@ -23,7 +22,7 @@ inputs:
       - Otherwise, this input has no effect.
     default: ""
 
-  skip-restore-on-primary-key-hit:
+  skip-restore-on-hit-primary-key:
     description: |
       - Can have an effect only when `prefixes-first-match` has no effect.
       - When `true`, when there's a hit on the `primary-key`, the action doesn't restore caches.

@@ -65,7 +65,6 @@ in
                 with a matching key and the action tries to restore that cache.
               - Otherwise, this input has no effect.
             default: ""
-        
           prefixes-all-matches:
             description: |
               - ${whenListOf} key prefixes, the action tries to restore 
@@ -73,7 +72,7 @@ in
               - Otherwise, this input has no effect.
             default: ""
         
-          skip-restore-on-primary-key-hit:
+          skip-restore-on-hit-primary-key:
             description: |
               - Can have an effect only when ${q prefixes-first-match} has no effect.
               - When `true`, when there's a hit on the ${q primary-key}, the action doesn't restore caches.
