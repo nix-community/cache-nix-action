@@ -93,7 +93,7 @@ def main():
             )
         )
 
-    print(f"{result}\n")
+    print(result.strip(), end="")
 
 
 if __name__ == "__main__":
