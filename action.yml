@@ -41,22 +41,22 @@ inputs:
 
   paths:
     description: |
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to `["/nix", "~/.cache/nix", "~root/.cache/nix"]` and uses the resulting list for restoring and saving caches.
+      - Otherwise, the action uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` for restoring and saving caches.
     default: ""
   paths-macos:
     description: |
       - Overrides `paths`.
       - Can have an effect only when on a `macOS` runner.
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to `["/nix", "~/.cache/nix", "~root/.cache/nix"]` and uses the resulting list for restoring and saving caches.
+      - Otherwise, the action uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` for restoring and saving caches.
     default: ""
   paths-linux:
     description: |
       - Overrides `paths`.
       - Can have an effect only when on a `Linux` runner.
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] and uses the resulting list for restoring and saving caches.
-      - Otherwise, the action uses [`/nix`, `~/.cache/nix`, `~root/.cache/nix`] for restoring and saving caches.
+      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to `["/nix", "~/.cache/nix", "~root/.cache/nix"]` and uses the resulting list for restoring and saving caches.
+      - Otherwise, the action uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` for restoring and saving caches.
     default: ""
 
   gc-max-store-size:
@@ -130,9 +130,9 @@ outputs:
   hit:
     description: |
       - A boolean value.
-      - `true` when `hit-primary` is `true` or `hit-first-match` is `true`.
+      - `true` when `hit-primary-key` is `true` or `hit-first-match` is `true`.
       - `false` otherwise.
-  hit-primary:
+  hit-primary-key:
     description: |
       - A boolean value.
       - `true` when there was a hit on the `primary-key`.

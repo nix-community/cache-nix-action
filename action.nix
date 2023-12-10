@@ -26,7 +26,7 @@ let
 
   q = txt: "`${txt}`";
   whenListOf = "When a newline-separated non-empty list of non-empty";
-  pathsDefault = "[`/nix`, `~/.cache/nix`, `~root/.cache/nix`]";
+  pathsDefault = ''`["/nix", "~/.cache/nix", "~root/.cache/nix"]`'';
   pathsWhen = ''${whenListOf} path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to ${pathsDefault} and uses the resulting list for ${specific.actions} caches.'';
   pathsOtherwise = ''Otherwise, the action uses ${pathsDefault} for ${specific.actions} caches.'';
   effectOnlyOn = platform: ''Can have an effect only when on a ${q platform} runner.'';
@@ -41,7 +41,7 @@ let
   gc-max-store-size = "gc-max-store-size";
   primary-key = "primary-key";
   prefixes-first-match = "prefixes-first-match";
-  hit-primary = "hit-primary";
+  hit-primary-key = "hit-primary-key";
   hit-first-match = "hit-first-match";
 in
 ''
@@ -190,9 +190,9 @@ in
       hit:
         description: |
           - A boolean value.
-          - `true` when ${q hit-primary} is `true` or ${q hit-first-match} is `true`.
+          - `true` when ${q hit-primary-key} is `true` or ${q hit-first-match} is `true`.
           - `false` otherwise.
-      ${hit-primary}:
+      ${hit-primary-key}:
         description: |
           - A boolean value.
           - `true` when there was a hit on the ${q primary-key}.
