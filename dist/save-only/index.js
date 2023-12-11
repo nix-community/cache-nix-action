@@ -62440,35 +62440,40 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RefKey = exports.Events = exports.State = exports.Outputs = exports.Inputs = void 0;
 var Inputs;
 (function (Inputs) {
-    Inputs["Key"] = "key";
-    Inputs["Path"] = "path";
-    Inputs["RestoreKeys"] = "restore-keys";
-    Inputs["UploadChunkSize"] = "upload-chunk-size";
-    Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
-    Inputs["RestoreKeyHit"] = "restore-key-hit";
-    Inputs["ExtraRestoreKeys"] = "extra-restore-keys";
-    Inputs["GCMacos"] = "gc-macos";
+    Inputs["PrimaryKey"] = "primary-key";
+    Inputs["RestorePrefixesFirstMatch"] = "restore-prefixes-first-match";
+    Inputs["RestorePrefixesAllMatches"] = "restore-prefixes-all-matches";
+    Inputs["SkipRestoreOnHitPrimaryKey"] = "skip-restore-on-primary-key-hit";
+    Inputs["FailOn"] = "fail-on";
+    Inputs["Nix"] = "nix";
+    Inputs["Save"] = "save";
+    Inputs["Paths"] = "paths";
+    Inputs["PathsMacos"] = "paths-macos";
+    Inputs["PathsLinux"] = "paths-linux";
+    Inputs["GCMaxStoreSize"] = "gc-max-store-size";
     Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
-    Inputs["GCLinux"] = "gc-linux";
     Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
-    Inputs["Token"] = "token";
     Inputs["Purge"] = "purge";
-    Inputs["PurgeKeys"] = "purge-keys";
-    Inputs["PurgeAccessed"] = "purge-accessed";
-    Inputs["PurgeAccessedMaxAge"] = "purge-accessed-max-age";
+    Inputs["PurgeOverwrite"] = "purge-overwrite";
+    Inputs["PurgePrefixes"] = "purge-prefixes";
+    Inputs["PurgeLastAccessed"] = "purge-last-accessed";
     Inputs["PurgeCreated"] = "purge-created";
-    Inputs["PurgeCreatedMaxAge"] = "purge-created-max-age"; // Input for cache, save action
+    Inputs["UploadChunkSize"] = "upload-chunk-size";
+    Inputs["Token"] = "token"; // Input for cache, save actions
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 var Outputs;
 (function (Outputs) {
-    Outputs["CacheHit"] = "cache-hit";
-    Outputs["CachePrimaryKey"] = "cache-primary-key";
-    Outputs["CacheMatchedKey"] = "cache-matched-key"; // Output from restore action
+    Outputs["PrimaryKey"] = "primary-key";
+    Outputs["Hit"] = "hit";
+    Outputs["HitPrimary"] = "hit-primary";
+    Outputs["HitFirstMatch"] = "hit-first-match";
+    Outputs["RestoredKey"] = "restored-key";
+    Outputs["RestoredKeys"] = "restored-keys"; // Output from cache, restore actions
 })(Outputs = exports.Outputs || (exports.Outputs = {}));
 var State;
 (function (State) {
-    State["CachePrimaryKey"] = "CACHE_KEY";
-    State["CacheMatchedKey"] = "CACHE_RESULT";
+    State["CachePrimaryKey"] = "CACHE_PRIMARY_KEY";
+    State["CacheRestoredKey"] = "CACHE_RESTORED_KEY";
 })(State = exports.State || (exports.State = {}));
 var Events;
 (function (Events) {
@@ -62481,7 +62486,7 @@ exports.RefKey = "GITHUB_REF";
 
 /***/ }),
 
-/***/ 2193:
+/***/ 7063:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -62509,196 +62514,66 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.collectGarbage = void 0;
-const exec_1 = __nccwpck_require__(1514);
-const constants_1 = __nccwpck_require__(9042);
-const utils = __importStar(__nccwpck_require__(6850));
-function collectGarbage() {
-    return __awaiter(this, void 0, void 0, function* () {
-        utils.info("Collecting garbage");
-        yield (0, exec_1.exec)("bash", ["-c", "sudo rm -rf /nix/.[!.]* /nix/..?*"]);
-        const gcEnabled = utils.getInputAsBool(process.platform == "darwin" ? constants_1.Inputs.GCMacos : constants_1.Inputs.GCLinux);
-        if (gcEnabled) {
-            const maxStoreSize = utils.getInputAsInt(process.platform == "darwin"
-                ? constants_1.Inputs.GCMaxStoreSizeMacos
-                : constants_1.Inputs.GCMaxStoreSizeLinux, { required: true });
-            yield (0, exec_1.exec)("bash", [
-                "-c",
-                `
-                STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"
-                printf "Current store size in bytes: $STORE_SIZE\\n"
-
-                MAX_STORE_SIZE=${maxStoreSize}
-                
-                if (( STORE_SIZE > MAX_STORE_SIZE )); then
-                    (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
-                    (( R2 = R1 > 0 ? R1 : 0 ))
-                    printf "Max bytes to free: $R2\\n"
-                    nix store gc --max "$R2"
-                fi
-                `
-            ]);
-        }
-    });
-}
-exports.collectGarbage = collectGarbage;
-
-
-/***/ }),
-
-/***/ 6231:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.purgeCaches = void 0;
+exports.token = exports.uploadChunkSize = exports.purgeCreatedMaxAge = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgeOverwrite = exports.purge = exports.gcMaxStoreSize = exports.paths = exports.save = exports.nix = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
 const constants_1 = __nccwpck_require__(9042);
-const utils = __importStar(__nccwpck_require__(6850));
-function purgeByTime({ doUseLastAccessedTime, keys, lookupOnly, time }) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const verb = doUseLastAccessedTime ? "last accessed" : "created";
-        const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
-        utils.info(`
-        ${lookupOnly ? "Searching for" : "Purging"} caches ${verb} before ${maxDate.toISOString()} and having keys:
-        ${utils.stringify(keys)}
-        `);
-        const token = core.getInput(constants_1.Inputs.Token, { required: true });
-        const caches = utils.filterCachesByTime({
-            caches: yield utils.getCachesByKeys(token, keys),
-            doUseLastAccessedTime,
-            maxDate
-        });
-        utils.info(`
-        Found ${caches.length} cache(s):
-        ${utils.stringify(caches)}
-        `);
-        if (lookupOnly) {
-            return caches;
-        }
-        const octokit = github.getOctokit(token);
-        caches.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
-            const at = doUseLastAccessedTime
-                ? cache.last_accessed_at
-                : cache.created_at;
-            if (at !== undefined && cache.id !== undefined) {
-                const atDate = new Date(at);
-                const atDatePretty = atDate.toISOString();
-                if (atDate < maxDate) {
-                    utils.info(`Deleting the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`);
-                    try {
-                        yield octokit.rest.actions.deleteActionsCacheById({
-                            per_page: 100,
-                            owner: github.context.repo.owner,
-                            repo: github.context.repo.repo,
-                            cache_id: cache.id
-                        });
-                    }
-                    catch (error) {
-                        utils.info(`
-                        Failed to delete cache ${cache.key}
-                        
-                        ${error}
-                        `);
-                    }
-                }
-                else {
-                    utils.info(`Skipping the cache having the key '${cache.key}' and ${verb} at ${atDatePretty}`);
-                }
-            }
-        }));
-        return [];
-    });
-}
-function purge({ key, lookupOnly, time }) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const accessed = core.getInput(constants_1.Inputs.PurgeAccessed) === "true";
-        const created = core.getInput(constants_1.Inputs.PurgeCreated) === "true";
-        let purgeKeys = utils.getInputAsArray(constants_1.Inputs.PurgeKeys);
-        if (purgeKeys.length == 0) {
-            purgeKeys.push(...[key]);
-        }
-        purgeKeys = purgeKeys.filter(key => key.trim().length > 0);
-        const results = [];
-        if (accessed || created) {
-            if (accessed) {
-                results.push(...(yield purgeByTime({
-                    doUseLastAccessedTime: true,
-                    keys: purgeKeys,
-                    lookupOnly,
-                    time
-                })));
-            }
-            if (created) {
-                results.push(...(yield purgeByTime({
-                    doUseLastAccessedTime: false,
-                    keys: purgeKeys,
-                    lookupOnly,
-                    time
-                })));
-            }
-        }
-        else {
-            core.warning("Either `accessed` or `created` input should be `true`.");
-        }
-        return results;
-    });
-}
-function purgeCaches({ key, lookupOnly, time }) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const purgeEnabled = utils.getInputAsBool(constants_1.Inputs.Purge);
-        const results = [];
-        if (purgeEnabled) {
-            results.push(...(yield purge({ key, lookupOnly, time })));
-        }
-        return results;
-    });
-}
-exports.purgeCaches = purgeCaches;
+const utils = __importStar(__nccwpck_require__(4427));
+exports.primaryKey = core.getInput(constants_1.Inputs.PrimaryKey, { required: true });
+exports.restorePrefixesFirstMatch = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesFirstMatch);
+exports.restorePrefixesAllMatches = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesAllMatches);
+exports.skipRestoreOnHitPrimaryKey = utils.getInputAsBool(constants_1.Inputs.SkipRestoreOnHitPrimaryKey);
+exports.failOn = (() => {
+    var _a;
+    const failOnRaw = (_a = new RegExp("^(primary|first-match)\\.(miss|not-restored)$")
+        .exec(core.getInput(constants_1.Inputs.FailOn))) === null || _a === void 0 ? void 0 : _a.slice(1);
+    if (!failOnRaw) {
+        return;
+    }
+    const [keyType, result] = failOnRaw;
+    if ((keyType == "primary" || keyType == "first-match") &&
+        (result == "miss" || result == "not-restored")) {
+        return { keyType, result };
+    }
+})();
+exports.nix = utils.getInputAsBool(constants_1.Inputs.Nix);
+exports.save = utils.getInputAsBool(constants_1.Inputs.Save);
+exports.paths = (exports.nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []).concat((() => {
+    const paths = utils.getInputAsArray(constants_1.Inputs.Paths);
+    const pathsPlatform = utils.getInputAsArray(utils.isLinux ? constants_1.Inputs.PathsLinux : constants_1.Inputs.PathsMacos);
+    if (pathsPlatform.length > 0) {
+        return pathsPlatform;
+    }
+    else
+        return paths;
+})());
+exports.gcMaxStoreSize = exports.nix
+    ? (() => {
+        const gcMaxStoreSize = utils.getInputAsInt(constants_1.Inputs.GCMaxStoreSize);
+        const gcMaxStoreSizePlatform = utils.getInputAsInt(utils.isLinux
+            ? constants_1.Inputs.GCMaxStoreSizeLinux
+            : constants_1.Inputs.GCMaxStoreSizeMacos);
+        return gcMaxStoreSizePlatform
+            ? gcMaxStoreSizePlatform
+            : gcMaxStoreSize;
+    })()
+    : undefined;
+exports.purge = utils.getInputAsBool(constants_1.Inputs.Purge);
+exports.purgeOverwrite = (() => {
+    const purgeOverwrite = core.getInput(constants_1.Inputs.PurgeOverwrite);
+    if (!(purgeOverwrite == "always" || purgeOverwrite == "never")) {
+        return "default";
+    }
+    return purgeOverwrite;
+})();
+exports.purgePrefixes = utils
+    .getInputAsArray(constants_1.Inputs.PurgePrefixes)
+    .map(prefix => prefix.trim())
+    .filter(prefix => prefix.length > 0);
+exports.purgeLastAccessed = utils.getInputAsInt(constants_1.Inputs.PurgeLastAccessed);
+exports.purgeCreatedMaxAge = utils.getInputAsInt(constants_1.Inputs.PurgeCreated);
+exports.uploadChunkSize = utils.getInputAsInt(constants_1.Inputs.UploadChunkSize) || 32 * 1024 * 1024;
+exports.token = core.getInput(constants_1.Inputs.Token, { required: true });
 
 
 /***/ }),
@@ -62743,19 +62618,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
-const github_1 = __nccwpck_require__(5438);
-const github = __importStar(__nccwpck_require__(5438));
 const constants_1 = __nccwpck_require__(9042);
-const gc_1 = __nccwpck_require__(2193);
-const purge_1 = __nccwpck_require__(6231);
-const utils = __importStar(__nccwpck_require__(6850));
+const inputs = __importStar(__nccwpck_require__(7063));
+const utils = __importStar(__nccwpck_require__(4427));
+const collectGarbage_1 = __nccwpck_require__(9311);
+const purge_1 = __nccwpck_require__(7612);
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
 // throw an uncaught exception.  Instead of failing this action, just warn.
 process.on("uncaughtException", e => utils.logError(e.message));
 function saveImpl(stateProvider) {
     return __awaiter(this, void 0, void 0, function* () {
-        let cacheId = -1;
+        const cacheId = -1;
+        const time = Date.now();
         try {
             if (!utils.isCacheFeatureAvailable()) {
                 return;
@@ -62765,57 +62640,55 @@ function saveImpl(stateProvider) {
             }
             // If restore has stored a primary key in state, reuse that
             // Else re-evaluate from inputs
-            const primaryKey = stateProvider.getState(constants_1.State.CachePrimaryKey) ||
-                core.getInput(constants_1.Inputs.Key);
-            if (!primaryKey || primaryKey === "") {
-                throw new Error(`
-                Primary cache key not found.
-                You may want to specify it in your workflow file.
-                See "with.key" field at the step where you use this action.
-                `);
-            }
-            const cachePaths = utils.paths;
-            const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
-            const restoredKey = yield utils.getCacheKey({
-                paths: cachePaths,
-                primaryKey,
-                restoreKeys,
-                lookupOnly: true
-            });
-            const time = Date.now();
-            if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
-                utils.info(`Cache hit occurred on the primary key "${primaryKey}".`);
-                const caches = yield (0, purge_1.purgeCaches)({
-                    key: primaryKey,
-                    lookupOnly: true,
-                    time
-                });
-                if (caches.map(cache => cache.key).includes(primaryKey)) {
-                    utils.info(`Purging the cache with the key "${primaryKey}".`);
-                    const token = core.getInput(constants_1.Inputs.Token, { required: true });
-                    const octokit = (0, github_1.getOctokit)(token);
-                    octokit.rest.actions.deleteActionsCacheByKey({
-                        per_page: 100,
-                        owner: github.context.repo.owner,
-                        repo: github.context.repo.repo,
-                        key: primaryKey,
-                        ref: github.context.ref
-                    });
+            const primaryKey = stateProvider.getState(constants_1.State.CachePrimaryKey) || inputs.primaryKey;
+            if (inputs.purge) {
+                if (inputs.purgeOverwrite == "always") {
+                    yield (0, purge_1.purgeCacheByKey)(primaryKey, `Purging the cache with the key "${primaryKey}" because of "${constants_1.Inputs.PurgeOverwrite}: always".`);
                 }
                 else {
-                    utils.info(`The cache with the key "${primaryKey}" won't be purged. Not saving a new cache.`);
-                    yield (0, purge_1.purgeCaches)({ key: primaryKey, lookupOnly: false, time });
-                    return;
+                    yield (0, purge_1.purgeCachesByTime)({
+                        primaryKey,
+                        time,
+                        prefixes: []
+                    });
                 }
             }
-            yield (0, gc_1.collectGarbage)();
-            utils.info(`Saving a new cache with the key "${primaryKey}".`);
-            cacheId = yield cache.saveCache(cachePaths, primaryKey, {
-                uploadChunkSize: utils.getInputAsInt(constants_1.Inputs.UploadChunkSize)
-            });
-            if (cacheId != -1) {
-                utils.info(`Cache saved with the key "${primaryKey}".`);
-                yield (0, purge_1.purgeCaches)({ key: primaryKey, lookupOnly: false, time });
+            // Save a cache using the primary key
+            {
+                utils.info(`Searching for a cache using the primary key "${primaryKey}".`);
+                const foundKey = yield utils.getCacheKey({
+                    primaryKey,
+                    restoreKeys: [],
+                    lookupOnly: true
+                });
+                if (utils.isExactKeyMatch(primaryKey, foundKey)) {
+                    utils.info(`
+                    Cache hit occurred on the "${constants_1.Inputs.PrimaryKey}".
+                    Not saving a new cache.
+                    `);
+                }
+                else if (inputs.save) {
+                    yield (0, collectGarbage_1.collectGarbage)();
+                    utils.info(`Saving a new cache with the key "${primaryKey}".`);
+                    // can throw
+                    yield cache.saveCache(inputs.paths, primaryKey, {
+                        uploadChunkSize: inputs.uploadChunkSize
+                    });
+                    utils.info(`Saved a new cache.`);
+                }
+                else {
+                    `Not saving a new cache because of "${constants_1.Inputs.Save}: false"`;
+                }
+            }
+            // Purge other caches
+            // This runs last so that in case of cache saving errors
+            //  the action can be re-run with other caches
+            if (inputs.purge) {
+                yield (0, purge_1.purgeCachesByTime)({
+                    primaryKey,
+                    time,
+                    prefixes: inputs.purgePrefixes
+                });
             }
         }
         catch (error) {
@@ -62927,7 +62800,7 @@ class StateProviderBase {
         this.getState = (key) => "";
     }
     getCacheState() {
-        const cacheKey = this.getState(constants_1.State.CacheMatchedKey);
+        const cacheKey = this.getState(constants_1.State.CacheRestoredKey);
         if (cacheKey) {
             core.debug(`Cache state/key: ${cacheKey}`);
             return cacheKey;
@@ -62947,8 +62820,8 @@ class NullStateProvider extends StateProviderBase {
     constructor() {
         super(...arguments);
         this.stateToOutputMap = new Map([
-            [constants_1.State.CacheMatchedKey, constants_1.Outputs.CacheMatchedKey],
-            [constants_1.State.CachePrimaryKey, constants_1.Outputs.CachePrimaryKey]
+            [constants_1.State.CacheRestoredKey, constants_1.Outputs.RestoredKey],
+            [constants_1.State.CachePrimaryKey, constants_1.Outputs.PrimaryKey]
         ]);
         this.setState = (key, value) => {
             core.setOutput(this.stateToOutputMap.get(key), value);
@@ -62962,7 +62835,7 @@ exports.NullStateProvider = NullStateProvider;
 
 /***/ }),
 
-/***/ 6850:
+/***/ 4427:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -63003,12 +62876,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.isLinux = exports.warning = exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByKeys = exports.octokit = exports.getCacheKey = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const dedent_1 = __importDefault(__nccwpck_require__(5281));
 const constants_1 = __nccwpck_require__(9042);
+const inputs = __importStar(__nccwpck_require__(7063));
+const utils = __importStar(__nccwpck_require__(4427));
 function isGhes() {
     const ghUrl = new URL(process.env["GITHUB_SERVER_URL"] || "https://github.com");
     return ghUrl.hostname.toUpperCase() !== "GITHUB.COM";
@@ -63023,7 +62898,7 @@ function isExactKeyMatch(key, cacheKey) {
 exports.isExactKeyMatch = isExactKeyMatch;
 function logWarning(message) {
     const warningPrefix = "[warning]";
-    core.info(`${warningPrefix}${message}`);
+    core.warning(`${warningPrefix} ${message}`);
 }
 exports.logWarning = logWarning;
 function logError(message) {
@@ -63032,7 +62907,7 @@ function logError(message) {
 }
 exports.logError = logError;
 // Cache token authorized for all events that are tied to a ref
-// See GitHub Context https://help.github.com/actions/automating-your-workflow-with-github-actions/contexts-and-expression-syntax-for-github-actions#github-context
+// See GitHub Context https://docs.github.com/en/actions/learn-github-actions/contexts
 function isValidEvent() {
     return constants_1.RefKey in process.env && Boolean(process.env[constants_1.RefKey]);
 }
@@ -63063,31 +62938,33 @@ function isCacheFeatureAvailable() {
         return true;
     }
     if (isGhes()) {
-        logWarning(`Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
+        logError(`Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
             Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`);
         return false;
     }
-    logWarning("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
+    logError(`
+        Actions cache service is unavailable.
+        Please check https://www.githubstatus.com/ for any ongoing issue in Actions.
+        `);
     return false;
 }
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
-exports.paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
-function getCacheKey({ paths, primaryKey, restoreKeys, lookupOnly }) {
+function getCacheKey({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield cache.restoreCache(
         // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-        paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false);
+        inputs.paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false);
     });
 }
 exports.getCacheKey = getCacheKey;
-function getCachesByKeys(token, keys) {
+exports.octokit = github.getOctokit(inputs.token);
+function getCachesByKeys(keys) {
     return __awaiter(this, void 0, void 0, function* () {
         const caches = [];
-        const octokit = github.getOctokit(token);
         for (let i = 0; i < keys.length; i += 1) {
             const key = keys[i];
             for (let page = 1; page <= 500; page += 1) {
-                const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
+                const { data: cachesRequest } = yield exports.octokit.rest.actions.getActionsCacheList({
                     owner: github.context.repo.owner,
                     repo: github.context.repo.repo,
                     key,
@@ -63098,31 +62975,21 @@ function getCachesByKeys(token, keys) {
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
                 }
-                caches.push(...cachesRequest.actions_caches);
+                if (utils.isExactKeyMatch(inputs.primaryKey, key)) {
+                    caches.push(...cachesRequest.actions_caches);
+                }
             }
         }
         return caches;
     });
 }
 exports.getCachesByKeys = getCachesByKeys;
-const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => caches.filter(cache => {
-    const at = doUseLastAccessedTime
-        ? cache.last_accessed_at
-        : cache.created_at;
-    if (at !== undefined && cache.id !== undefined) {
-        const atDate = new Date(at);
-        return atDate < maxDate;
-    }
-    else
-        return false;
-});
-exports.filterCachesByTime = filterCachesByTime;
-const mkMessageWrongValue = (input, value) => `Wrong value for the input '${input}': ${value}`;
+const mkMessageWrongValue = (input, value) => `Wrong value for the input "${input}": ${value}`;
 exports.mkMessageWrongValue = mkMessageWrongValue;
 function getMaxDate({ doUseLastAccessedTime, time }) {
     const inputMaxAge = doUseLastAccessedTime
-        ? constants_1.Inputs.PurgeAccessedMaxAge
-        : constants_1.Inputs.PurgeCreatedMaxAge;
+        ? constants_1.Inputs.PurgeLastAccessed
+        : constants_1.Inputs.PurgeCreated;
     const maxAge = core.getInput(inputMaxAge, { required: false });
     const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
     if (maxDate === null) {
@@ -63133,10 +63000,237 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 exports.getMaxDate = getMaxDate;
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
-const info = (message) => {
-    core.info(dedent_1.default.withOptions({})(message));
-};
+const myDedent = dedent_1.default.withOptions({});
+const info = (message) => core.info(myDedent(message));
 exports.info = info;
+const warning = (message) => core.warning(myDedent(message));
+exports.warning = warning;
+exports.isLinux = process.platform === "linux";
+
+
+/***/ }),
+
+/***/ 9311:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.collectGarbage = void 0;
+const exec_1 = __nccwpck_require__(1514);
+const inputs = __importStar(__nccwpck_require__(7063));
+const utils = __importStar(__nccwpck_require__(4427));
+function collectGarbage() {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (inputs.gcMaxStoreSize) {
+            utils.info("Collecting garbage.");
+            const printStoreSize = `
+            STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
+            printf "Current store size in bytes: $STORE_SIZE\\n"
+            `;
+            yield (0, exec_1.exec)("bash", [
+                "-c",
+                `
+            sudo rm -rf /nix/.[!.]* /nix/..?*
+
+            ${printStoreSize}
+
+            MAX_STORE_SIZE=${inputs.gcMaxStoreSize}
+            
+            if (( STORE_SIZE > MAX_STORE_SIZE )); then
+                (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
+                (( R2 = R1 > 0 ? R1 : 0 ))
+                printf "Max bytes to free: $R2\\n"
+                nix store gc --max "$R2"
+            fi
+            `
+            ]);
+            utils.info(`
+            Finished collecting garbage.
+
+            Calculating the new store size.
+            `);
+            yield (0, exec_1.exec)("bash", ["-c", printStoreSize]);
+        }
+    });
+}
+exports.collectGarbage = collectGarbage;
+
+
+/***/ }),
+
+/***/ 7612:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.purgeCachesByTime = exports.filterCachesByTime = exports.purgeCacheByKey = void 0;
+const github = __importStar(__nccwpck_require__(5438));
+const constants_1 = __nccwpck_require__(9042);
+const inputs = __importStar(__nccwpck_require__(7063));
+const utils = __importStar(__nccwpck_require__(4427));
+function purgeCacheByKey(key, message) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            utils.info(message || "");
+            yield utils.octokit.rest.actions.deleteActionsCacheByKey({
+                per_page: 100,
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                key,
+                ref: github.context.ref
+            });
+        }
+        catch (error) {
+            utils.info(`
+            Failed to delete the cache.
+            
+            ${error}
+            `);
+        }
+    });
+}
+exports.purgeCacheByKey = purgeCacheByKey;
+const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => caches.filter(cache => {
+    const at = doUseLastAccessedTime
+        ? cache.last_accessed_at
+        : cache.created_at;
+    if (at && cache.key) {
+        const atDate = new Date(at);
+        return atDate < maxDate;
+    }
+    else
+        return false;
+});
+exports.filterCachesByTime = filterCachesByTime;
+function purgeByTime({ primaryKey, doUseLastAccessedTime, prefixes, time }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const verb = doUseLastAccessedTime ? "last accessed" : "created";
+        const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
+        let caches = [];
+        if (prefixes.length > 0) {
+            utils.info(`
+            Purging cache(s) ${verb} before ${maxDate.toISOString()} and having key prefixes:
+            
+            ${utils.stringify(prefixes)}
+            `);
+            caches = (0, exports.filterCachesByTime)({
+                caches: yield utils.getCachesByKeys(prefixes),
+                doUseLastAccessedTime,
+                maxDate
+            });
+        }
+        else {
+            utils.info(`Purging cache(s) ${verb} before ${maxDate.toISOString()} and having the key "${primaryKey}".`);
+            caches = (0, exports.filterCachesByTime)({
+                caches: yield utils.getCachesByKeys([primaryKey]),
+                doUseLastAccessedTime,
+                maxDate
+            }).filter(x => utils.isExactKeyMatch(primaryKey, x.key));
+        }
+        if (inputs.purgeOverwrite == "never") {
+            `The cache with the key "${primaryKey}" will be skipped because of "${constants_1.Inputs.PurgeOverwrite}: never".`;
+            caches.filter(x => !utils.isExactKeyMatch(primaryKey, x.key));
+        }
+        utils.info(`
+        Found ${caches.length} cache(s):
+        
+        ${utils.stringify(caches)}
+        `);
+        for (const cache of caches) {
+            const at = doUseLastAccessedTime
+                ? cache.last_accessed_at
+                : cache.created_at;
+            if (at && cache.key) {
+                const atDate = new Date(at);
+                const atDatePretty = atDate.toISOString();
+                yield purgeCacheByKey(cache.key, `Purging the cache ${verb} at ${atDatePretty} and having the key "${cache.key}".`);
+            }
+        }
+        utils.info(`Finished purging cache(s).`);
+    });
+}
+function purgeCachesByTime({ primaryKey, time, prefixes }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // TODO https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
+        for (const flag of [true, false]) {
+            if (flag ? inputs.purgeLastAccessed : inputs.purgeCreatedMaxAge) {
+                yield purgeByTime({
+                    primaryKey,
+                    doUseLastAccessedTime: flag,
+                    prefixes: prefixes.slice(),
+                    time
+                });
+            }
+        }
+    });
+}
+exports.purgeCachesByTime = purgeCachesByTime;
 
 
 /***/ }),

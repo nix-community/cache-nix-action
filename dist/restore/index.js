@@ -62440,35 +62440,40 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RefKey = exports.Events = exports.State = exports.Outputs = exports.Inputs = void 0;
 var Inputs;
 (function (Inputs) {
-    Inputs["Key"] = "key";
-    Inputs["Path"] = "path";
-    Inputs["RestoreKeys"] = "restore-keys";
-    Inputs["UploadChunkSize"] = "upload-chunk-size";
-    Inputs["FailOnCacheMiss"] = "fail-on-cache-miss";
-    Inputs["RestoreKeyHit"] = "restore-key-hit";
-    Inputs["ExtraRestoreKeys"] = "extra-restore-keys";
-    Inputs["GCMacos"] = "gc-macos";
+    Inputs["PrimaryKey"] = "primary-key";
+    Inputs["RestorePrefixesFirstMatch"] = "restore-prefixes-first-match";
+    Inputs["RestorePrefixesAllMatches"] = "restore-prefixes-all-matches";
+    Inputs["SkipRestoreOnHitPrimaryKey"] = "skip-restore-on-primary-key-hit";
+    Inputs["FailOn"] = "fail-on";
+    Inputs["Nix"] = "nix";
+    Inputs["Save"] = "save";
+    Inputs["Paths"] = "paths";
+    Inputs["PathsMacos"] = "paths-macos";
+    Inputs["PathsLinux"] = "paths-linux";
+    Inputs["GCMaxStoreSize"] = "gc-max-store-size";
     Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
-    Inputs["GCLinux"] = "gc-linux";
     Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
-    Inputs["Token"] = "token";
     Inputs["Purge"] = "purge";
-    Inputs["PurgeKeys"] = "purge-keys";
-    Inputs["PurgeAccessed"] = "purge-accessed";
-    Inputs["PurgeAccessedMaxAge"] = "purge-accessed-max-age";
+    Inputs["PurgeOverwrite"] = "purge-overwrite";
+    Inputs["PurgePrefixes"] = "purge-prefixes";
+    Inputs["PurgeLastAccessed"] = "purge-last-accessed";
     Inputs["PurgeCreated"] = "purge-created";
-    Inputs["PurgeCreatedMaxAge"] = "purge-created-max-age"; // Input for cache, save action
+    Inputs["UploadChunkSize"] = "upload-chunk-size";
+    Inputs["Token"] = "token"; // Input for cache, save actions
 })(Inputs = exports.Inputs || (exports.Inputs = {}));
 var Outputs;
 (function (Outputs) {
-    Outputs["CacheHit"] = "cache-hit";
-    Outputs["CachePrimaryKey"] = "cache-primary-key";
-    Outputs["CacheMatchedKey"] = "cache-matched-key"; // Output from restore action
+    Outputs["PrimaryKey"] = "primary-key";
+    Outputs["Hit"] = "hit";
+    Outputs["HitPrimary"] = "hit-primary";
+    Outputs["HitFirstMatch"] = "hit-first-match";
+    Outputs["RestoredKey"] = "restored-key";
+    Outputs["RestoredKeys"] = "restored-keys"; // Output from cache, restore actions
 })(Outputs = exports.Outputs || (exports.Outputs = {}));
 var State;
 (function (State) {
-    State["CachePrimaryKey"] = "CACHE_KEY";
-    State["CacheMatchedKey"] = "CACHE_RESULT";
+    State["CachePrimaryKey"] = "CACHE_PRIMARY_KEY";
+    State["CacheRestoredKey"] = "CACHE_RESTORED_KEY";
 })(State = exports.State || (exports.State = {}));
 var Events;
 (function (Events) {
@@ -62477,6 +62482,98 @@ var Events;
     Events["PullRequest"] = "pull_request";
 })(Events = exports.Events || (exports.Events = {}));
 exports.RefKey = "GITHUB_REF";
+
+
+/***/ }),
+
+/***/ 7063:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.token = exports.uploadChunkSize = exports.purgeCreatedMaxAge = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgeOverwrite = exports.purge = exports.gcMaxStoreSize = exports.paths = exports.save = exports.nix = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const constants_1 = __nccwpck_require__(9042);
+const utils = __importStar(__nccwpck_require__(4427));
+exports.primaryKey = core.getInput(constants_1.Inputs.PrimaryKey, { required: true });
+exports.restorePrefixesFirstMatch = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesFirstMatch);
+exports.restorePrefixesAllMatches = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesAllMatches);
+exports.skipRestoreOnHitPrimaryKey = utils.getInputAsBool(constants_1.Inputs.SkipRestoreOnHitPrimaryKey);
+exports.failOn = (() => {
+    var _a;
+    const failOnRaw = (_a = new RegExp("^(primary|first-match)\\.(miss|not-restored)$")
+        .exec(core.getInput(constants_1.Inputs.FailOn))) === null || _a === void 0 ? void 0 : _a.slice(1);
+    if (!failOnRaw) {
+        return;
+    }
+    const [keyType, result] = failOnRaw;
+    if ((keyType == "primary" || keyType == "first-match") &&
+        (result == "miss" || result == "not-restored")) {
+        return { keyType, result };
+    }
+})();
+exports.nix = utils.getInputAsBool(constants_1.Inputs.Nix);
+exports.save = utils.getInputAsBool(constants_1.Inputs.Save);
+exports.paths = (exports.nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []).concat((() => {
+    const paths = utils.getInputAsArray(constants_1.Inputs.Paths);
+    const pathsPlatform = utils.getInputAsArray(utils.isLinux ? constants_1.Inputs.PathsLinux : constants_1.Inputs.PathsMacos);
+    if (pathsPlatform.length > 0) {
+        return pathsPlatform;
+    }
+    else
+        return paths;
+})());
+exports.gcMaxStoreSize = exports.nix
+    ? (() => {
+        const gcMaxStoreSize = utils.getInputAsInt(constants_1.Inputs.GCMaxStoreSize);
+        const gcMaxStoreSizePlatform = utils.getInputAsInt(utils.isLinux
+            ? constants_1.Inputs.GCMaxStoreSizeLinux
+            : constants_1.Inputs.GCMaxStoreSizeMacos);
+        return gcMaxStoreSizePlatform
+            ? gcMaxStoreSizePlatform
+            : gcMaxStoreSize;
+    })()
+    : undefined;
+exports.purge = utils.getInputAsBool(constants_1.Inputs.Purge);
+exports.purgeOverwrite = (() => {
+    const purgeOverwrite = core.getInput(constants_1.Inputs.PurgeOverwrite);
+    if (!(purgeOverwrite == "always" || purgeOverwrite == "never")) {
+        return "default";
+    }
+    return purgeOverwrite;
+})();
+exports.purgePrefixes = utils
+    .getInputAsArray(constants_1.Inputs.PurgePrefixes)
+    .map(prefix => prefix.trim())
+    .filter(prefix => prefix.length > 0);
+exports.purgeLastAccessed = utils.getInputAsInt(constants_1.Inputs.PurgeLastAccessed);
+exports.purgeCreatedMaxAge = utils.getInputAsInt(constants_1.Inputs.PurgeCreated);
+exports.uploadChunkSize = utils.getInputAsInt(constants_1.Inputs.UploadChunkSize) || 32 * 1024 * 1024;
+exports.token = core.getInput(constants_1.Inputs.Token, { required: true });
 
 
 /***/ }),
@@ -62508,86 +62605,6 @@ function run() {
 }
 run();
 exports["default"] = run;
-
-
-/***/ }),
-
-/***/ 5084:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.restoreExtraCaches = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const constants_1 = __nccwpck_require__(9042);
-const utils = __importStar(__nccwpck_require__(6850));
-function restoreExtraCaches() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const extraRestoreKeys = utils.getInputAsArray(constants_1.Inputs.ExtraRestoreKeys);
-        if (extraRestoreKeys.length == 0) {
-            return;
-        }
-        const token = core.getInput(constants_1.Inputs.Token, { required: true });
-        utils.info(`
-        Restoring extra caches with keys:
-        ${utils.stringify(extraRestoreKeys)}
-        `);
-        const results = yield utils.getCachesByKeys(token, extraRestoreKeys);
-        utils.info(`
-        Found ${results.length} cache(s):
-        ${utils.stringify(results)}
-        `);
-        const cachePaths = utils.paths;
-        results.forEach((cache) => __awaiter(this, void 0, void 0, function* () {
-            utils.info(`Restoring a cache with the key ${cache.key}`);
-            if (cache.key !== undefined) {
-                const restoreKey = yield utils.getCacheKey({
-                    paths: cachePaths,
-                    primaryKey: cache.key,
-                    restoreKeys: [],
-                    lookupOnly: false
-                });
-                if (restoreKey) {
-                    utils.info(`Restored a cache with the key ${cache.key}`);
-                }
-            }
-        }));
-    });
-}
-exports.restoreExtraCaches = restoreExtraCaches;
 
 
 /***/ }),
@@ -62630,93 +62647,105 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.restoreWithKey = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const constants_1 = __nccwpck_require__(9042);
-const restoreExtraCaches_1 = __nccwpck_require__(5084);
-const utils = __importStar(__nccwpck_require__(6850));
-function restoreWithKey(key, paths) {
-    return __awaiter(this, void 0, void 0, function* () {
-        utils.info(`Restoring a cache with the key "${key}".`);
-        utils.info(`::group::Logs are hidden. Errors are due to attempts to overwrite read-only paths.`);
-        yield utils.getCacheKey({
-            paths,
-            primaryKey: key,
-            restoreKeys: [],
-            lookupOnly: false
-        });
-        utils.info(`::endgroup::`);
-        utils.info(`Finished restoring the cache.`);
-    });
-}
-exports.restoreWithKey = restoreWithKey;
+const inputs = __importStar(__nccwpck_require__(7063));
+const utils = __importStar(__nccwpck_require__(4427));
+const restore_1 = __nccwpck_require__(8486);
 function restoreImpl(stateProvider) {
+    var _a, _b, _c, _d, _e, _f, _g;
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            core.setOutput(constants_1.Outputs.Hit, false);
+            core.setOutput(constants_1.Outputs.HitPrimary, false);
+            core.setOutput(constants_1.Outputs.HitFirstMatch, false);
+            core.setOutput(constants_1.Outputs.RestoredKey, false);
+            core.setOutput(constants_1.Outputs.RestoredKeys, []);
             if (!utils.isCacheFeatureAvailable()) {
-                core.setOutput(constants_1.Outputs.CacheHit, "false");
                 return;
             }
             // Validate inputs, this can cause task failure
             if (!utils.isValidEvent()) {
                 throw new Error(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
             }
-            const primaryKey = core.getInput(constants_1.Inputs.Key, { required: true });
-            stateProvider.setState(constants_1.State.CachePrimaryKey, primaryKey);
-            const restoreKeys = utils.getInputAsArray(constants_1.Inputs.RestoreKeys);
-            const cachePaths = utils.paths;
-            const failOnCacheMiss = utils.getInputAsBool(constants_1.Inputs.FailOnCacheMiss);
-            const restoreKeyHit = utils.getInputAsBool(constants_1.Inputs.RestoreKeyHit);
-            utils.info(`Searching for a cache with the key "${primaryKey}".`);
-            let cacheKey = yield utils.getCacheKey({
-                paths: cachePaths,
-                primaryKey,
-                restoreKeys: [],
-                lookupOnly: true
-            });
-            if (cacheKey) {
-                yield restoreWithKey(cacheKey, cachePaths);
-            }
-            else {
-                utils.info(`
-                No cache with the given primary key found.
-                Searching for a cache using restore keys:
-                ${JSON.stringify(restoreKeys)}
+            let restoredKey;
+            let lookedUpKey;
+            const restoredKeys = [];
+            const errorNot = (message) => new Error(`
+                No cache with the given key ${message}.
+                Exiting as the input "${constants_1.Inputs.FailOn}" is set.
                 `);
-                const restoreKey = yield utils.getCacheKey({
-                    paths: cachePaths,
-                    primaryKey: "",
-                    restoreKeys,
+            const errorNotFound = errorNot("was found");
+            const errorNotRestored = errorNot("could be restored");
+            {
+                const primaryKey = inputs.primaryKey;
+                stateProvider.setState(constants_1.State.CachePrimaryKey, primaryKey);
+                utils.info(`Searching for a cache with the key "${primaryKey}".`);
+                lookedUpKey = yield utils.getCacheKey({
+                    primaryKey,
+                    restoreKeys: [],
                     lookupOnly: true
                 });
-                if (restoreKey) {
-                    yield restoreWithKey(restoreKey, cachePaths);
+                if (!lookedUpKey &&
+                    ((_a = inputs.failOn) === null || _a === void 0 ? void 0 : _a.keyType) == "primary" &&
+                    ((_b = inputs.failOn) === null || _b === void 0 ? void 0 : _b.result) == "miss") {
+                    throw errorNotFound;
                 }
-                if (restoreKeyHit) {
-                    cacheKey = restoreKey;
+                if (lookedUpKey && utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
+                    utils.info(`Found a cache with the given "${constants_1.Inputs.PrimaryKey}".`);
+                    core.setOutput(constants_1.Outputs.HitPrimary, true);
+                    if (!inputs.skipRestoreOnHitPrimaryKey) {
+                        restoredKey = yield (0, restore_1.restoreWithKey)(primaryKey);
+                        if (restoredKey) {
+                            restoredKeys.push(...[restoredKey]);
+                        }
+                        else if (((_c = inputs.failOn) === null || _c === void 0 ? void 0 : _c.keyType) == "primary" &&
+                            ((_d = inputs.failOn) === null || _d === void 0 ? void 0 : _d.result) == "not-restored") {
+                            throw errorNotRestored;
+                        }
+                    }
                 }
             }
-            if (!cacheKey) {
-                if (failOnCacheMiss) {
-                    throw new Error(`
-                    Failed to restore a cache with the key "${primaryKey}".
-                    Exiting as ${constants_1.Inputs.FailOnCacheMiss} is set. 
-                    `);
-                }
+            if (!restoredKey &&
+                !(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)) {
                 utils.info(`
-                Cache not found for input keys:
-                ${utils.stringify([primaryKey, ...restoreKeys])}
+                Searching for a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}":
+                
+                ${JSON.stringify(inputs.restorePrefixesFirstMatch)}
                 `);
-                yield (0, restoreExtraCaches_1.restoreExtraCaches)();
-                return;
+                const foundKey = yield utils.getCacheKey({
+                    primaryKey: "",
+                    restoreKeys: inputs.restorePrefixesFirstMatch,
+                    lookupOnly: true
+                });
+                if (!foundKey &&
+                    ((_e = inputs.failOn) === null || _e === void 0 ? void 0 : _e.keyType) == "first-match" &&
+                    inputs.failOn.result == "miss") {
+                    throw errorNotFound;
+                }
+                if (foundKey) {
+                    utils.info(`Found a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}".`);
+                    core.setOutput(constants_1.Outputs.HitFirstMatch, true);
+                    restoredKey = yield (0, restore_1.restoreWithKey)(foundKey);
+                    if (restoredKey) {
+                        restoredKeys.push(...[restoredKey]);
+                    }
+                    else if (((_f = inputs.failOn) === null || _f === void 0 ? void 0 : _f.keyType) == "first-match" &&
+                        ((_g = inputs.failOn) === null || _g === void 0 ? void 0 : _g.result) == "not-restored") {
+                        throw errorNotRestored;
+                    }
+                }
             }
+            if (!(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)) {
+                restoredKeys.push(...(yield (0, restore_1.restoreCaches)()));
+            }
+            restoredKey || (restoredKey = "");
             // Store the matched cache key in states
-            stateProvider.setState(constants_1.State.CacheMatchedKey, cacheKey);
-            const isExactKeyMatch = utils.isExactKeyMatch(core.getInput(constants_1.Inputs.Key, { required: true }), cacheKey) || restoreKeyHit;
-            core.setOutput(constants_1.Outputs.CacheHit, isExactKeyMatch.toString());
-            utils.info(`Cache restored from key: "${cacheKey}"`);
-            yield (0, restoreExtraCaches_1.restoreExtraCaches)();
-            return cacheKey;
+            stateProvider.setState(constants_1.State.CacheRestoredKey, restoredKey);
+            core.setOutput(constants_1.Outputs.Hit, true);
+            core.setOutput(constants_1.Outputs.RestoredKey, restoredKey);
+            core.setOutput(constants_1.Outputs.RestoredKeys, restoredKeys);
+            return restoredKey;
         }
         catch (error) {
             core.setFailed(error.message);
@@ -62768,7 +62797,7 @@ class StateProviderBase {
         this.getState = (key) => "";
     }
     getCacheState() {
-        const cacheKey = this.getState(constants_1.State.CacheMatchedKey);
+        const cacheKey = this.getState(constants_1.State.CacheRestoredKey);
         if (cacheKey) {
             core.debug(`Cache state/key: ${cacheKey}`);
             return cacheKey;
@@ -62788,8 +62817,8 @@ class NullStateProvider extends StateProviderBase {
     constructor() {
         super(...arguments);
         this.stateToOutputMap = new Map([
-            [constants_1.State.CacheMatchedKey, constants_1.Outputs.CacheMatchedKey],
-            [constants_1.State.CachePrimaryKey, constants_1.Outputs.CachePrimaryKey]
+            [constants_1.State.CacheRestoredKey, constants_1.Outputs.RestoredKey],
+            [constants_1.State.CachePrimaryKey, constants_1.Outputs.PrimaryKey]
         ]);
         this.setState = (key, value) => {
             core.setOutput(this.stateToOutputMap.get(key), value);
@@ -62803,7 +62832,7 @@ exports.NullStateProvider = NullStateProvider;
 
 /***/ }),
 
-/***/ 6850:
+/***/ 4427:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -62844,12 +62873,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.filterCachesByTime = exports.getCachesByKeys = exports.getCacheKey = exports.paths = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.isLinux = exports.warning = exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByKeys = exports.octokit = exports.getCacheKey = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const dedent_1 = __importDefault(__nccwpck_require__(5281));
 const constants_1 = __nccwpck_require__(9042);
+const inputs = __importStar(__nccwpck_require__(7063));
+const utils = __importStar(__nccwpck_require__(4427));
 function isGhes() {
     const ghUrl = new URL(process.env["GITHUB_SERVER_URL"] || "https://github.com");
     return ghUrl.hostname.toUpperCase() !== "GITHUB.COM";
@@ -62864,7 +62895,7 @@ function isExactKeyMatch(key, cacheKey) {
 exports.isExactKeyMatch = isExactKeyMatch;
 function logWarning(message) {
     const warningPrefix = "[warning]";
-    core.info(`${warningPrefix}${message}`);
+    core.warning(`${warningPrefix} ${message}`);
 }
 exports.logWarning = logWarning;
 function logError(message) {
@@ -62873,7 +62904,7 @@ function logError(message) {
 }
 exports.logError = logError;
 // Cache token authorized for all events that are tied to a ref
-// See GitHub Context https://help.github.com/actions/automating-your-workflow-with-github-actions/contexts-and-expression-syntax-for-github-actions#github-context
+// See GitHub Context https://docs.github.com/en/actions/learn-github-actions/contexts
 function isValidEvent() {
     return constants_1.RefKey in process.env && Boolean(process.env[constants_1.RefKey]);
 }
@@ -62904,31 +62935,33 @@ function isCacheFeatureAvailable() {
         return true;
     }
     if (isGhes()) {
-        logWarning(`Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
+        logError(`Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
             Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`);
         return false;
     }
-    logWarning("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
+    logError(`
+        Actions cache service is unavailable.
+        Please check https://www.githubstatus.com/ for any ongoing issue in Actions.
+        `);
     return false;
 }
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
-exports.paths = ["/nix/", "~/.cache/nix", "~root/.cache/nix"];
-function getCacheKey({ paths, primaryKey, restoreKeys, lookupOnly }) {
+function getCacheKey({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield cache.restoreCache(
         // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-        paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false);
+        inputs.paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false);
     });
 }
 exports.getCacheKey = getCacheKey;
-function getCachesByKeys(token, keys) {
+exports.octokit = github.getOctokit(inputs.token);
+function getCachesByKeys(keys) {
     return __awaiter(this, void 0, void 0, function* () {
         const caches = [];
-        const octokit = github.getOctokit(token);
         for (let i = 0; i < keys.length; i += 1) {
             const key = keys[i];
             for (let page = 1; page <= 500; page += 1) {
-                const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
+                const { data: cachesRequest } = yield exports.octokit.rest.actions.getActionsCacheList({
                     owner: github.context.repo.owner,
                     repo: github.context.repo.repo,
                     key,
@@ -62939,31 +62972,21 @@ function getCachesByKeys(token, keys) {
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
                 }
-                caches.push(...cachesRequest.actions_caches);
+                if (utils.isExactKeyMatch(inputs.primaryKey, key)) {
+                    caches.push(...cachesRequest.actions_caches);
+                }
             }
         }
         return caches;
     });
 }
 exports.getCachesByKeys = getCachesByKeys;
-const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => caches.filter(cache => {
-    const at = doUseLastAccessedTime
-        ? cache.last_accessed_at
-        : cache.created_at;
-    if (at !== undefined && cache.id !== undefined) {
-        const atDate = new Date(at);
-        return atDate < maxDate;
-    }
-    else
-        return false;
-});
-exports.filterCachesByTime = filterCachesByTime;
-const mkMessageWrongValue = (input, value) => `Wrong value for the input '${input}': ${value}`;
+const mkMessageWrongValue = (input, value) => `Wrong value for the input "${input}": ${value}`;
 exports.mkMessageWrongValue = mkMessageWrongValue;
 function getMaxDate({ doUseLastAccessedTime, time }) {
     const inputMaxAge = doUseLastAccessedTime
-        ? constants_1.Inputs.PurgeAccessedMaxAge
-        : constants_1.Inputs.PurgeCreatedMaxAge;
+        ? constants_1.Inputs.PurgeLastAccessed
+        : constants_1.Inputs.PurgeCreated;
     const maxAge = core.getInput(inputMaxAge, { required: false });
     const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
     if (maxDate === null) {
@@ -62974,10 +62997,107 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 exports.getMaxDate = getMaxDate;
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
-const info = (message) => {
-    core.info(dedent_1.default.withOptions({})(message));
-};
+const myDedent = dedent_1.default.withOptions({});
+const info = (message) => core.info(myDedent(message));
 exports.info = info;
+const warning = (message) => core.warning(myDedent(message));
+exports.warning = warning;
+exports.isLinux = process.platform === "linux";
+
+
+/***/ }),
+
+/***/ 8486:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.restoreCaches = exports.restoreWithKey = void 0;
+const constants_1 = __nccwpck_require__(9042);
+const inputs = __importStar(__nccwpck_require__(7063));
+const utils = __importStar(__nccwpck_require__(4427));
+function restoreWithKey(key) {
+    return __awaiter(this, void 0, void 0, function* () {
+        utils.info(`Restoring a cache with the key "${key}".`);
+        utils.info(`::group::Logs are hidden. Errors are due to attempts to overwrite read-only paths.`);
+        const cacheKey = yield utils.getCacheKey({
+            primaryKey: key,
+            restoreKeys: [],
+            lookupOnly: false
+        });
+        utils.info(`::endgroup::`);
+        if (cacheKey) {
+            utils.info(`Finished restoring the cache.`);
+            return cacheKey;
+        }
+        else {
+            utils.info(`Failed to restore the cache.`);
+        }
+    });
+}
+exports.restoreWithKey = restoreWithKey;
+function restoreCaches() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const restoredCaches = [];
+        if (inputs.restorePrefixesAllMatches.length == 0) {
+            return restoredCaches;
+        }
+        utils.info(`
+        Searching for caches using the "${constants_1.Inputs.RestorePrefixesAllMatches}":
+        
+        ${utils.stringify(inputs.restorePrefixesAllMatches)}
+        `);
+        const caches = yield utils.getCachesByKeys(inputs.restorePrefixesAllMatches);
+        utils.info(`
+        Found ${caches.length} cache(s):
+        
+        ${utils.stringify(caches)}
+        `);
+        for (const cache of caches) {
+            if (cache.key) {
+                const cacheKey = yield restoreWithKey(cache.key);
+                if (cacheKey) {
+                    restoredCaches.push(...[cacheKey]);
+                }
+            }
+        }
+        return restoredCaches;
+    });
+}
+exports.restoreCaches = restoreCaches;
 
 
 /***/ }),
