@@ -1,4 +1,4 @@
-{ target }:
+{ target, lib }:
 let
   specific = {
     cache = {
@@ -27,22 +27,23 @@ let
   q = txt: "`${txt}`";
   whenListOf = "When a newline-separated non-empty list of non-empty";
   pathsDefault = ''`["/nix", "~/.cache/nix", "~root/.cache/nix"]`'';
-  nixTrue = q "nix: true";
-  
-  pathsDefaultWhenNix = ''When ${nixTrue}, uses ${pathsDefault} as default paths. Otherwise, uses an empty list as default paths.'';
+  nixTrue = "nix: true";
+
+  pathsDefaultWhenNix = ''When ${q nixTrue}, uses ${pathsDefault} as default paths. Otherwise, uses an empty list as default paths.'';
   pathsWhen = ''${whenListOf} path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for ${specific.actions} caches.'';
   pathsOtherwise = ''Otherwise, the action uses default paths for ${specific.actions} caches.'';
-  
+
   effectOnlyOn = platform: ''Can have an effect only when on a ${q platform} runner.'';
   effectOnlyOnLinux = effectOnlyOn "Linux";
   effectOnlyOnMacOS = effectOnlyOn "macOS";
   effectOnlyWhenHasEffect = input: "Can have an effect only when ${q input} has effect.";
-  effectOnlyWhenNixEnabled = "Can have an effect only when ${q "nix: true"}.";
-  
+  effectOnlyWhen = conditions: "Can have an effect only when ${lib.concatMapStringsSep ", " q conditions}.";
+  effectOnlyWhenNixEnabled = effectOnlyWhen [ nixTrue ];
+
   noEffectOtherwise = ''Otherwise, this input has no effect.'';
-  
-  gcWhen = ''When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.'';
-  
+
+  gcWhen = ''When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.'';
+
   overrides = input: "Overrides ${q input}.";
 
   paths = "paths";
@@ -105,6 +106,12 @@ in
           - Otherwise, the action doesn't do them.
         default: "true"
 
+      save:
+        description: |
+          - When `true`, the action can save a cache with the ${q primary-key}.
+          - Otherwise, the action can't save a cache.
+        default: "true"
+
       ${paths}:
         description: |
           - ${pathsDefaultWhenNix}
@@ -133,13 +140,13 @@ in
   ''
     ${gc-max-store-size}:
         description: |
-          - ${effectOnlyWhenNixEnabled}
+          - ${effectOnlyWhen [nixTrue "save: true"]}
           - ${gcWhen}
           - ${noEffectOtherwise}
         default: ""
       ${gc-max-store-size}-macos:
         description: |
-          - ${effectOnlyWhenNixEnabled}
+          - ${effectOnlyWhen [nixTrue "save: true"]}
           - ${overrides gc-max-store-size}
           - ${effectOnlyOnMacOS}
           - ${gcWhen}
@@ -147,7 +154,7 @@ in
         default: ""
       ${gc-max-store-size}-linux:
         description: |
-          - ${effectOnlyWhenNixEnabled}
+          - ${effectOnlyWhen [nixTrue "save: true"]}
           - ${overrides gc-max-store-size}
           - ${effectOnlyOnLinux}
           - ${gcWhen}
@@ -156,32 +163,32 @@ in
     
       purge:
         description: |
-          - When `true`, the action purges (possibly zero) old caches.
+          - When `true`, the action purges (possibly zero) caches.
           - ${noEffectOtherwise}
         default: "false"
       purge-overwrite:
         description: |
-          - ${effectOnlyWhenHasEffect "purge"}
-          - When `always`, the action always purges old cache(s) with the ${q primary-key} and saves a new cache with the ${q primary-key}.
-          - When `never`, the action never purges old cache(s) with the ${q primary-key} and saves a new cache when there's a miss on the ${q primary-key}.
-          - Otherwise, the action purges old caches using purging criteria and saves a new cache when there's a miss on the ${q primary-key}.
+          - ${effectOnlyWhen ["purge: true"]}
+          - When `always`, the action always purges cache with the ${q primary-key}.
+          - When `never`, the action never purges cache with the ${q primary-key}.
+          - Otherwise, the action purges old caches using purging criteria.
         default: ""
       purge-prefixes:
         description: |
-          - ${effectOnlyWhenHasEffect "purge"}
-          - ${whenListOf} cache key prefixes, the action collects for purging all cache keys that match these prefixes.
+          - ${effectOnlyWhen ["purge: true"]}
+          - ${whenListOf} cache key prefixes, the action collects all cache keys that match these prefixes.
           - ${noEffectOtherwise}
         default: ""
       purge-last-accessed:
         description: |
-          - ${effectOnlyWhenHasEffect "purge-prefixes"}
-          - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the Save phase.
+          - ${effectOnlyWhen ["purge: true"]}
+          - When a number, the action selects for purging caches last accessed more than this number of seconds ago relative to the start of the Save phase.
           - ${noEffectOtherwise}
         default: ""
       purge-created:
         description: |
-          - ${effectOnlyWhenHasEffect "purge-prefixes"}
-          - When a number, the action purges caches created more than this number of seconds ago relative to the start of the Save phase.
+          - ${effectOnlyWhen ["purge: true"]}
+          - When a number, the action selects for purging caches created more than this number of seconds ago relative to the start of the Save phase.
           - ${noEffectOtherwise}
         default: ""
     

@@ -45,6 +45,12 @@ inputs:
       - Otherwise, the action doesn't do them.
     default: "true"
 
+  save:
+    description: |
+      - When `true`, the action can save a cache with the `primary-key`.
+      - Otherwise, the action can't save a cache.
+    default: "true"
+
   paths:
     description: |
       - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.

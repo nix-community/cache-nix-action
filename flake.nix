@@ -15,9 +15,9 @@
           tools = [ pkgs.nodejs_18 pkgs.poetry ];
 
           packages = mkShellApps {
-            writeSave = writeYAML "save" "save/action.yml" (import ./action.nix { target = "save"; });
-            writeRestore = writeYAML "restore" "restore/action.yml" (import ./action.nix { target = "restore"; });
-            writeCache = writeYAML "cache" "action.yml" (import ./action.nix { target = "cache"; });
+            writeSave = writeYAML "save" "save/action.yml" (import ./action.nix { target = "save"; inherit (pkgs) lib; });
+            writeRestore = writeYAML "restore" "restore/action.yml" (import ./action.nix { target = "restore"; inherit (pkgs) lib; });
+            writeCache = writeYAML "cache" "action.yml" (import ./action.nix { target = "cache"; inherit (pkgs) lib; });
             write = {
               runtimeInputs = [ pkgs.poetry ];
               text = ''

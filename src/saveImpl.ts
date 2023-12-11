@@ -68,7 +68,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                     Not saving a new cache.
                     `
                 );
-            } else {
+            } else if (inputs.save) {
                 await collectGarbage();
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
@@ -79,6 +79,8 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 });
 
                 utils.info(`Saved a new cache.`);
+            } else {
+                `Not saving a new cache because of "${Inputs.Save}: false"`;
             }
         }
 

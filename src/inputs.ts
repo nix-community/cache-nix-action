@@ -43,6 +43,8 @@ export const failOn: FailOn | undefined = (() => {
 
 export const nix = utils.getInputAsBool(Inputs.Nix);
 
+export const save = utils.getInputAsBool(Inputs.Save);
+
 export const paths = (
     nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []
 ).concat(

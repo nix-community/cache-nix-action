@@ -10,6 +10,8 @@ export enum Inputs {
 
     Nix = "nix",
 
+    Save = "save",
+
     Paths = "paths", // Input for cache, save, restore actions
     PathsMacos = "paths-macos", // Input for cache, save, restore actions
     PathsLinux = "paths-linux", // Input for cache, save, restore actions

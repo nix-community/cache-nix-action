@@ -45,6 +45,12 @@ inputs:
       - Otherwise, the action doesn't do them.
     default: "true"
 
+  save:
+    description: |
+      - When `true`, the action can save a cache with the `primary-key`.
+      - Otherwise, the action can't save a cache.
+    default: "true"
+
   paths:
     description: |
       - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
@@ -70,55 +76,55 @@ inputs:
 
   gc-max-store-size:
     description: |
-      - Can have an effect only when `nix: true`.
-      - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
+      - Can have an effect only when `nix: true`, `save: true`.
+      - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.
       - Otherwise, this input has no effect.
     default: ""
   gc-max-store-size-macos:
     description: |
-      - Can have an effect only when `nix: true`.
+      - Can have an effect only when `nix: true`, `save: true`.
       - Overrides `gc-max-store-size`.
       - Can have an effect only when on a `macOS` runner.
-      - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
+      - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.
       - Otherwise, this input has no effect.
     default: ""
   gc-max-store-size-linux:
     description: |
-      - Can have an effect only when `nix: true`.
+      - Can have an effect only when `nix: true`, `save: true`.
       - Overrides `gc-max-store-size`.
       - Can have an effect only when on a `Linux` runner.
-      - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before trying to save a new cache.
+      - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.
       - Otherwise, this input has no effect.
     default: ""
 
   purge:
     description: |
-      - When `true`, the action purges (possibly zero) old caches.
+      - When `true`, the action purges (possibly zero) caches.
       - Otherwise, this input has no effect.
     default: "false"
   purge-overwrite:
     description: |
-      - Can have an effect only when `purge` has effect.
-      - When `always`, the action always purges old cache(s) with the `primary-key` and saves a new cache with the `primary-key`.
-      - When `never`, the action never purges old cache(s) with the `primary-key` and saves a new cache when there's a miss on the `primary-key`.
-      - Otherwise, the action purges old caches using purging criteria and saves a new cache when there's a miss on the `primary-key`.
+      - Can have an effect only when `purge: true`.
+      - When `always`, the action always purges cache with the `primary-key`.
+      - When `never`, the action never purges cache with the `primary-key`.
+      - Otherwise, the action purges old caches using purging criteria.
     default: ""
   purge-prefixes:
     description: |
-      - Can have an effect only when `purge` has effect.
-      - When a newline-separated non-empty list of non-empty cache key prefixes, the action collects for purging all cache keys that match these prefixes.
+      - Can have an effect only when `purge: true`.
+      - When a newline-separated non-empty list of non-empty cache key prefixes, the action collects all cache keys that match these prefixes.
       - Otherwise, this input has no effect.
     default: ""
   purge-last-accessed:
     description: |
-      - Can have an effect only when `purge-prefixes` has effect.
-      - When a number, the action purges caches last accessed more than this number of seconds ago relative to the start of the Save phase.
+      - Can have an effect only when `purge: true`.
+      - When a number, the action selects for purging caches last accessed more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
     default: ""
   purge-created:
     description: |
-      - Can have an effect only when `purge-prefixes` has effect.
-      - When a number, the action purges caches created more than this number of seconds ago relative to the start of the Save phase.
+      - Can have an effect only when `purge: true`.
+      - When a number, the action selects for purging caches created more than this number of seconds ago relative to the start of the Save phase.
       - Otherwise, this input has no effect.
     default: ""
 
