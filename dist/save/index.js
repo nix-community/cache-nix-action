@@ -62573,7 +62573,7 @@ exports.purgePrefixes = utils
 exports.purgeLastAccessed = utils.getInputAsInt(constants_1.Inputs.PurgeLastAccessed);
 exports.purgeCreatedMaxAge = utils.getInputAsInt(constants_1.Inputs.PurgeCreated);
 exports.uploadChunkSize = utils.getInputAsInt(constants_1.Inputs.UploadChunkSize) || 32 * 1024 * 1024;
-exports.token = core.getInput(constants_1.Inputs.Token, { required: true });
+exports.token = core.getInput(constants_1.Inputs.Token);
 
 
 /***/ }),
@@ -62963,7 +62963,7 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
     const inputMaxAge = doUseLastAccessedTime
         ? constants_1.Inputs.PurgeLastAccessed
         : constants_1.Inputs.PurgeCreated;
-    const maxAge = core.getInput(inputMaxAge, { required: false });
+    const maxAge = core.getInput(inputMaxAge);
     const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
     if (maxDate === null) {
         throw new Error((0, exports.mkMessageWrongValue)(inputMaxAge, maxAge));
