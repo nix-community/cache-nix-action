@@ -1,38 +1,49 @@
 export enum Inputs {
-    Key = "key", // Input for cache, restore, save action
-    Path = "path", // Input for cache, restore, save action
-    RestoreKeys = "restore-keys", // Input for cache, restore action
-    UploadChunkSize = "upload-chunk-size", // Input for cache, save action
-    FailOnCacheMiss = "fail-on-cache-miss", // Input for cache, restore action
+    PrimaryKey = "primary-key", // Input for cache, restore, save action
 
-    RestoreKeyHit = "restore-key-hit",
+    RestorePrefixesFirstMatch = "restore-prefixes-first-match", // Input for cache, restore actions
+    RestorePrefixesAllMatches = "restore-prefixes-all-matches", // Input for cache, restore actions
 
-    ExtraRestoreKeys = "extra-restore-keys", // Input for cache, restore action
+    SkipRestoreOnHitPrimaryKey = "skip-restore-on-primary-key-hit", // Input for cache, restore, actions
 
-    GCMacos = "gc-macos", // Input for cache, save action
-    GCMaxStoreSizeMacos = "gc-max-store-size-macos", // Input for cache, save action
-    GCLinux = "gc-linux", // Input for cache, save action
-    GCMaxStoreSizeLinux = "gc-max-store-size-linux", // Input for cache, save action
+    FailOn = "fail-on", // Input for cache, restore actions
 
-    Token = "token", // Input for cache, save action
+    Nix = "nix",
 
-    Purge = "purge", // Input for cache, save action
-    PurgeKeys = "purge-keys", // Input for cache, save action
-    PurgeAccessed = "purge-accessed", // Input for cache, save action
-    PurgeAccessedMaxAge = "purge-accessed-max-age", // Input for cache, save action
-    PurgeCreated = "purge-created", // Input for cache, save action
-    PurgeCreatedMaxAge = "purge-created-max-age" // Input for cache, save action
+    Save = "save",
+
+    Paths = "paths", // Input for cache, save, restore actions
+    PathsMacos = "paths-macos", // Input for cache, save, restore actions
+    PathsLinux = "paths-linux", // Input for cache, save, restore actions
+
+    GCMaxStoreSize = "gc-max-store-size",
+    GCMaxStoreSizeMacos = "gc-max-store-size-macos", // Input for cache, save actions
+    GCMaxStoreSizeLinux = "gc-max-store-size-linux", // Input for cache, save actions
+
+    Purge = "purge", // Input for cache, save actions
+    PurgeOverwrite = "purge-overwrite", // Input for cache, save actions
+    PurgePrefixes = "purge-prefixes", // Input for cache, save actions
+    PurgeLastAccessed = "purge-last-accessed", // Input for cache, save actions
+    PurgeCreated = "purge-created", // Input for cache, save actions
+
+    UploadChunkSize = "upload-chunk-size", // Input for cache, save actions
+    Token = "token" // Input for cache, save actions
 }
 
 export enum Outputs {
-    CacheHit = "cache-hit", // Output from cache, restore action
-    CachePrimaryKey = "cache-primary-key", // Output from restore action
-    CacheMatchedKey = "cache-matched-key" // Output from restore action
+    PrimaryKey = "primary-key",
+
+    Hit = "hit", // Output from cache, restore actions
+    HitPrimaryKey = "hit-primary-key", // Output from cache, restore actions
+    HitFirstMatch = "hit-first-match", // Output from cache, restore actions
+
+    RestoredKey = "restored-key", // Output from cache, restore actions
+    RestoredKeys = "restored-keys" // Output from cache, restore actions
 }
 
 export enum State {
-    CachePrimaryKey = "CACHE_KEY",
-    CacheMatchedKey = "CACHE_RESULT"
+    CachePrimaryKey = "CACHE_PRIMARY_KEY",
+    CacheRestoredKey = "CACHE_RESTORED_KEY"
 }
 
 export enum Events {

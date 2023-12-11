@@ -11,7 +11,7 @@ export interface IStateProvider {
 
 class StateProviderBase implements IStateProvider {
     getCacheState(): string | undefined {
-        const cacheKey = this.getState(State.CacheMatchedKey);
+        const cacheKey = this.getState(State.CacheRestoredKey);
         if (cacheKey) {
             core.debug(`Cache state/key: ${cacheKey}`);
             return cacheKey;
@@ -34,8 +34,8 @@ export class StateProvider extends StateProviderBase {
 
 export class NullStateProvider extends StateProviderBase {
     stateToOutputMap = new Map<string, string>([
-        [State.CacheMatchedKey, Outputs.CacheMatchedKey],
-        [State.CachePrimaryKey, Outputs.CachePrimaryKey]
+        [State.CacheRestoredKey, Outputs.RestoredKey],
+        [State.CachePrimaryKey, Outputs.PrimaryKey]
     ]);
 
     setState = (key: string, value: string) => {

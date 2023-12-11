@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "cache-nix-action"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyyaml = "^6.0.1"
+types-pyyaml = "^6.0.12.12"
+lxml = "^4.9.3"
+markdown = "^3.5.1"
+
+[tool.poetry.scripts]
+translate_table = "cache_nix_action.translate_table:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
