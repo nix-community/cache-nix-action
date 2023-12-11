@@ -75,6 +75,10 @@ inputs:
     default: ""
 
   
+
+  token:
+    description: The action uses it to communicate with GitHub API.
+    default: ${{ secrets.GITHUB_TOKEN }}
 outputs:
   primary-key:
     description: |

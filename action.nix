@@ -198,13 +198,12 @@ in
         description: |
           - When a number, the action uses it as the chunk size (in bytes) to split up large files during upload.
           - Otherwise, the action uses the default value `33554432` (32MB).
-        default: ""
-    
+        default: ""''
+      else ""}
+
       token:
         description: The action uses it to communicate with GitHub API.
-        default: ''${{ github.token }}'' 
-      else ""
-    }
+        default: ''${{ secrets.GITHUB_TOKEN }}
     ${
       if target == "cache" || target == "restore" then
     ''
