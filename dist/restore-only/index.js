@@ -62776,7 +62776,7 @@ const constants_1 = __nccwpck_require__(9042);
 const inputs = __importStar(__nccwpck_require__(7063));
 const stateProvider_1 = __nccwpck_require__(1527);
 const utils = __importStar(__nccwpck_require__(4427));
-const restore_1 = __nccwpck_require__(8486);
+const restore = __importStar(__nccwpck_require__(8486));
 function restoreImpl(stateProvider) {
     var _a, _b, _c, _d, _e, _f, _g;
     return __awaiter(this, void 0, void 0, function* () {
@@ -62806,7 +62806,7 @@ function restoreImpl(stateProvider) {
                 const primaryKey = inputs.primaryKey;
                 stateProvider.setState(constants_1.State.CachePrimaryKey, primaryKey);
                 utils.info(`Searching for a cache with the key "${primaryKey}".`);
-                lookedUpKey = yield utils.getCacheKey({
+                lookedUpKey = yield utils.restoreCache({
                     primaryKey,
                     restoreKeys: [],
                     lookupOnly: true
@@ -62824,7 +62824,7 @@ function restoreImpl(stateProvider) {
                     utils.info(`Found a cache with the given "${constants_1.Inputs.PrimaryKey}".`);
                     core.setOutput(constants_1.Outputs.HitPrimaryKey, true);
                     if (!inputs.skipRestoreOnHitPrimaryKey) {
-                        restoredKey = yield (0, restore_1.restoreWithKey)(primaryKey);
+                        restoredKey = yield restore.restoreCache(primaryKey);
                         if (restoredKey) {
                             restoredKeys.push(...[restoredKey]);
                         }
@@ -62840,10 +62840,9 @@ function restoreImpl(stateProvider) {
                 !(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)) {
                 utils.info(`
                 Searching for a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}":
-                
                 ${JSON.stringify(inputs.restorePrefixesFirstMatch)}
                 `);
-                const foundKey = yield utils.getCacheKey({
+                const foundKey = yield utils.restoreCache({
                     primaryKey: "",
                     restoreKeys: inputs.restorePrefixesFirstMatch,
                     lookupOnly: true
@@ -62860,7 +62859,7 @@ function restoreImpl(stateProvider) {
                 if (foundKey) {
                     utils.info(`Found a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}".`);
                     core.setOutput(constants_1.Outputs.HitFirstMatch, true);
-                    restoredKey = yield (0, restore_1.restoreWithKey)(foundKey);
+                    restoredKey = yield restore.restoreCache(foundKey);
                     if (restoredKey) {
                         restoredKeys.push(...[restoredKey]);
                     }
@@ -62871,7 +62870,7 @@ function restoreImpl(stateProvider) {
                 }
             }
             if (!(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)) {
-                restoredKeys.push(...(yield (0, restore_1.restoreCaches)()));
+                restoredKeys.push(...(yield restore.restoreCaches()));
             }
             restoredKey || (restoredKey = "");
             // Store the matched cache key in states
@@ -63040,7 +63039,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.warning = exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByKeys = exports.getCacheKey = exports.isCacheFeatureAvailable = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.warning = exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByKeys = exports.restoreCache = exports.isCacheFeatureAvailable = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
@@ -63091,14 +63090,14 @@ function isCacheFeatureAvailable() {
     return false;
 }
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
-function getCacheKey({ primaryKey, restoreKeys, lookupOnly }) {
+function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield cache.restoreCache(
         // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
         inputs.paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false);
     });
 }
-exports.getCacheKey = getCacheKey;
+exports.restoreCache = restoreCache;
 function getCachesByKeys(keys) {
     return __awaiter(this, void 0, void 0, function* () {
         const caches = [];
@@ -63246,15 +63245,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.restoreCaches = exports.restoreWithKey = void 0;
+exports.restoreCaches = exports.restoreCache = void 0;
 const constants_1 = __nccwpck_require__(9042);
 const inputs = __importStar(__nccwpck_require__(7063));
 const utils = __importStar(__nccwpck_require__(4427));
-function restoreWithKey(key) {
+function restoreCache(key) {
     return __awaiter(this, void 0, void 0, function* () {
         utils.info(`Restoring a cache with the key "${key}".`);
         utils.info(`::group::Logs are hidden. Errors are due to attempts to overwrite read-only paths.`);
-        const cacheKey = yield utils.getCacheKey({
+        const cacheKey = yield utils.restoreCache({
             primaryKey: key,
             restoreKeys: [],
             lookupOnly: false
@@ -63269,7 +63268,7 @@ function restoreWithKey(key) {
         }
     });
 }
-exports.restoreWithKey = restoreWithKey;
+exports.restoreCache = restoreCache;
 function restoreCaches() {
     return __awaiter(this, void 0, void 0, function* () {
         const restoredCaches = [];
@@ -63289,7 +63288,7 @@ function restoreCaches() {
         `);
         for (const cache of caches) {
             if (cache.key) {
-                const cacheKey = yield restoreWithKey(cache.key);
+                const cacheKey = yield restoreCache(cache.key);
                 if (cacheKey) {
                     restoredCaches.push(...[cacheKey]);
                 }

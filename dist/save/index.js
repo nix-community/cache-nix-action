@@ -62841,7 +62841,7 @@ function saveImpl(stateProvider) {
             // Save a cache using the primary key
             {
                 utils.info(`Searching for a cache using the primary key "${primaryKey}".`);
-                const foundKey = yield utils.getCacheKey({
+                const foundKey = yield utils.restoreCache({
                     primaryKey,
                     restoreKeys: [],
                     lookupOnly: true
@@ -63003,7 +63003,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.warning = exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByKeys = exports.getCacheKey = exports.isCacheFeatureAvailable = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.warning = exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByKeys = exports.restoreCache = exports.isCacheFeatureAvailable = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7799));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
@@ -63054,14 +63054,14 @@ function isCacheFeatureAvailable() {
     return false;
 }
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
-function getCacheKey({ primaryKey, restoreKeys, lookupOnly }) {
+function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield cache.restoreCache(
         // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
         inputs.paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false);
     });
 }
-exports.getCacheKey = getCacheKey;
+exports.restoreCache = restoreCache;
 function getCachesByKeys(keys) {
     return __awaiter(this, void 0, void 0, function* () {
         const caches = [];
