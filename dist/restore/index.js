@@ -63300,13 +63300,11 @@ const utils = __importStar(__nccwpck_require__(4427));
 function restoreCache(key) {
     return __awaiter(this, void 0, void 0, function* () {
         utils.info(`Restoring a cache with the key "${key}".`);
-        utils.info(`::group::Logs are hidden. Errors are due to attempts to overwrite read-only paths.`);
         const cacheKey = yield utils.restoreCache({
             primaryKey: key,
             restoreKeys: [],
             lookupOnly: false
         });
-        utils.info(`::endgroup::`);
         if (cacheKey) {
             utils.info(`Finished restoring the cache.`);
             return cacheKey;
