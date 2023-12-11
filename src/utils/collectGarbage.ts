@@ -11,12 +11,15 @@ export async function collectGarbage() {
             STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
             printf "Current store size in bytes: $STORE_SIZE\\n"
             `;
-        await exec("bash", [
-            "-c",
+
+        const run = async (command: string) =>
+            await exec("bash", ["-c", command]);
+
+        await run(printStoreSize);
+
+        await run(
             `
             sudo rm -rf /nix/.[!.]* /nix/..?*
-
-            ${printStoreSize}
 
             MAX_STORE_SIZE=${inputs.gcMaxStoreSize}
             
@@ -27,16 +30,10 @@ export async function collectGarbage() {
                 nix store gc --max "$R2"
             fi
             `
-        ]);
-
-        utils.info(
-            `
-            Finished collecting garbage.
-
-            Calculating the new store size.
-            `
         );
 
-        await exec("bash", ["-c", printStoreSize]);
+        utils.info(`Finished collecting garbage.`);
+
+        await run(printStoreSize);
     }
 }

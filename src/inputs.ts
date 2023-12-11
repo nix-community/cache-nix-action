@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 
 import { Inputs } from "./constants";
-import * as utils from "./utils/action";
+import * as utils from "./utils/inputs";
 
 export const primaryKey = core.getInput(Inputs.PrimaryKey, { required: true });
 
@@ -85,10 +85,7 @@ export const purgeOverwrite = (() => {
     return purgeOverwrite;
 })();
 
-export const purgePrefixes = utils
-    .getInputAsArray(Inputs.PurgePrefixes)
-    .map(prefix => prefix.trim())
-    .filter(prefix => prefix.length > 0);
+export const purgePrefixes = utils.getInputAsArray(Inputs.PurgePrefixes);
 
 export const purgeLastAccessed = utils.getInputAsInt(Inputs.PurgeLastAccessed);
 
@@ -97,4 +94,4 @@ export const purgeCreatedMaxAge = utils.getInputAsInt(Inputs.PurgeCreated);
 export const uploadChunkSize =
     utils.getInputAsInt(Inputs.UploadChunkSize) || 32 * 1024 * 1024;
 
-export const token = core.getInput(Inputs.Token);
+export const token = core.getInput(Inputs.Token, { required: true });

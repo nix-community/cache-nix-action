@@ -55,7 +55,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 `Searching for a cache using the primary key "${primaryKey}".`
             );
 
-            const foundKey = await utils.getCacheKey({
+            const foundKey = await utils.restoreCache({
                 primaryKey,
                 restoreKeys: [],
                 lookupOnly: true

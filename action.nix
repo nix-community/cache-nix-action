@@ -72,31 +72,33 @@ in
               - ${whenListOf} key prefixes, when there's a miss on the ${q primary-key}, 
                 the action searches in this list for the first prefix for which there exists a cache 
                 with a matching key and the action tries to restore that cache.
-              - Otherwise, this input has no effect.
+              - ${noEffectOtherwise}
             default: ""
           restore-prefixes-all-matches:
             description: |
               - ${whenListOf} key prefixes, the action tries to restore 
                 all caches whose keys match these prefixes.
-              - Otherwise, this input has no effect.
+              - ${noEffectOtherwise}
             default: ""
         
           skip-restore-on-hit-primary-key:
             description: |
               - Can have an effect only when ${q restore-prefixes-first-match} has no effect.
               - When `true`, when there's a hit on the ${q primary-key}, the action doesn't restore caches.
-              - Otherwise, this input has no effect.
+              - ${noEffectOtherwise}
             default: "false"
         
           fail-on:
             description: |
               - Input form: `<key type>.<result>`.
-              - `<key type>` options: `primary`, `first-match`.
+              - `<key type>` options: ${q primary-key}, `first-match`.
               - `<result>` options: `miss`, `not-restored`.
               - When the input satisfies the input form, when the event described in the input happens, the action fails.
-              - Example:
-                - Input: `primary.not-restored`.
-                - Event: a cache could not be restored via the ${q primary-key}.''
+                - Example:
+                  - Input: `${primary-key}.not-restored`.
+                  - Event: a cache could not be restored via the ${q primary-key}.
+              - ${noEffectOtherwise}
+            default: ""''
         else ""
       }
 
@@ -208,7 +210,7 @@ in
       if target == "cache" || target == "restore" then
     ''
     outputs:
-      primary-key:
+      ${primary-key}:
         description: |
           - A string.
           - The ${q primary-key}.

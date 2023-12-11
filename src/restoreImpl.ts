@@ -8,14 +8,14 @@ import {
     StateProvider
 } from "./stateProvider";
 import * as utils from "./utils/action";
-import { restoreCaches, restoreWithKey } from "./utils/restore";
+import * as restore from "./utils/restore";
 
 export async function restoreImpl(
     stateProvider: IStateProvider
 ): Promise<string | undefined> {
     try {
         core.setOutput(Outputs.Hit, false);
-        core.setOutput(Outputs.HitPrimary, false);
+        core.setOutput(Outputs.HitPrimaryKey, false);
         core.setOutput(Outputs.HitFirstMatch, false);
         core.setOutput(Outputs.RestoredKey, false);
         core.setOutput(Outputs.RestoredKeys, []);
@@ -53,28 +53,31 @@ export async function restoreImpl(
             stateProvider.setState(State.CachePrimaryKey, primaryKey);
 
             utils.info(`Searching for a cache with the key "${primaryKey}".`);
-            lookedUpKey = await utils.getCacheKey({
+            lookedUpKey = await utils.restoreCache({
                 primaryKey,
                 restoreKeys: [],
                 lookupOnly: true
             });
 
-            if (
-                !lookedUpKey &&
-                inputs.failOn?.keyType == "primary" &&
-                inputs.failOn?.result == "miss"
-            ) {
-                throw errorNotFound;
+            if (!lookedUpKey) {
+                if (
+                    inputs.failOn?.keyType == "primary" &&
+                    inputs.failOn?.result == "miss"
+                ) {
+                    throw errorNotFound;
+                } else {
+                    utils.info(`Could not find a cache.`);
+                }
             }
 
             if (lookedUpKey && utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
                 utils.info(
                     `Found a cache with the given "${Inputs.PrimaryKey}".`
                 );
-                core.setOutput(Outputs.HitPrimary, true);
+                core.setOutput(Outputs.HitPrimaryKey, true);
 
                 if (!inputs.skipRestoreOnHitPrimaryKey) {
-                    restoredKey = await restoreWithKey(primaryKey);
+                    restoredKey = await restore.restoreCache(primaryKey);
                     if (restoredKey) {
                         restoredKeys.push(...[restoredKey]);
                     } else if (
@@ -88,6 +91,7 @@ export async function restoreImpl(
         }
 
         if (
+            inputs.restorePrefixesFirstMatch.length > 0 &&
             !restoredKey &&
             !(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)
         ) {
@@ -96,23 +100,25 @@ export async function restoreImpl(
                 Searching for a cache using the "${
                     Inputs.RestorePrefixesFirstMatch
                 }":
-                
                 ${JSON.stringify(inputs.restorePrefixesFirstMatch)}
                 `
             );
 
-            const foundKey = await utils.getCacheKey({
+            const foundKey = await utils.restoreCache({
                 primaryKey: "",
                 restoreKeys: inputs.restorePrefixesFirstMatch,
                 lookupOnly: true
             });
 
-            if (
-                !foundKey &&
-                inputs.failOn?.keyType == "first-match" &&
-                inputs.failOn.result == "miss"
-            ) {
-                throw errorNotFound;
+            if (!foundKey) {
+                if (
+                    inputs.failOn?.keyType == "first-match" &&
+                    inputs.failOn.result == "miss"
+                ) {
+                    throw errorNotFound;
+                } else {
+                    utils.info(`Could not find a cache.`);
+                }
             }
 
             if (foundKey) {
@@ -121,7 +127,7 @@ export async function restoreImpl(
                 );
                 core.setOutput(Outputs.HitFirstMatch, true);
 
-                restoredKey = await restoreWithKey(foundKey);
+                restoredKey = await restore.restoreCache(foundKey);
                 if (restoredKey) {
                     restoredKeys.push(...[restoredKey]);
                 } else if (
@@ -134,7 +140,7 @@ export async function restoreImpl(
         }
 
         if (!(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)) {
-            restoredKeys.push(...(await restoreCaches()));
+            restoredKeys.push(...(await restore.restoreCaches()));
         }
 
         restoredKey ||= "";

@@ -34,7 +34,7 @@ export enum Outputs {
     PrimaryKey = "primary-key",
 
     Hit = "hit", // Output from cache, restore actions
-    HitPrimary = "hit-primary", // Output from cache, restore actions
+    HitPrimaryKey = "hit-primary-key", // Output from cache, restore actions
     HitFirstMatch = "hit-first-match", // Output from cache, restore actions
 
     RestoredKey = "restored-key", // Output from cache, restore actions

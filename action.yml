@@ -32,12 +32,14 @@ inputs:
   fail-on:
     description: |
       - Input form: `<key type>.<result>`.
-      - `<key type>` options: `primary`, `first-match`.
+      - `<key type>` options: `primary-key`, `first-match`.
       - `<result>` options: `miss`, `not-restored`.
       - When the input satisfies the input form, when the event described in the input happens, the action fails.
-      - Example:
-        - Input: `primary.not-restored`.
-        - Event: a cache could not be restored via the `primary-key`.
+        - Example:
+          - Input: `primary-key.not-restored`.
+          - Event: a cache could not be restored via the `primary-key`.
+      - Otherwise, this input has no effect.
+    default: ""
 
   nix:
     description: |

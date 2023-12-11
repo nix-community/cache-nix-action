@@ -2,14 +2,14 @@ import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 
-export async function restoreWithKey(key: string) {
+export async function restoreCache(key: string) {
     utils.info(`Restoring a cache with the key "${key}".`);
 
     utils.info(
         `::group::Logs are hidden. Errors are due to attempts to overwrite read-only paths.`
     );
 
-    const cacheKey = await utils.getCacheKey({
+    const cacheKey = await utils.restoreCache({
         primaryKey: key,
         restoreKeys: [],
         lookupOnly: false
@@ -54,7 +54,7 @@ export async function restoreCaches() {
 
     for (const cache of caches) {
         if (cache.key) {
-            const cacheKey = await restoreWithKey(cache.key);
+            const cacheKey = await restoreCache(cache.key);
             if (cacheKey) {
                 restoredCaches.push(...[cacheKey]);
             }

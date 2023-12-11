@@ -8,7 +8,9 @@ export async function purgeCacheByKey(key: string, message?: string) {
     try {
         utils.info(message || "");
 
-        await utils.octokit.rest.actions.deleteActionsCacheByKey({
+        const octokit = github.getOctokit(inputs.token);
+
+        await octokit.rest.actions.deleteActionsCacheByKey({
             per_page: 100,
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,

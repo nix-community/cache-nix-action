@@ -5,7 +5,6 @@ import dedent from "dedent";
 
 import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
-import * as utils from "../utils/action";
 
 export function isGhes(): boolean {
     const ghUrl = new URL(
@@ -39,36 +38,6 @@ export function isValidEvent(): boolean {
     return RefKey in process.env && Boolean(process.env[RefKey]);
 }
 
-export function getInputAsArray(
-    name: string,
-    options?: core.InputOptions
-): string[] {
-    return core
-        .getInput(name, options)
-        .split("\n")
-        .map(s => s.replace(/^!\s+/, "!").trim())
-        .filter(x => x !== "");
-}
-
-export function getInputAsInt(
-    name: string,
-    options?: core.InputOptions
-): number | undefined {
-    const value = parseInt(core.getInput(name, options));
-    if (isNaN(value) || value < 0) {
-        return undefined;
-    }
-    return value;
-}
-
-export function getInputAsBool(
-    name: string,
-    options?: core.InputOptions
-): boolean {
-    const result = core.getInput(name, options);
-    return result.toLowerCase() === "true";
-}
-
 export function isCacheFeatureAvailable(): boolean {
     if (cache.isFeatureAvailable()) {
         return true;
@@ -91,7 +60,7 @@ export function isCacheFeatureAvailable(): boolean {
     return false;
 }
 
-export async function getCacheKey({
+export async function restoreCache({
     primaryKey,
     restoreKeys,
     lookupOnly
@@ -120,10 +89,10 @@ export interface Cache {
     size_in_bytes?: number | undefined;
 }
 
-export const octokit = github.getOctokit(inputs.token);
-
 export async function getCachesByKeys(keys: string[]) {
     const caches: Cache[] = [];
+
+    const octokit = github.getOctokit(inputs.token);
 
     for (let i = 0; i < keys.length; i += 1) {
         const key = keys[i];
@@ -142,7 +111,7 @@ export async function getCachesByKeys(keys: string[]) {
                 break;
             }
 
-            if (utils.isExactKeyMatch(inputs.primaryKey, key)) {
+            if (isExactKeyMatch(inputs.primaryKey, key)) {
                 caches.push(...cachesRequest.actions_caches);
             }
         }
@@ -183,5 +152,3 @@ const myDedent = dedent.withOptions({});
 export const info = (message: string) => core.info(myDedent(message));
 
 export const warning = (message: string) => core.warning(myDedent(message));
-
-export const isLinux = process.platform === "linux";

@@ -103,6 +103,8 @@ jobs:
   make-similar-caches:
     name: Make similar caches
     needs: check-cache-changes
+    permissions:
+      actions: write
     strategy:
       matrix:
         os:
@@ -220,7 +222,7 @@ jobs:
         uses: ./.
         with:
           # save a new cache every time ci file changes
-          key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          primary-key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-prefixes-first-match: cache-${{ matrix.os }}-
           
           gc-max-store-size-linux: 8000000000

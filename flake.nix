@@ -36,7 +36,7 @@
               description = "install dependencies";
             };
             build = {
-              text = "NODE_OPTIONS=--openssl-legacy-provider ${pkgs.nodejs_18}/bin/npm run build";
+              text = "${pkgs.nodejs_18}/bin/npm run build";
               description = "build project";
             };
           };
