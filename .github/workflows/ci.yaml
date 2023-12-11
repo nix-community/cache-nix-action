@@ -239,9 +239,11 @@ jobs:
       - name: Show profile
         run: nix profile list
 
-      - name: Lock nixpkgs
+      - name: Lock and install nixpkgs
         run: |
           nix registry add nixpkgs github:NixOS/nixpkgs/5daaa32204e9c46b05cd709218b7ba733d07e80c
+          nix registry list
+
           nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
 
       - name: Show profile
