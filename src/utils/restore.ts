@@ -5,17 +5,11 @@ import * as utils from "./action";
 export async function restoreCache(key: string) {
     utils.info(`Restoring a cache with the key "${key}".`);
 
-    utils.info(
-        `::group::Logs are hidden. Errors are due to attempts to overwrite read-only paths.`
-    );
-
     const cacheKey = await utils.restoreCache({
         primaryKey: key,
         restoreKeys: [],
         lookupOnly: false
     });
-
-    utils.info(`::endgroup::`);
 
     if (cacheKey) {
         utils.info(`Finished restoring the cache.`);
