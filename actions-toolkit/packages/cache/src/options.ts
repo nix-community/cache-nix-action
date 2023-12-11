@@ -71,6 +71,12 @@ export interface DownloadOptions {
 }
 
 /**
+ * Options to control tar extraction
+ */
+
+export type ExtraTarArgs = string[]
+
+/**
  * Returns a copy of the upload options with defaults filled in.
  *
  * @param copy the original upload options

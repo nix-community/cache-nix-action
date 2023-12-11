@@ -88,7 +88,7 @@ async function getVersion(
       }
     })
   } catch (err) {
-    core.debug(err.message)
+    core.debug((err as {message}).message)
   }
 
   versionOutput = versionOutput.trim()

@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as utils from './internal/cacheUtils'
 import * as cacheHttpClient from './internal/cacheHttpClient'
 import {createTar, extractTar, listTar} from './internal/tar'
-import {DownloadOptions, UploadOptions} from './options'
+import {DownloadOptions, ExtraTarArgs, UploadOptions} from './options'
 
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -68,7 +68,8 @@ export async function restoreCache(
   primaryKey: string,
   restoreKeys?: string[],
   options?: DownloadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  extraTarArgs: ExtraTarArgs = [],
 ): Promise<string | undefined> {
   checkPaths(paths)
 
@@ -129,7 +130,7 @@ export async function restoreCache(
       )} MB (${archiveFileSize} B)`
     )
 
-    await extractTar(archivePath, compressionMethod)
+    await extractTar(archivePath, compressionMethod, extraTarArgs)
     core.info('Cache restored successfully')
 
     return cacheEntry.cacheKey

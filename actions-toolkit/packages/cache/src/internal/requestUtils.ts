@@ -57,11 +57,11 @@ export async function retry<T>(
       response = await method()
     } catch (error) {
       if (onError) {
-        response = onError(error)
+        response = onError(error as Error)
       }
 
       isRetryable = true
-      errorMessage = error.message
+      errorMessage = (error as ({message: string})).message
     }
 
     if (response) {

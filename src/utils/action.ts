@@ -1,4 +1,4 @@
-import * as cache from "@actions/cache";
+import * as cache from "@actions/cache/src/cache";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import dedent from "dedent";
@@ -75,7 +75,8 @@ export async function restoreCache({
         primaryKey,
         restoreKeys,
         { lookupOnly },
-        false
+        false,
+        ["--skip-old-files"]
     );
 }
 
