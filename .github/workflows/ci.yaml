@@ -134,7 +134,7 @@ jobs:
         with:
           # save a new cache every time ci file changes
           primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
-          prefixes-first-match: similar-cache-${{ matrix.os }}-common-
+          restore-prefixes-first-match: similar-cache-${{ matrix.os }}-common-
           
           # remove own old versions
           purge: true
@@ -175,7 +175,7 @@ jobs:
         uses: ./.
         with:
           primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
-          prefixes-all-matches: similar-cache-${{ matrix.os }}-individual-
+          restore-prefixes-all-matches: similar-cache-${{ matrix.os }}-individual-
 
           purge: true
           purge-prefixes: |
