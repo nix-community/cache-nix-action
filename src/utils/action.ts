@@ -165,7 +165,7 @@ export function getMaxDate({
         ? Inputs.PurgeLastAccessed
         : Inputs.PurgeCreated;
 
-    const maxAge = core.getInput(inputMaxAge, { required: false });
+    const maxAge = core.getInput(inputMaxAge);
 
     const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
 

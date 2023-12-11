@@ -96,5 +96,3 @@ export const purgeCreatedMaxAge = utils.getInputAsInt(Inputs.PurgeCreated);
 
 export const uploadChunkSize =
     utils.getInputAsInt(Inputs.UploadChunkSize) || 32 * 1024 * 1024;
-
-export const token = core.getInput(Inputs.Token, { required: true });
