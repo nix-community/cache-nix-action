@@ -138,7 +138,8 @@ jobs:
           
           # remove own old versions
           purge: true
-          purge-overwrite: always
+          purge-created: 0
+          purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
   
   # Merge similar individual `id` caches
   # Purge individual caches and old `common` caches
