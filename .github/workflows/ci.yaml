@@ -140,6 +140,8 @@ jobs:
           purge: true
           purge-created: 0
           purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
+
+          token: ${{ github.token }}
   
   # Merge similar individual `id` caches
   # Purge individual caches and old `common` caches
