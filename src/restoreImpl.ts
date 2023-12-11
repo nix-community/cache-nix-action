@@ -7,7 +7,7 @@ import {
     NullStateProvider,
     StateProvider
 } from "./stateProvider";
-import * as utils from "./utils/actionUtils";
+import * as utils from "./utils/action";
 import { restoreCaches, restoreWithKey } from "./utils/restore";
 
 export async function restoreImpl(
