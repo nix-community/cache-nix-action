@@ -138,7 +138,7 @@ inputs:
 
   token:
     description: The action uses it to communicate with GitHub API.
-    default: ${{ secrets.GITHUB_TOKEN }}
+    default: ${{ github.token }}
 outputs:
   primary-key:
     description: |

@@ -203,7 +203,7 @@ in
 
       token:
         description: The action uses it to communicate with GitHub API.
-        default: ''${{ secrets.GITHUB_TOKEN }}
+        default: ''${{ github.token }}
     ${
       if target == "cache" || target == "restore" then
     ''
