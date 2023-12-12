@@ -19,6 +19,9 @@ inputs:
     description: |
       - When a newline-separated non-empty list of non-empty key prefixes, the action tries to restore 
         all caches whose keys match these prefixes.
+        - Tries caches across all refs to make use of caches created 
+          on the current, base, and default branches 
+          (see [docs](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
       - Otherwise, this input has no effect.
     default: ""
 
@@ -43,6 +46,7 @@ inputs:
 
   nix:
     description: |
+      - Can have an effect only when the action runs on a `Linux` or a `macOS` runner.
       - When `true`, the action can do Nix-specific things.
       - Otherwise, the action doesn't do them.
     default: "true"
@@ -55,25 +59,19 @@ inputs:
 
   paths:
     description: |
-      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
+      - When `nix: true`, the action uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths, as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7). Otherwise, the action uses an empty list as default paths.
       - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for restoring caches.
       - Otherwise, the action uses default paths for restoring caches.
     default: ""
   paths-macos:
     description: |
       - Overrides `paths`.
-      - Can have an effect only when on a `macOS` runner.
-      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for restoring caches.
-      - Otherwise, the action uses default paths for restoring caches.
+      - Can have an effect only when the action runs on a `macOS` runner.
     default: ""
   paths-linux:
     description: |
       - Overrides `paths`.
-      - Can have an effect only when on a `Linux` runner.
-      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for restoring caches.
-      - Otherwise, the action uses default paths for restoring caches.
+      - Can have an effect only when the action runs on a `Linux` runner.
     default: ""
 
   

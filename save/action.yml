@@ -12,6 +12,7 @@ inputs:
 
   nix:
     description: |
+      - Can have an effect only when the action runs on a `Linux` or a `macOS` runner.
       - When `true`, the action can do Nix-specific things.
       - Otherwise, the action doesn't do them.
     default: "true"
@@ -24,25 +25,19 @@ inputs:
 
   paths:
     description: |
-      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
+      - When `nix: true`, the action uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths, as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7). Otherwise, the action uses an empty list as default paths.
       - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for saving caches.
       - Otherwise, the action uses default paths for saving caches.
     default: ""
   paths-macos:
     description: |
       - Overrides `paths`.
-      - Can have an effect only when on a `macOS` runner.
-      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for saving caches.
-      - Otherwise, the action uses default paths for saving caches.
+      - Can have an effect only when the action runs on a `macOS` runner.
     default: ""
   paths-linux:
     description: |
       - Overrides `paths`.
-      - Can have an effect only when on a `Linux` runner.
-      - When `nix: true`, uses `["/nix", "~/.cache/nix", "~root/.cache/nix"]` as default paths. Otherwise, uses an empty list as default paths.
-      - When a newline-separated non-empty list of non-empty path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for saving caches.
-      - Otherwise, the action uses default paths for saving caches.
+      - Can have an effect only when the action runs on a `Linux` runner.
     default: ""
 
   gc-max-store-size:
@@ -53,19 +48,13 @@ inputs:
     default: ""
   gc-max-store-size-macos:
     description: |
-      - Can have an effect only when `nix: true`, `save: true`.
       - Overrides `gc-max-store-size`.
-      - Can have an effect only when on a `macOS` runner.
-      - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.
-      - Otherwise, this input has no effect.
+      - Can have an effect only when the action runs on a `macOS` runner.
     default: ""
   gc-max-store-size-linux:
     description: |
-      - Can have an effect only when `nix: true`, `save: true`.
       - Overrides `gc-max-store-size`.
-      - Can have an effect only when on a `Linux` runner.
-      - When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.
-      - Otherwise, this input has no effect.
+      - Can have an effect only when the action runs on a `Linux` runner.
     default: ""
 
   purge:
@@ -73,29 +62,29 @@ inputs:
       - When `true`, the action purges (possibly zero) caches.
       - Otherwise, this input has no effect.
     default: "false"
-  purge-overwrite:
+  purge-primary-key:
     description: |
       - Can have an effect only when `purge: true`.
       - When `always`, the action always purges cache with the `primary-key`.
       - When `never`, the action never purges cache with the `primary-key`.
-      - Otherwise, the action purges old caches using purging criteria.
+      - Otherwise, this input has no effect..
     default: ""
   purge-prefixes:
     description: |
       - Can have an effect only when `purge: true`.
-      - When a newline-separated non-empty list of non-empty cache key prefixes, the action collects all cache keys that match these prefixes.
+      - When a newline-separated non-empty list of non-empty cache key prefixes, the action selects for purging all caches whose keys match some of these prefixes and that are scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
       - Otherwise, this input has no effect.
     default: ""
   purge-last-accessed:
     description: |
       - Can have an effect only when `purge: true`.
-      - When a number, the action selects for purging caches last accessed more than this number of seconds ago relative to the start of the Save phase.
+      - When a number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the `Post Restore` phase.
       - Otherwise, this input has no effect.
     default: ""
   purge-created:
     description: |
       - Can have an effect only when `purge: true`.
-      - When a number, the action selects for purging caches created more than this number of seconds ago relative to the start of the Save phase.
+      - When a number, the action purges caches created more than this number of seconds ago relative to the start of the `Post Restore` phase.
       - Otherwise, this input has no effect.
     default: ""
 
