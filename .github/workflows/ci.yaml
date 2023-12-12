@@ -68,9 +68,9 @@ jobs:
           purge: true
           # purge all versions of the cache
           purge-prefixes: build-${{ runner.os }}-
-          # created more than 0 seconds ago (basically all previous versions)
+          # created more than 0 seconds ago
           purge-created: 0
-          # but don't purge the version with the `primary-key` if it exists
+          # except the version with the `primary-key`, if it exists
           purge-primary-key: never
 
       - name: Install packages & Build the action
@@ -146,7 +146,7 @@ jobs:
       - name: Restore and save Nix store - ${{ matrix.id }}
         uses: ./.
         with:
-          # save a new cache every time
+          # save a new cache every time `ci.yaml` changes
           primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-prefixes-first-match: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
           purge: true
@@ -186,18 +186,18 @@ jobs:
         uses: ./.
         with:
           primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
-          # when there's a common cache, don't restore individual caches
+          # when there's a common cache hit, don't restore individual caches
           skip-restore-on-hit-primary-key: true
-          # otherwise, restore individual caches
-          # don't restore their old versions
+          # otherwise, restore individual caches, but not their old versions
           restore-prefixes-all-matches: |
             similar-cache-${{ matrix.os }}-individual-1-${{ hashFiles('.github/workflows/ci.yaml') }}
             similar-cache-${{ matrix.os }}-individual-2-${{ hashFiles('.github/workflows/ci.yaml') }}
           purge: true
-          # purge caches created more than 0 seconds ago (basically all previous versions)
-          purge-created: 0
-          # purge all versions of the common cache
+          # purge all versions of the cache
           purge-prefixes: similar-cache-${{ matrix.os }}-common-
+          # created more than 0 seconds ago
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
           purge-primary-key: never
 
   compare-run-times:
@@ -235,14 +235,11 @@ jobs:
           # save a new cache every time ci file changes
           primary-key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-prefixes-first-match: cache-${{ matrix.os }}-
-          
-          gc-max-store-size-linux: 8000000000
-          gc-max-store-size-macos: 8000000000
-          
           purge: true
           purge-prefixes: cache-${{ matrix.os }}-
           purge-created: 0
           purge-primary-key: never
+          gc-max-store-size: 8000000000
       
       # Uncomment to debug this job
       # - name: Setup tmate session
