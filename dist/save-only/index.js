@@ -62659,7 +62659,7 @@ var Inputs;
     Inputs["GCMaxStoreSizeMacos"] = "gc-max-store-size-macos";
     Inputs["GCMaxStoreSizeLinux"] = "gc-max-store-size-linux";
     Inputs["Purge"] = "purge";
-    Inputs["PurgeOverwrite"] = "purge-overwrite";
+    Inputs["PurgePrimaryKey"] = "purge-primary-key";
     Inputs["PurgePrefixes"] = "purge-prefixes";
     Inputs["PurgeLastAccessed"] = "purge-last-accessed";
     Inputs["PurgeCreated"] = "purge-created";
@@ -62720,7 +62720,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgeOverwrite = exports.purge = exports.gcMaxStoreSize = exports.paths = exports.save = exports.nix = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
+exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgePrimaryKey = exports.purge = exports.gcMaxStoreSize = exports.save = exports.paths = exports.nix = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(9378));
@@ -62728,7 +62728,7 @@ exports.primaryKey = core.getInput(constants_1.Inputs.PrimaryKey, { required: tr
 exports.restorePrefixesFirstMatch = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesFirstMatch);
 exports.restorePrefixesAllMatches = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesAllMatches);
 exports.skipRestoreOnHitPrimaryKey = utils.getInputAsBool(constants_1.Inputs.SkipRestoreOnHitPrimaryKey);
-exports.failOn = (() => {
+exports.failOn = (function () {
     var _a;
     const failOnRaw = (_a = new RegExp("^(primary|first-match)\\.(miss|not-restored)$")
         .exec(core.getInput(constants_1.Inputs.FailOn))) === null || _a === void 0 ? void 0 : _a.slice(1);
@@ -62741,35 +62741,44 @@ exports.failOn = (() => {
         return { keyType, result };
     }
 })();
-exports.nix = utils.getInputAsBool(constants_1.Inputs.Nix);
-exports.save = utils.getInputAsBool(constants_1.Inputs.Save);
-exports.paths = (exports.nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []).concat((() => {
+function choose(linuxOption, macosOption, defaultOption) {
+    switch (process.env.RUNNER_OS) {
+        case "Linux":
+            return linuxOption;
+        case "macOS":
+            return macosOption;
+        default:
+            return defaultOption;
+    }
+}
+exports.nix = utils.getInputAsBool(constants_1.Inputs.Nix) &&
+    (process.platform == "linux" || process.platform == "darwin");
+exports.paths = (exports.nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []).concat((function () {
     const paths = utils.getInputAsArray(constants_1.Inputs.Paths);
-    const pathsPlatform = utils.getInputAsArray(utils.isLinux ? constants_1.Inputs.PathsLinux : constants_1.Inputs.PathsMacos);
+    const pathsPlatform = utils.getInputAsArray(choose(constants_1.Inputs.PathsLinux, constants_1.Inputs.PathsMacos, constants_1.Inputs.Paths));
     if (pathsPlatform.length > 0) {
         return pathsPlatform;
     }
     else
         return paths;
 })());
+exports.save = utils.getInputAsBool(constants_1.Inputs.Save);
 exports.gcMaxStoreSize = exports.nix
-    ? (() => {
+    ? (function () {
         const gcMaxStoreSize = utils.getInputAsInt(constants_1.Inputs.GCMaxStoreSize);
-        const gcMaxStoreSizePlatform = utils.getInputAsInt(utils.isLinux
-            ? constants_1.Inputs.GCMaxStoreSizeLinux
-            : constants_1.Inputs.GCMaxStoreSizeMacos);
-        return gcMaxStoreSizePlatform
+        const gcMaxStoreSizePlatform = utils.getInputAsInt(choose(constants_1.Inputs.GCMaxStoreSizeLinux, constants_1.Inputs.GCMaxStoreSizeMacos, constants_1.Inputs.GCMaxStoreSize));
+        return gcMaxStoreSizePlatform !== undefined
             ? gcMaxStoreSizePlatform
             : gcMaxStoreSize;
     })()
     : undefined;
 exports.purge = utils.getInputAsBool(constants_1.Inputs.Purge);
-exports.purgeOverwrite = (() => {
-    const purgeOverwrite = core.getInput(constants_1.Inputs.PurgeOverwrite);
-    if (!(purgeOverwrite == "always" || purgeOverwrite == "never")) {
+exports.purgePrimaryKey = (function () {
+    const purgePrimaryKey = core.getInput(constants_1.Inputs.PurgePrimaryKey);
+    if (!(purgePrimaryKey == "always" || purgePrimaryKey == "never")) {
         return "default";
     }
-    return purgeOverwrite;
+    return purgePrimaryKey;
 })();
 exports.purgePrefixes = utils.getInputAsArray(constants_1.Inputs.PurgePrefixes);
 exports.purgeLastAccessed = utils.getInputAsInt(constants_1.Inputs.PurgeLastAccessed);
@@ -62847,8 +62856,8 @@ function saveImpl(stateProvider) {
                 utils.info(`Trying to save a new cache with the key "${primaryKey}".`);
             }
             if (inputs.purge) {
-                if (inputs.purgeOverwrite == "always") {
-                    yield (0, purge_1.purgeCacheByKey)(primaryKey, `Purging the cache with the key "${primaryKey}" because of "${constants_1.Inputs.PurgeOverwrite}: always".`);
+                if (inputs.purgePrimaryKey == "always") {
+                    yield (0, purge_1.purgeCacheByKey)(primaryKey, `Purging the cache with the key "${primaryKey}" because of "${constants_1.Inputs.PurgePrimaryKey}: always".`);
                 }
                 else {
                     yield (0, purge_1.purgeCachesByTime)({
@@ -63139,7 +63148,7 @@ function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     });
 }
 exports.restoreCache = restoreCache;
-function getCachesByPrefixes(prefixes) {
+function getCachesByPrefixes({ prefixes, useRef }) {
     return __awaiter(this, void 0, void 0, function* () {
         const caches = [];
         const octokit = github.getOctokit(inputs.token);
@@ -63152,7 +63161,7 @@ function getCachesByPrefixes(prefixes) {
                     key,
                     per_page: 100,
                     page,
-                    ref: github.context.ref
+                    ref: useRef ? undefined : github.context.ref
                 });
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
@@ -63294,7 +63303,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isLinux = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = void 0;
+exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 function getInputAsArray(name, options) {
     return core
@@ -63317,7 +63326,6 @@ function getInputAsBool(name, options) {
     return result.toLowerCase() === "true";
 }
 exports.getInputAsBool = getInputAsBool;
-exports.isLinux = process.platform === "linux";
 
 
 /***/ }),
@@ -63410,7 +63418,10 @@ function purgeByTime({ primaryKey, doUseLastAccessedTime, prefixes, time }) {
             Purging cache(s) ${verb} before ${maxDate.toISOString()}, scoped to "${github.context.ref}", and with one of the key prefixes:
             ${utils.stringify(prefixes)}
             `);
-            const cachesFound = yield utils.getCachesByPrefixes(prefixes);
+            const cachesFound = yield utils.getCachesByPrefixes({
+                prefixes,
+                useRef: false
+            });
             caches = (0, exports.filterCachesByTime)({
                 caches: cachesFound,
                 doUseLastAccessedTime,
@@ -63419,7 +63430,10 @@ function purgeByTime({ primaryKey, doUseLastAccessedTime, prefixes, time }) {
         }
         else {
             utils.info(`Purging cache(s) ${verb} before ${maxDate.toISOString()}, scoped to "${github.context.ref}", and with the key "${primaryKey}".`);
-            const cachesFound = yield utils.getCachesByPrefixes([primaryKey]);
+            const cachesFound = yield utils.getCachesByPrefixes({
+                prefixes: [primaryKey],
+                useRef: false
+            });
             caches = (0, exports.filterCachesByTime)({
                 caches: cachesFound,
                 doUseLastAccessedTime,
@@ -63432,9 +63446,9 @@ function purgeByTime({ primaryKey, doUseLastAccessedTime, prefixes, time }) {
             ${utils.stringify(caches)}
             `
             : `Found no cache(s).`);
-        if (inputs.purgeOverwrite == "never" &&
+        if (inputs.purgePrimaryKey == "never" &&
             caches.filter(x => utils.isExactKeyMatch(primaryKey, x.key)).length > 0) {
-            utils.info(`Skipping cache(s) with the key "${primaryKey}" because of "${constants_1.Inputs.PurgeOverwrite}: never".`);
+            utils.info(`Skipping cache(s) with the key "${primaryKey}" because of "${constants_1.Inputs.PurgePrimaryKey}: never".`);
             caches = caches.filter(x => !utils.isExactKeyMatch(primaryKey, x.key));
         }
         for (const cache of caches) {
