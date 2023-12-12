@@ -90,7 +90,13 @@ export interface Cache {
     size_in_bytes?: number | undefined;
 }
 
-export async function getCachesByPrefixes(prefixes: string[]) {
+export async function getCachesByPrefixes({
+    prefixes,
+    useRef
+}: {
+    prefixes: string[];
+    useRef: boolean;
+}) {
     const caches: Cache[] = [];
 
     const octokit = github.getOctokit(inputs.token);
@@ -105,7 +111,7 @@ export async function getCachesByPrefixes(prefixes: string[]) {
                     key,
                     per_page: 100,
                     page,
-                    ref: github.context.ref
+                    ref: useRef ? undefined : github.context.ref
                 });
 
             if (cachesRequest.actions_caches.length == 0) {

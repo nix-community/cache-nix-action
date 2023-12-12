@@ -2,8 +2,12 @@ import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 
-export async function restoreCache(key: string) {
-    utils.info(`Restoring a cache with the key "${key}".`);
+export async function restoreCache(key: string, ref?: string) {
+    utils.info(
+        `Restoring a cache with the key "${key}"${
+            ref ? ` and scoped to "${ref}"` : ""
+        }.`
+    );
 
     const cacheKey = await utils.restoreCache({
         primaryKey: key,
@@ -33,9 +37,10 @@ export async function restoreCaches() {
         `
     );
 
-    const caches = await utils.getCachesByPrefixes(
-        inputs.restorePrefixesAllMatches
-    );
+    const caches = await utils.getCachesByPrefixes({
+        prefixes: inputs.restorePrefixesAllMatches,
+        useRef: true
+    });
 
     utils.info(
         caches.length > 0
@@ -48,7 +53,7 @@ export async function restoreCaches() {
 
     for (const cache of caches) {
         if (cache.key) {
-            const cacheKey = await restoreCache(cache.key);
+            const cacheKey = await restoreCache(cache.key, cache.ref);
             if (cacheKey) {
                 restoredCaches.push(...[cacheKey]);
             }

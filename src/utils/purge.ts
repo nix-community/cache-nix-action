@@ -74,7 +74,10 @@ async function purgeByTime({
             `
         );
 
-        const cachesFound = await utils.getCachesByPrefixes(prefixes);
+        const cachesFound = await utils.getCachesByPrefixes({
+            prefixes,
+            useRef: false
+        });
 
         caches = filterCachesByTime({
             caches: cachesFound,
@@ -88,7 +91,10 @@ async function purgeByTime({
             }", and with the key "${primaryKey}".`
         );
 
-        const cachesFound = await utils.getCachesByPrefixes([primaryKey]);
+        const cachesFound = await utils.getCachesByPrefixes({
+            prefixes: [primaryKey],
+            useRef: false
+        });
 
         caches = filterCachesByTime({
             caches: cachesFound,
