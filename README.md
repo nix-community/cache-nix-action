@@ -579,7 +579,7 @@ A cache today is immutable and cannot be updated. But some use cases require the
           primary-key: primes-${{ runner.os }}          
           paths: prime-numbers
           purge: true
-          purge-overwrite: always
+          purge-primary-key: always
   ```
 
   Please note that this will create a new cache on every run and hence will consume the cache [quota](./README.md#cache-limits).
