@@ -90,13 +90,13 @@ export interface Cache {
     size_in_bytes?: number | undefined;
 }
 
-export async function getCachesByKeys(keys: string[]) {
+export async function getCachesByPrefixes(prefixes: string[]) {
     const caches: Cache[] = [];
 
     const octokit = github.getOctokit(inputs.token);
 
-    for (let i = 0; i < keys.length; i += 1) {
-        const key = keys[i];
+    for (let i = 0; i < prefixes.length; i += 1) {
+        const key = prefixes[i];
         for (let page = 1; page <= 500; page += 1) {
             const { data: cachesRequest } =
                 await octokit.rest.actions.getActionsCacheList({
@@ -112,9 +112,7 @@ export async function getCachesByKeys(keys: string[]) {
                 break;
             }
 
-            if (isExactKeyMatch(inputs.primaryKey, key)) {
-                caches.push(...cachesRequest.actions_caches);
-            }
+            caches.push(...cachesRequest.actions_caches);
         }
     }
 

@@ -67,42 +67,55 @@ async function purgeByTime({
     if (prefixes.length > 0) {
         utils.info(
             `
-            Purging cache(s) ${verb} before ${maxDate.toISOString()} and having key prefixes:
-            
+            Purging cache(s) ${verb} before ${maxDate.toISOString()}, scoped to "${
+                github.context.ref
+            }", and with one of the key prefixes:
             ${utils.stringify(prefixes)}
             `
         );
 
+        const cachesFound = await utils.getCachesByPrefixes(prefixes);
+
         caches = filterCachesByTime({
-            caches: await utils.getCachesByKeys(prefixes),
+            caches: cachesFound,
             doUseLastAccessedTime,
             maxDate
         });
     } else {
         utils.info(
-            `Purging cache(s) ${verb} before ${maxDate.toISOString()} and having the key "${primaryKey}".`
+            `Purging cache(s) ${verb} before ${maxDate.toISOString()}, scoped to "${
+                github.context.ref
+            }", and with the key "${primaryKey}".`
         );
 
+        const cachesFound = await utils.getCachesByPrefixes([primaryKey]);
+
         caches = filterCachesByTime({
-            caches: await utils.getCachesByKeys([primaryKey]),
+            caches: cachesFound,
             doUseLastAccessedTime,
             maxDate
         }).filter(x => utils.isExactKeyMatch(primaryKey, x.key));
     }
 
-    if (inputs.purgeOverwrite == "never") {
-        `The cache with the key "${primaryKey}" will be skipped because of "${Inputs.PurgeOverwrite}: never".`;
-
-        caches.filter(x => !utils.isExactKeyMatch(primaryKey, x.key));
-    }
-
     utils.info(
-        `
-        Found ${caches.length} cache(s):
-        
-        ${utils.stringify(caches)}
-        `
+        caches.length > 0
+            ? `
+            Found ${caches.length} cache(s):
+            ${utils.stringify(caches)}
+            `
+            : `Found no cache(s).`
     );
+
+    if (
+        inputs.purgeOverwrite == "never" &&
+        caches.filter(x => utils.isExactKeyMatch(primaryKey, x.key)).length > 0
+    ) {
+        utils.info(
+            `Skipping cache(s) with the key "${primaryKey}" because of "${Inputs.PurgeOverwrite}: never".`
+        );
+
+        caches = caches.filter(x => !utils.isExactKeyMatch(primaryKey, x.key));
+    }
 
     for (const cache of caches) {
         const at = doUseLastAccessedTime
@@ -113,7 +126,7 @@ async function purgeByTime({
             const atDatePretty = atDate.toISOString();
             await purgeCacheByKey(
                 cache.key,
-                `Purging the cache ${verb} at ${atDatePretty} and having the key "${cache.key}".`
+                `Purging the cache ${verb} at ${atDatePretty} with the key "${cache.key}".`
             );
         }
     }
@@ -132,11 +145,15 @@ export async function purgeCachesByTime({
 }): Promise<void> {
     // TODO https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
 
-    for (const flag of [true, false]) {
-        if (flag ? inputs.purgeLastAccessed : inputs.purgeCreatedMaxAge) {
+    for (const doUseLastAccessedTime of [true, false]) {
+        if (
+            (doUseLastAccessedTime
+                ? inputs.purgeLastAccessed
+                : inputs.purgeCreated) !== undefined
+        ) {
             await purgeByTime({
                 primaryKey,
-                doUseLastAccessedTime: flag,
+                doUseLastAccessedTime,
                 prefixes: prefixes.slice(),
                 time
             });

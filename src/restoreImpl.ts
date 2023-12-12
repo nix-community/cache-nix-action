@@ -68,9 +68,7 @@ export async function restoreImpl(
                 } else {
                     utils.info(`Could not find a cache.`);
                 }
-            }
-
-            if (lookedUpKey && utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
+            } else if (utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
                 utils.info(
                     `Found a cache with the given "${Inputs.PrimaryKey}".`
                 );
@@ -119,9 +117,7 @@ export async function restoreImpl(
                 } else {
                     utils.info(`Could not find a cache.`);
                 }
-            }
-
-            if (foundKey) {
+            } else {
                 utils.info(
                     `Found a cache using the "${Inputs.RestorePrefixesFirstMatch}".`
                 );

@@ -34,6 +34,12 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         const primaryKey =
             stateProvider.getState(State.CachePrimaryKey) || inputs.primaryKey;
 
+        if (inputs.save) {
+            utils.info(
+                `Trying to save a new cache with the key "${primaryKey}".`
+            );
+        }
+
         if (inputs.purge) {
             if (inputs.purgeOverwrite == "always") {
                 await purgeCacheByKey(
@@ -50,10 +56,10 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         }
 
         // Save a cache using the primary key
-        {
-            utils.info(
-                `Searching for a cache using the primary key "${primaryKey}".`
-            );
+        if (!inputs.save) {
+            `Not saving a new cache because of "${Inputs.Save}: false"`;
+        } else {
+            utils.info(`Searching for a cache with the key "${primaryKey}".`);
 
             const foundKey = await utils.restoreCache({
                 primaryKey,
@@ -68,7 +74,9 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                     Not saving a new cache.
                     `
                 );
-            } else if (inputs.save) {
+            } else {
+                utils.info(`Found no cache with this key.`);
+
                 await collectGarbage();
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
@@ -79,14 +87,10 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 });
 
                 utils.info(`Saved a new cache.`);
-            } else {
-                `Not saving a new cache because of "${Inputs.Save}: false"`;
             }
         }
 
         // Purge other caches
-        // This runs last so that in case of cache saving errors
-        //  the action can be re-run with other caches
         if (inputs.purge) {
             await purgeCachesByTime({
                 primaryKey,

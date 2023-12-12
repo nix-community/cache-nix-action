@@ -28,22 +28,22 @@ export async function restoreCaches() {
 
     utils.info(
         `
-        Searching for caches using the "${Inputs.RestorePrefixesAllMatches}":
-        
+        Restoring cache(s) using the "${Inputs.RestorePrefixesAllMatches}":
         ${utils.stringify(inputs.restorePrefixesAllMatches)}
         `
     );
 
-    const caches = await utils.getCachesByKeys(
+    const caches = await utils.getCachesByPrefixes(
         inputs.restorePrefixesAllMatches
     );
 
     utils.info(
-        `
-        Found ${caches.length} cache(s):
-        
-        ${utils.stringify(caches)}
-        `
+        caches.length > 0
+            ? `
+            Found ${caches.length} cache(s):
+            ${utils.stringify(caches)}
+            `
+            : "Found no cache(s)."
     );
 
     for (const cache of caches) {
@@ -53,6 +53,10 @@ export async function restoreCaches() {
                 restoredCaches.push(...[cacheKey]);
             }
         }
+    }
+
+    if (caches.length > 0) {
+        utils.info(`Finished restoring cache(s).`);
     }
 
     return restoredCaches;
