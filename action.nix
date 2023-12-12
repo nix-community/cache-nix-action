@@ -29,13 +29,13 @@ let
   pathsDefault = ''`["/nix", "~/.cache/nix", "~root/.cache/nix"]`'';
   nixTrue = "nix: true";
 
-  pathsDefaultWhenNix = ''When ${q nixTrue}, uses ${pathsDefault} as default paths. Otherwise, uses an empty list as default paths.'';
+  pathsDefaultWhenNix = ''When ${q nixTrue}, the action uses ${pathsDefault} as default paths, as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7). Otherwise, the action uses an empty list as default paths.'';
   pathsWhen = ''${whenListOf} path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for ${specific.actions} caches.'';
   pathsOtherwise = ''Otherwise, the action uses default paths for ${specific.actions} caches.'';
 
-  effectOnlyOn = platform: ''Can have an effect only when on a ${q platform} runner.'';
-  effectOnlyOnLinux = effectOnlyOn "Linux";
-  effectOnlyOnMacOS = effectOnlyOn "macOS";
+  effectOnlyOn = platform: ''Can have an effect only when the action runs on a ${q platform} runner.'';
+  linux = "Linux";
+  macos = "macOS";
   effectOnlyWhenHasEffect = input: "Can have an effect only when ${q input} has effect.";
   effectOnlyWhen = conditions: "Can have an effect only when ${lib.concatMapStringsSep ", " q conditions}.";
   effectOnlyWhenNixEnabled = effectOnlyWhen [ nixTrue ];
@@ -78,6 +78,9 @@ in
             description: |
               - ${whenListOf} key prefixes, the action tries to restore 
                 all caches whose keys match these prefixes.
+                - Tries caches across all refs to make use of caches created 
+                  on the current, base, and default branches 
+                  (see [docs](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
               - ${noEffectOtherwise}
             default: ""
         
@@ -104,6 +107,7 @@ in
 
       nix:
         description: |
+          - Can have an effect only when the action runs on a ${q linux} or a ${q macos} runner.
           - When `true`, the action can do Nix-specific things.
           - Otherwise, the action doesn't do them.
         default: "true"
@@ -123,18 +127,12 @@ in
       ${paths}-macos:
         description: |
           - ${overrides paths}
-          - ${effectOnlyOnMacOS}
-          - ${pathsDefaultWhenNix}
-          - ${pathsWhen}
-          - ${pathsOtherwise}
+          - ${effectOnlyOn macos}
         default: ""
       ${paths}-linux:
         description: |
           - ${overrides paths}
-          - ${effectOnlyOnLinux}
-          - ${pathsDefaultWhenNix}
-          - ${pathsWhen}
-          - ${pathsOtherwise}
+          - ${effectOnlyOn linux}
         default: ""
 
       ${
@@ -148,19 +146,13 @@ in
         default: ""
       ${gc-max-store-size}-macos:
         description: |
-          - ${effectOnlyWhen [nixTrue "save: true"]}
           - ${overrides gc-max-store-size}
-          - ${effectOnlyOnMacOS}
-          - ${gcWhen}
-          - ${noEffectOtherwise}
+          - ${effectOnlyOn macos}
         default: ""
       ${gc-max-store-size}-linux:
         description: |
-          - ${effectOnlyWhen [nixTrue "save: true"]}
           - ${overrides gc-max-store-size}
-          - ${effectOnlyOnLinux}
-          - ${gcWhen}
-          - ${noEffectOtherwise}
+          - ${effectOnlyOn linux}
         default: ""
     
       purge:
@@ -173,24 +165,24 @@ in
           - ${effectOnlyWhen ["purge: true"]}
           - When `always`, the action always purges cache with the ${q primary-key}.
           - When `never`, the action never purges cache with the ${q primary-key}.
-          - Otherwise, the action purges old caches using purging criteria.
+          - ${noEffectOtherwise}.
         default: ""
       purge-prefixes:
         description: |
           - ${effectOnlyWhen ["purge: true"]}
-          - ${whenListOf} cache key prefixes, the action collects all cache keys that match these prefixes.
+          - ${whenListOf} cache key prefixes, the action selects for purging all caches whose keys match some of these prefixes and that are scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
           - ${noEffectOtherwise}
         default: ""
       purge-last-accessed:
         description: |
           - ${effectOnlyWhen ["purge: true"]}
-          - When a number, the action selects for purging caches last accessed more than this number of seconds ago relative to the start of the Save phase.
+          - When a number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the `Post Restore` phase.
           - ${noEffectOtherwise}
         default: ""
       purge-created:
         description: |
           - ${effectOnlyWhen ["purge: true"]}
-          - When a number, the action selects for purging caches created more than this number of seconds ago relative to the start of the Save phase.
+          - When a number, the action purges caches created more than this number of seconds ago relative to the start of the `Post Restore` phase.
           - ${noEffectOtherwise}
         default: ""
     
