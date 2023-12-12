@@ -29,5 +29,3 @@ export function getInputAsBool(
     const result = core.getInput(name, options);
     return result.toLowerCase() === "true";
 }
-
-export const isLinux = process.platform === "linux";

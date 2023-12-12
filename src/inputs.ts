@@ -21,7 +21,7 @@ interface FailOn {
     result: "miss" | "not-restored";
 }
 
-export const failOn: FailOn | undefined = (() => {
+export const failOn: FailOn | undefined = (function () {
     const failOnRaw = new RegExp(
         "^(primary|first-match)\\.(miss|not-restored)$"
     )
@@ -41,17 +41,28 @@ export const failOn: FailOn | undefined = (() => {
     }
 })();
 
-export const nix = utils.getInputAsBool(Inputs.Nix);
+function choose<T>(linuxOption: T, macosOption: T, defaultOption: T): T {
+    switch (process.env.RUNNER_OS) {
+        case "Linux":
+            return linuxOption;
+        case "macOS":
+            return macosOption;
+        default:
+            return defaultOption;
+    }
+}
 
-export const save = utils.getInputAsBool(Inputs.Save);
+export const nix =
+    utils.getInputAsBool(Inputs.Nix) &&
+    (process.platform == "linux" || process.platform == "darwin");
 
 export const paths = (
     nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []
 ).concat(
-    (() => {
+    (function () {
         const paths = utils.getInputAsArray(Inputs.Paths);
         const pathsPlatform = utils.getInputAsArray(
-            utils.isLinux ? Inputs.PathsLinux : Inputs.PathsMacos
+            choose(Inputs.PathsLinux, Inputs.PathsMacos, Inputs.Paths)
         );
         if (pathsPlatform.length > 0) {
             return pathsPlatform;
@@ -59,15 +70,19 @@ export const paths = (
     })()
 );
 
+export const save = utils.getInputAsBool(Inputs.Save);
+
 export const gcMaxStoreSize = nix
-    ? (() => {
+    ? (function () {
           const gcMaxStoreSize = utils.getInputAsInt(Inputs.GCMaxStoreSize);
           const gcMaxStoreSizePlatform = utils.getInputAsInt(
-              utils.isLinux
-                  ? Inputs.GCMaxStoreSizeLinux
-                  : Inputs.GCMaxStoreSizeMacos
+              choose(
+                  Inputs.GCMaxStoreSizeLinux,
+                  Inputs.GCMaxStoreSizeMacos,
+                  Inputs.GCMaxStoreSize
+              )
           );
-          return gcMaxStoreSizePlatform
+          return gcMaxStoreSizePlatform !== undefined
               ? gcMaxStoreSizePlatform
               : gcMaxStoreSize;
       })()
