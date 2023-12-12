@@ -14,6 +14,12 @@ name: Nix CI
     - cron: 0 0 * * *
   workflow_dispatch: {}
 
+env:
+  nix_conf: |
+    substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+    trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+    keep-outputs = true
+
 jobs:
   # Check if the action code changed
   check-action-code-changes:
@@ -48,6 +54,10 @@ jobs:
     if: needs.check-action-code-changes.outputs.any_changed
     steps:
       - uses: actions/checkout@v3
+      - uses: nixbuild/nix-quick-install-action@v26
+        with:
+          nix_conf: ${{ env.nix_conf }}
+            
       - name: Restore and save Nix store
         uses: ./.
         with:
@@ -129,10 +139,7 @@ jobs:
       
       - uses: nixbuild/nix-quick-install-action@v26
         with:
-          nix_conf: |
-            substituters = https://cache.nixos.org/ https://nix-community.cachix.org
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
-            keep-outputs = true
+          nix_conf: ${{ env.nix_conf }}
 
       - name: Restore and save Nix store - ${{ matrix.id }}
         uses: ./.
@@ -171,10 +178,7 @@ jobs:
       
       - uses: nixbuild/nix-quick-install-action@v25
         with:
-          nix_conf: |
-            substituters = https://cache.nixos.org/ https://nix-community.cachix.org
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
-            keep-outputs = true
+          nix_conf: ${{ env.nix_conf }}
               
       - name: Restore and save Nix store
         uses: ./.
@@ -221,10 +225,7 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v25
         with:
-          nix_conf: |
-            substituters = https://cache.nixos.org/ https://nix-community.cachix.org
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
-            keep-outputs = true
+          nix_conf: ${{ env.nix_conf }}
 
       - name: Restore and save Nix store
         if: ${{ matrix.do-cache }}
