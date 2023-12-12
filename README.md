@@ -90,7 +90,7 @@ See [ci.yaml](.github/workflows/ci.yaml) and its [runs](https://github.com/nix-c
 
 ## Configuration
 
-See [action.yml](action.yml), [restore/action.yml](restore/action.yml), [save/action.yml](save/action.yml).
+See [action.yml](action.yml).
 
 ### Inputs
 
@@ -353,8 +353,8 @@ jobs:
       id: cache-primes
       uses: actions/cache@v3
       with:
-        path: prime-numbers
-        key: ${{ runner.os }}-primes
+        primary-key: ${{ runner.os }}-primes
+        paths: prime-numbers
 
     - name: Generate Prime Numbers
       if: steps.cache-primes.outputs.cache-hit != 'true'
@@ -382,23 +382,23 @@ jobs:
 
     - name: Restore cached Primes
       id: cache-primes-restore
-      uses: actions/cache/restore@v3
+      uses: nix-community/cache-nix-action/restore@v5
       with:
-        path: |
+        primary-key: ${{ runner.os }}-primes
+        paths: |
           path/to/dependencies
           some/other/dependencies
-        key: ${{ runner.os }}-primes
-    .
-    . //intermediate workflow steps
-    .
+    
+    # other steps
+    
     - name: Save Primes
       id: cache-primes-save
-      uses: actions/cache/save@v3
+      uses: nix-community/cache-nix-action/save@v5
       with:
-        path: |
+        primary-key: ${{ steps.cache-primes-restore.outputs.cache-primary-key }}
+        paths: |
           path/to/dependencies
           some/other/dependencies
-        key: ${{ steps.cache-primes-restore.outputs.cache-primary-key }}
 ```
 
 > **Note**
@@ -447,12 +447,12 @@ A cache key can include any of the contexts, functions, literals, and operators 
 For example, using the [`hashFiles`](https://docs.github.com/en/actions/learn-github-actions/expressions#hashfiles) function allows you to create a new cache when dependencies change.
 
 ```yaml
-  - uses: actions/cache@v3
+  - uses: nix-community/cache-nix-action@v5
     with:
-      path: |
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: |
         path/to/dependencies
         some/other/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 ```
 
 Additionally, you can use arbitrary command output in a cache key, such as a date or software version:
@@ -461,25 +461,24 @@ Additionally, you can use arbitrary command output in a cache key, such as a dat
   # http://man7.org/linux/man-pages/man1/date.1.html
   - name: Get Date
     id: get-date
-    run: |
-      echo "date=$(/bin/date -u "+%Y%m%d")" >> $GITHUB_OUTPUT
+    run: echo "date=$(/bin/date -u "+%Y%m%d")" >> $GITHUB_OUTPUT
     shell: bash
 
-  - uses: actions/cache@v3
+  - uses: nix-community/cache-nix-action@v5
     with:
-      path: path/to/dependencies
-      key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('**/lockfiles') }}
+      primary-key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('**/lockfiles') }}
+      paths: path/to/dependencies
 ```
 
 See [Using contexts to create cache keys](https://help.github.com/en/actions/configuring-and-managing-workflows/caching-dependencies-to-speed-up-workflows#using-contexts-to-create-cache-keys)
 
 ## Cache Limits
 
-A repository can have up to 10GB of caches. Once the 10GB limit is reached, older caches will be evicted based on when the cache was last accessed.  Caches that are not accessed within the last week will also be evicted.
+A repository can have up to 10GB of caches. Once the 10GB limit is reached, older caches will be evicted based on when the cache was last accessed. Caches that are not accessed within the last week will also be evicted.
 
-## Skipping steps based on cache-hit
+## Skipping steps based on cache hit
 
-Using the `cache-hit` output, subsequent steps (such as install or build) can be skipped when a cache hit occurs on the key.  It is recommended to install missing/updated dependencies in case of a partial key match when the key is dependent on the `hash` of the package file.
+Using the `hit-primary-key` output, subsequent steps (such as install or build) can be skipped when a cache hit occurs on the primary key. It is recommended to install missing/updated dependencies in case of a partial key match when the key is dependent on the `hash` of the package file.
 
 Example:
 
@@ -487,18 +486,18 @@ Example:
 steps:
   - uses: actions/checkout@v3
 
-  - uses: actions/cache@v3
+  - uses: nix-community/cache-nix-action@v5
     id: cache
     with:
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
       path: path/to/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
   - name: Install Dependencies
-    if: steps.cache.outputs.cache-hit != 'true'
+    if: steps.cache.outputs.hit-primary-key != true
     run: /install.sh
 ```
 
-> **Note** The `id` defined in `actions/cache` must match the `id` in the `if` statement (i.e. `steps.[ID].outputs.cache-hit`)
+> **Note** The `id` defined in `nix-community/cache-nix-action` must match the `[id]` in the `if` statement (i.e. `steps.[id].outputs.hit-primary-key`)
 
 ## Cache Version
 
@@ -519,10 +518,10 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: actions/cache@v3
+        uses: nix-community/cache-nix-action@v5
         with:
-          path: prime-numbers
-          key: primes
+          primary-key: primes
+          paths: prime-numbers
 
       - name: Generate Prime Numbers
         if: steps.cache-primes.outputs.cache-hit != 'true'
@@ -530,10 +529,10 @@ jobs:
 
       - name: Cache Numbers
         id: cache-numbers
-        uses: actions/cache@v3
+        uses: nix-community/cache-nix-action@v5
         with:
-          path: numbers
-          key: primes
+          primary-key: primes
+          paths: numbers
 
       - name: Generate Numbers
         if: steps.cache-numbers.outputs.cache-hit != 'true'
@@ -546,10 +545,11 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: actions/cache@v3
+        uses: nix-community/cache-nix-action@v5
         with:
-          path: prime-numbers
-          key: primes
+          nix: false
+          primary-key: primes
+          paths: prime-numbers
 
       - name: Generate Prime Numbers
         if: steps.cache-primes.outputs.cache-hit != 'true'
