@@ -1,64 +1,63 @@
-# Cache Nix
+# Cache Nix action
 
 A GitHub Action to cache Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
-## What it can do (main things)
+## What it can
 
-* Work on `Linux` and `macOS` runners.
-* Cache full Nix store into a single cache.
-* Collect garbage in the store before saving.
+* Restore and save the Nix store and/or other paths.
+* Collect garbage in the Nix store before saving a new cache.
 * Merge caches produced by several jobs.
-* Purge old caches by their creation or last access time.
-* Can be used instead of `actions/cache` if you set `nix: false` (see [Inputs](#inputs)).
+* Purge caches created or last accessed at least the given time ago.
 
-## Approach
+## A typical job
 
-1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) action makes `/nix/store` owned by an unpriviliged user.
+1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) installs Nix and makes `/nix/store` owned by an unpriviliged user.
 
-1. `cache-nix-action` tries to restore caches.
+1. `Restore` phase:
+    1. The `cache-nix-action` tries to restore a cache whose key is the same as the primary key.
+
+    1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in the given list of key prefixes.
+
+    1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in the given list of key prefixes.
 
 1. Other job steps run.
 
-1. Optionally, `cache-nix-action` purges old caches by `created` or `last_accessed` time.
+1. `Post Restore` phase:
 
-1. Optionally, `cache-nix-action` collects garbage in the Nix store (see [Garbage Collection](#garbage-collection)).
+    1. The `cache-nix-action` purges caches whose keys are the same as the primary key and that were created more than a given time ago.
 
-1. `cache-nix-action` saves a new cache when there's no cache hit after purging old caches.
+    1. When there's no cache whose key is the same as the primary key, the `cache-nix-action` collects garbage in the Nix store and saves a new cache.
+
+    1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created more than a given time ago.
+
+## Limitations
+
+* Requires `nix-quick-install-action`.
+* Supports only `Linux` and `macOS` runners.
+* `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
+  * [Purge old caches](#purge-old-caches)
+  * [Merge caches](#merge-caches)
+* Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)). Workaround:
+  * The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
+* Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)). Workaround:
+  * Provide caches for PRs on the default or base branches.
+* For purging, a workflow requires the permission `action: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
+* Purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
+* Purge time is calculated relative to the start of the `Post Restore` phase of this action.
+* Purges caches by keys without considering caches versions (see [Cache version](#cache-version)).
 
 ## Comparison with alternative approaches
 
 See [Caching Approaches](#caching-approaches).
 
-## Limitations
+## Additional actions
 
-* Always caches `/nix`, `~/.cache/nix`, `~root/.cache/nix` paths as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
-* `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
-  * [Purge old caches](#purge-old-caches)
-  * [Merge caches](#merge-caches)
-* `cache-nix-action` requires `nix-quick-install-action` (see [Approach](#approach)).
-* Supports only `Linux` and `macOS` runners.
-* Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)). Workaround:
-  * The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
-* Caches are isolated between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)). Workaround:
-  * Provide caches on the default and base branches (for PRs).
-* When restoring, `cache-nix-action` writes cached Nix store paths into a read-only `/nix/store` of a runner.
-  Some of these paths may already be present, so the action will show `File exists` errors and a warning that it failed to restore.
-  It's OK.
-* For `purge: true`, a workflow requires the permission `action: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
-* Purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
-* Purge time is calculated relative to the start of the `Save` phase of this action.
-* Purges caches by keys without considering their versions (see [Cache version](#cache-version)).
+* [Restore action](./restore/README.md)
+* [Save action](./save/README.md)
 
 ## Example steps
-
-* Due to `gc-max-store-size-linux: 1073741824`, Nix store size on `Linux` runners will be reduced to `1GB` before trying to save a new cache.
-  * If the store has a larger size, it will be garbage collected to reach the (See [Garbage collection parameters](#garbage-collection-parameters)).
-  * The `cache-nix-action` will print the Nix store size in the `Post` phase, so you can choose an optimal store size to avoid garbage collection.
-* On `macOS` runners, Nix store won't be garbage collected since `gc-max-store-size-macos` isn't set to a number.
-* Before trying to save a new cache, the `cache-nix-action` will search for caches with a key prefix `cache-${{ matrix.os }}-`.
-  Among these caches, due to `purge-created: 42` the `cache-nix-action` will delete caches created more than `42` seconds ago.
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v26
@@ -71,19 +70,23 @@ See [Caching Approaches](#caching-approaches).
 - name: Restore and cache Nix store
   uses: nix-community/cache-nix-action@v5
   with:
-    primary-key: cache-nix-${{ matrix.os }}-${{ hashFiles('**/*.nix') }}
-    restore-prefixes-first-match: cache-nix-${{ matrix.os }}-
+    primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+    restore-prefixes-first-match: nix-${{ runner.os }}-
 
-    gc-max-store-size-linux: 1073741824
-    
     purge: true
     purge-prefixes: cache-${{ matrix.os }}-
     purge-created: 42
+    purge-last-accessed: 42
 ```
+
+* Due to `gc-max-store-size-linux: 1073741824`, on `Linux` runners, Nix store will be garbage collected until its size reaches `1GB` or until there's nothing to garbage collect.
+* Since `gc-max-store-size-macos` isn't set to a number, on `macOS` runners, Nix store won't be garbage collected.
+* The `cache-nix-action` will purge caches:
+  * with a key prefix `cache-${{ matrix.os }}-` **AND** (created more than `42` seconds ago **OR** last accessed more than `42` seconds ago).
 
 ### Example workflow
 
-See [ci.yaml](.github/workflows/ci.yaml).
+See [ci.yaml](.github/workflows/ci.yaml) and its [runs](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml).
 
 ## Configuration
 
@@ -103,15 +106,16 @@ See [action.yml](action.yml), [restore/action.yml](restore/action.yml), [save/ac
 
 ### Garbage collection parameters
 
-On `Linux` runners, when `gc-linux` is `true`, when a cache size is greater than `gc-max-cache-size-linux`, this action will run `nix store gc --max R` before saving a cache.
+On `Linux` runners, when `gc-max-store-size-linux` is set to a number, the `cache-nix-action` will run `nix store gc --max R` before saving a cache.
 Here, `R` is `max(0, S - gc-max-store-size-linux)`, where `S` is the current store size.
+
 Respective conditions hold for `macOS` runners.
 
 There are alternative approaches to garbage collection (see [Garbage collection](#garbage-collection)).
 
 ### Purge old caches
 
-The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [Inputs](#inputs) and `compare-run-times` in [Example workflow](#example-workflow)).
+The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [Inputs](#inputs) and the `compare-run-times` job in the [Example workflow](#example-workflow)).
 
 The [purge-cache](https://github.com/MyAlbum/purge-cache) action allows to remove caches based on their `last accessed` or `created` time without branch limitations.
 
@@ -157,7 +161,7 @@ These distances affect the restore and save speed.
 * Allows to save outputs from garbage collection (see [Garbage collection](#garbage-collection)).
 * When there's a cache hit, restoring from a GitHub Actions cache can be faster than downloading multiple paths from binary caches.
   * You can compare run times of jobs with and without store caching in [Actions](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml).
-        * Open a run and click on the time under `Total duration`.
+    * Open a run and click on the time under `Total duration`.
 
 **Cons**: see [Limitations](#limitations)
 
@@ -280,15 +284,6 @@ Disadvantages:
 * Update [actions-toolkit](./actions-toolkit). It was added via `git subtree`. See [tutorial](https://www.atlassian.com/git/tutorials/git-subtree).
 
 # Cache action
-
-## !!! This documentation was inherited from actions/cache and may be partially irrelevant to cache-nix-action
-
-This action allows caching dependencies and build outputs to improve workflow execution time.
-
->Two other actions are available in addition to the primary `cache` action:
->
->* [Restore action](./restore/README.md)
->* [Save action](./save/README.md)
 
 [![Tests](https://github.com/actions/cache/actions/workflows/workflow.yml/badge.svg)](https://github.com/actions/cache/actions/workflows/workflow.yml)
 
