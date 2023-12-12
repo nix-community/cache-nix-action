@@ -10,7 +10,7 @@
   - [macOS](#macos)
   - [Windows](#windows-1)
 - [Elixir - Mix](#elixir---mix)
-- [Erlang - Rebar3](#erlang--rebar3)
+- [Erlang - Rebar3](#erlang---rebar3)
 - [Go - Modules](#go---modules)
   - [Linux](#linux-1)
   - [macOS](#macos-1)
@@ -48,9 +48,9 @@ Using [NuGet lock files](https://docs.microsoft.com/nuget/consume-packages/packa
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: ~/.nuget/packages
-    key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-    restore-keys: |
+    paths: ~/.nuget/packages
+    primary-key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-nuget-
 ```
 
@@ -60,11 +60,11 @@ With `actions/cache@v3` you can now exclude unwanted packages with [exclude patt
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.nuget/packages
       !~/.nuget/packages/unwanted
-    key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-nuget-
 ```
 
@@ -77,9 +77,9 @@ env:
 steps:
   - uses: actions/cache@v3
     with:
-      path: ${{ github.workspace }}/.nuget/packages
-      key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-      restore-keys: |
+      paths: ${{ github.workspace }}/.nuget/packages
+      primary-key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+      restore-prefixes-first-match: |
         ${{ runner.os }}-nuget-
 ```
 
@@ -89,12 +89,11 @@ steps:
 - name: Cache lein project dependencies
   uses: actions/cache@v3
   with:
-    path: ~/.m2/repository
-    key: ${{ runner.os }}-clojure-${{ hashFiles('**/project.clj') }}
-    restore-keys: |
+    paths: ~/.m2/repository
+    primary-key: ${{ runner.os }}-clojure-${{ hashFiles('**/project.clj') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-clojure
 ```
-
 
 ## D - DUB
 
@@ -103,9 +102,9 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: ~/.dub
-    key: ${{ runner.os }}-dub-${{ hashFiles('**/dub.selections.json') }}
-    restore-keys: |
+    paths: ~/.dub
+    primary-key: ${{ runner.os }}-dub-${{ hashFiles('**/dub.selections.json') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-dub-
 ```
 
@@ -114,9 +113,9 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: ~\AppData\Local\dub
-    key: ${{ runner.os }}-dub-${{ hashFiles('**/dub.selections.json') }}
-    restore-keys: |
+    paths: ~\AppData\Local\dub
+    primary-key: ${{ runner.os }}-dub-${{ hashFiles('**/dub.selections.json') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-dub-
 ```
 
@@ -127,10 +126,10 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.deno
       ~/.cache/deno
-    key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
+    primary-key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
 ```
 
 ### macOS
@@ -138,10 +137,10 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.deno
       ~/Library/Caches/deno
-    key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
+    primary-key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
 ```
 
 ### Windows
@@ -149,10 +148,10 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~\.deno
       ~\AppData\Local\deno
-    key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
+    primary-key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
 ```
 
 ## Elixir - Mix
@@ -160,23 +159,24 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       deps
       _build
-    key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-mix-
 ```
 
 ## Erlang - Rebar3
+
 ```yaml
 - uses: actions/cache@v2
   with:
-    path: |
+    paths: |
       ~/.cache/rebar3
       _build
-    key: ${{ runner.os }}-erlang-${{ env.OTP_VERSION }}-${{ hashFiles('**/*rebar.lock') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-erlang-${{ env.OTP_VERSION }}-${{ hashFiles('**/*rebar.lock') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-erlang-${{ env.OTP_VERSION }}-
 ```
 
@@ -187,11 +187,11 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.cache/go-build
       ~/go/pkg/mod
-    key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-go-
 ```
 
@@ -200,11 +200,11 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/Library/Caches/go-build
       ~/go/pkg/mod
-    key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-go-
 ```
 
@@ -213,11 +213,11 @@ steps:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~\AppData\Local\go-build
       ~\go\pkg\mod
-    key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-go-
 ```
 
@@ -229,12 +229,12 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 - name: Cache ~/.cabal/packages, ~/.cabal/store and dist-newstyle
   uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.cabal/packages
       ~/.cabal/store
       dist-newstyle
-    key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal', '**/cabal.project', '**/cabal.project.freeze') }}
-    restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
+    primary-key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal', '**/cabal.project', '**/cabal.project.freeze') }}
+    restore-prefixes-first-match: ${{ runner.os }}-${{ matrix.ghc }}-
 ```
 
 ## Haskell - Stack
@@ -245,16 +245,16 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 - uses: actions/cache@v3
   name: Cache ~/.stack
   with:
-    path: ~/.stack
-    key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
-    restore-keys: |
+    paths: ~/.stack
+    primary-key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-stack-global-
 - uses: actions/cache@v3
   name: Cache .stack-work
   with:
-    path: .stack-work
-    key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
-    restore-keys: |
+    paths: .stack-work
+    primary-key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-stack-work-
 ```
 
@@ -264,18 +264,18 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 - uses: actions/cache@v3
   name: Cache %APPDATA%\stack %LOCALAPPDATA%\Programs\stack
   with:
-    path: |
+    paths: |
       ~\AppData\Roaming\stack
       ~\AppData\Local\Programs\stack    
-    key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-stack-global-
 - uses: actions/cache@v3
   name: Cache .stack-work
   with:
-    path: .stack-work
-    key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
-    restore-keys: |
+    paths: .stack-work
+    primary-key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-stack-work-
 ```
 
@@ -286,11 +286,11 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.gradle/caches
       ~/.gradle/wrapper
-    key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-gradle-
 ```
 
@@ -300,9 +300,9 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 - name: Cache local Maven repository
   uses: actions/cache@v3
   with:
-    path: ~/.m2/repository
-    key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-    restore-keys: |
+    paths: ~/.m2/repository
+    primary-key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-maven-
 ```
 
@@ -316,7 +316,9 @@ After [deprecation](https://github.blog/changelog/2022-10-11-github-actions-depr
 > **Note** It is not recommended to cache `node_modules`, as it can break across Node versions and won't work with `npm ci`
 
 ### **Get npm cache directory using same shell**
+
 ### Bash shell
+
 ```yaml
 - name: Get npm cache directory
   id: npm-cache-dir
@@ -325,21 +327,23 @@ After [deprecation](https://github.blog/changelog/2022-10-11-github-actions-depr
 ```
 
 ### PWSH shell
+
 ```yaml
 - name: Get npm cache directory
   id: npm-cache-dir
   shell: pwsh
   run: echo "dir=$(npm config get cache)" >> ${env:GITHUB_OUTPUT}
 ```
+
 `Get npm cache directory` step can then be used with `actions/cache` as shown below
 
 ```yaml
 - uses: actions/cache@v3
   id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
   with:
-    path: ${{ steps.npm-cache-dir.outputs.dir }}
-    key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-    restore-keys: |
+    paths: ${{ steps.npm-cache-dir.outputs.dir }}
+    primary-key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-node-
 ```
 
@@ -349,12 +353,13 @@ After [deprecation](https://github.blog/changelog/2022-10-11-github-actions-depr
 - name: restore lerna
   uses: actions/cache@v3
   with:
-    path: '**/node_modules'
-    key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+    paths: '**/node_modules'
+    primary-key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 ```
 
 ## Node - Yarn
-The yarn cache directory will depend on your operating system and version of `yarn`. See https://yarnpkg.com/lang/en/docs/cli/cache/ for more info.
+
+The yarn cache directory will depend on your operating system and version of `yarn`. See <https://yarnpkg.com/lang/en/docs/cli/cache/> for more info.
 
 ```yaml
 - name: Get yarn cache directory path
@@ -364,15 +369,15 @@ The yarn cache directory will depend on your operating system and version of `ya
 - uses: actions/cache@v3
   id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
   with:
-    path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-    key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-    restore-keys: |
+    paths: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+    primary-key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-yarn-
 ```
 
 ## Node - Yarn 2
 
-The yarn 2 cache directory will depend on your config. See https://yarnpkg.com/configuration/yarnrc#cacheFolder for more info.
+The yarn 2 cache directory will depend on your config. See <https://yarnpkg.com/configuration/yarnrc#cacheFolder> for more info.
 
 ```yaml
 - name: Get yarn cache directory path
@@ -382,23 +387,24 @@ The yarn 2 cache directory will depend on your config. See https://yarnpkg.com/c
 - uses: actions/cache@v3
   id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
   with:
-    path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-    key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-    restore-keys: |
+    paths: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+    primary-key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-yarn-
 ```
 
 ## OCaml/Reason - esy
 
 Esy allows you to export built dependencies and import pre-built dependencies.
+
 ```yaml
     - name: Restore Cache
       id: restore-cache
       uses: actions/cache@v3
       with:
-        path: _export
-        key:  ${{ runner.os }}-esy-${{ hashFiles('esy.lock/index.json') }}
-        restore-keys: |
+        paths: _export
+        primary-key:  ${{ runner.os }}-esy-${{ hashFiles('esy.lock/index.json') }}
+        restore-prefixes-first-match: |
           ${{ runner.os }}-esy-
     - name: Esy install
       run: 'esy install'
@@ -425,15 +431,15 @@ Esy allows you to export built dependencies and import pre-built dependencies.
     echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 - uses: actions/cache@v3
   with:
-    path: ${{ steps.composer-cache.outputs.dir }}
-    key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-    restore-keys: |
+    paths: ${{ steps.composer-cache.outputs.dir }}
+    primary-key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-composer-
 ```
 
 ## Python - pip
 
-For pip, the cache directory will vary by OS. See https://pip.pypa.io/en/stable/reference/pip_install/#caching
+For pip, the cache directory will vary by OS. See <https://pip.pypa.io/en/stable/reference/pip_install/#caching>
 
 Locations:
 
@@ -446,9 +452,9 @@ Locations:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: ~/.cache/pip
-    key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    restore-keys: |
+    paths: ~/.cache/pip
+    primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-pip-
 ```
 
@@ -460,25 +466,25 @@ Replace `~/.cache/pip` with the correct `path` if not using Ubuntu.
 - uses: actions/cache@v3
   if: startsWith(runner.os, 'Linux')
   with:
-    path: ~/.cache/pip
-    key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    restore-keys: |
+    paths: ~/.cache/pip
+    primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-pip-
 
 - uses: actions/cache@v3
   if: startsWith(runner.os, 'macOS')
   with:
-    path: ~/Library/Caches/pip
-    key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    restore-keys: |
+    paths: ~/Library/Caches/pip
+    primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-pip-
 
 - uses: actions/cache@v3
   if: startsWith(runner.os, 'Windows')
   with:
-    path: ~\AppData\Local\pip\Cache
-    key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    restore-keys: |
+    paths: ~\AppData\Local\pip\Cache
+    primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-pip-
 ```
 
@@ -493,23 +499,24 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
         - os: ubuntu-latest
-          path: ~/.cache/pip
+          paths: ~/.cache/pip
         - os: macos-latest
-          path: ~/Library/Caches/pip
+          paths: ~/Library/Caches/pip
         - os: windows-latest
-          path: ~\AppData\Local\pip\Cache
+          paths: ~\AppData\Local\pip\Cache
     steps:
     - uses: actions/cache@v3
       with:
-        path: ${{ matrix.path }}
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
+        paths: ${{ matrix.path }}
+        primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-prefixes-first-match: |
          ${{ runner.os }}-pip-
 ```
 
 ### Using pip to get cache location
 
 > **Note** This requires pip 20.1+
+
 ```yaml
 - name: Get pip cache dir
   id: pip-cache
@@ -519,9 +526,9 @@ jobs:
 - name: pip cache
   uses: actions/cache@v3
   with:
-    path: ${{ steps.pip-cache.outputs.dir }}
-    key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-    restore-keys: |
+    paths: ${{ steps.pip-cache.outputs.dir }}
+    primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-pip-
 ```
 
@@ -537,13 +544,13 @@ jobs:
 
 - uses: actions/cache@v3
   with:
-    path: ~/.local/share/virtualenvs
-    key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipenv-${{ hashFiles('Pipfile.lock') }}
+    paths: ~/.local/share/virtualenvs
+    primary-key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipenv-${{ hashFiles('Pipfile.lock') }}
 ```
 
 ## R - renv
 
-For renv, the cache directory will vary by OS. The `RENV_PATHS_ROOT` environment variable is used to set the cache location. Have a look at https://rstudio.github.io/renv/reference/paths.html#details for more details.
+For renv, the cache directory will vary by OS. The `RENV_PATHS_ROOT` environment variable is used to set the cache location. Have a look at <https://rstudio.github.io/renv/reference/paths.html#details> for more details.
 
 ```yaml
 - name: Set RENV_PATHS_ROOT
@@ -564,9 +571,9 @@ For renv, the cache directory will vary by OS. The `RENV_PATHS_ROOT` environment
 - name: Restore Renv package cache
   uses: actions/cache@v3
   with:
-    path: ${{ env.RENV_PATHS_ROOT }}
-    key: ${{ steps.get-version.outputs.os-version }}-${{ steps.get-version.outputs.r-version }}-${{ inputs.cache-version }}-${{ hashFiles('renv.lock') }}
-    restore-keys: ${{ steps.get-version.outputs.os-version }}-${{ steps.get-version.outputs.r-version }}-${{inputs.cache-version }}-
+    paths: ${{ env.RENV_PATHS_ROOT }}
+    primary-key: ${{ steps.get-version.outputs.os-version }}-${{ steps.get-version.outputs.r-version }}-${{ inputs.cache-version }}-${{ hashFiles('renv.lock') }}
+    restore-prefixes-first-match: ${{ steps.get-version.outputs.os-version }}-${{ steps.get-version.outputs.r-version }}-${{inputs.cache-version }}-
 ```
 
 ## Ruby - Bundler
@@ -590,13 +597,13 @@ whenever possible:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.cargo/bin/
       ~/.cargo/registry/index/
       ~/.cargo/registry/cache/
       ~/.cargo/git/db/
       target/
-    key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    primary-key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 ```
 
 ## Scala - SBT
@@ -605,10 +612,10 @@ whenever possible:
 - name: Cache SBT
   uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.ivy2/cache
       ~/.sbt
-    key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+    primary-key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
 ```
 
 ## Swift, Objective-C - Carthage
@@ -616,9 +623,9 @@ whenever possible:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: Carthage
-    key: ${{ runner.os }}-carthage-${{ hashFiles('**/Cartfile.resolved') }}
-    restore-keys: |
+    paths: Carthage
+    primary-key: ${{ runner.os }}-carthage-${{ hashFiles('**/Cartfile.resolved') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-carthage-
 ```
 
@@ -627,9 +634,9 @@ whenever possible:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: Pods
-    key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
-    restore-keys: |
+    paths: Pods
+    primary-key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-pods-
 ```
 
@@ -638,9 +645,9 @@ whenever possible:
 ```yaml
 - uses: actions/cache@v3
   with:
-    path: .build
-    key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
-    restore-keys: |
+    paths: .build
+    primary-key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-spm-
 ```
 
@@ -648,14 +655,14 @@ whenever possible:
 
 ```yaml
 env:
-  MINT_PATH: .mint/lib
-  MINT_LINK_PATH: .mint/bin
+  MINT_paths: .mint/lib
+  MINT_LINK_paths: .mint/bin
 steps:
   - uses: actions/cache@v3
     with:
-      path: .mint
-      key: ${{ runner.os }}-mint-${{ hashFiles('**/Mintfile') }}
-      restore-keys: |
+      paths: .mint
+      primary-key: ${{ runner.os }}-mint-${{ hashFiles('**/Mintfile') }}
+      restore-prefixes-first-match: |
         ${{ runner.os }}-mint-
 ```
 
@@ -669,10 +676,10 @@ steps:
 - name: Cache Bazel
   uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       ~/.cache/bazel
-    key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-bazel-
 - run: bazelisk test //...
 ```
@@ -683,10 +690,10 @@ steps:
 - name: Cache Bazel
   uses: actions/cache@v3
   with:
-    path: |
+    paths: |
       /private/var/tmp/_bazel_runner/
-    key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') }}
-    restore-keys: |
+    primary-key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') }}
+    restore-prefixes-first-match: |
       ${{ runner.os }}-bazel-
 - run: bazelisk test //...
 ```
