@@ -31,18 +31,22 @@
               description = "write action.yml-s and tables for README-s";
             };
             install = {
-              runtimeInputs = [ pkgs.nodejs ];
-              text = "${pkgs.nodejs}/bin/npm i";
+              runtimeInputs = [ pkgs.nodejs pkgs.poetry ];
+              text = ''
+                npm i
+                poetry install
+              '';
               description = "install dependencies";
             };
             build = {
-              text = "${pkgs.nodejs_18}/bin/npm run build";
+              runtimeInputs = [ pkgs.nodejs ];
+              text = "npm run build";
               description = "build project";
             };
           };
           devShells.default = mkShell {
             packages = tools;
-            commands = mkRunCommands "scripts" { inherit (packages) write init build; };
+            commands = mkRunCommands "scripts" { inherit (packages) write install build; };
           };
         in
         {

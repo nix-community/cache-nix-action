@@ -62,7 +62,9 @@ jobs:
         uses: ./.
         with:
           primary-key: build-${{ runner.os }}-${{ hashFiles('**/package-lock.json', 'package.json') }}
-          paths: ~/.npm
+          paths: |
+            ~/.npm
+            .venv
           purge: true
           # purge all versions of the cache
           purge-prefixes: build-${{ runner.os }}-
