@@ -62720,7 +62720,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.token = exports.uploadChunkSize = exports.purgeCreatedMaxAge = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgeOverwrite = exports.purge = exports.gcMaxStoreSize = exports.paths = exports.save = exports.nix = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
+exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgeOverwrite = exports.purge = exports.gcMaxStoreSize = exports.paths = exports.save = exports.nix = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(9378));
@@ -62732,7 +62732,7 @@ exports.failOn = (() => {
     var _a;
     const failOnRaw = (_a = new RegExp("^(primary|first-match)\\.(miss|not-restored)$")
         .exec(core.getInput(constants_1.Inputs.FailOn))) === null || _a === void 0 ? void 0 : _a.slice(1);
-    if (!failOnRaw) {
+    if (failOnRaw === undefined || failOnRaw.length != 2) {
         return;
     }
     const [keyType, result] = failOnRaw;
@@ -62773,7 +62773,7 @@ exports.purgeOverwrite = (() => {
 })();
 exports.purgePrefixes = utils.getInputAsArray(constants_1.Inputs.PurgePrefixes);
 exports.purgeLastAccessed = utils.getInputAsInt(constants_1.Inputs.PurgeLastAccessed);
-exports.purgeCreatedMaxAge = utils.getInputAsInt(constants_1.Inputs.PurgeCreated);
+exports.purgeCreated = utils.getInputAsInt(constants_1.Inputs.PurgeCreated);
 exports.uploadChunkSize = utils.getInputAsInt(constants_1.Inputs.UploadChunkSize) || 32 * 1024 * 1024;
 exports.token = core.getInput(constants_1.Inputs.Token, { required: true });
 
@@ -62868,7 +62868,7 @@ function restoreImpl(stateProvider) {
                         utils.info(`Could not find a cache.`);
                     }
                 }
-                if (lookedUpKey && utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
+                else if (utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
                     utils.info(`Found a cache with the given "${constants_1.Inputs.PrimaryKey}".`);
                     core.setOutput(constants_1.Outputs.HitPrimaryKey, true);
                     if (!inputs.skipRestoreOnHitPrimaryKey) {
@@ -62904,7 +62904,7 @@ function restoreImpl(stateProvider) {
                         utils.info(`Could not find a cache.`);
                     }
                 }
-                if (foundKey) {
+                else {
                     utils.info(`Found a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}".`);
                     core.setOutput(constants_1.Outputs.HitFirstMatch, true);
                     restoredKey = yield restore.restoreCache(foundKey);
@@ -63087,7 +63087,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.warning = exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByKeys = exports.restoreCache = exports.isCacheFeatureAvailable = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.warning = exports.info = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByPrefixes = exports.restoreCache = exports.isCacheFeatureAvailable = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__nccwpck_require__(7942));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
@@ -63146,12 +63146,12 @@ function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     });
 }
 exports.restoreCache = restoreCache;
-function getCachesByKeys(keys) {
+function getCachesByPrefixes(prefixes) {
     return __awaiter(this, void 0, void 0, function* () {
         const caches = [];
         const octokit = github.getOctokit(inputs.token);
-        for (let i = 0; i < keys.length; i += 1) {
-            const key = keys[i];
+        for (let i = 0; i < prefixes.length; i += 1) {
+            const key = prefixes[i];
             for (let page = 1; page <= 500; page += 1) {
                 const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
                     owner: github.context.repo.owner,
@@ -63164,15 +63164,13 @@ function getCachesByKeys(keys) {
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
                 }
-                if (isExactKeyMatch(inputs.primaryKey, key)) {
-                    caches.push(...cachesRequest.actions_caches);
-                }
+                caches.push(...cachesRequest.actions_caches);
             }
         }
         return caches;
     });
 }
-exports.getCachesByKeys = getCachesByKeys;
+exports.getCachesByPrefixes = getCachesByPrefixes;
 const mkMessageWrongValue = (input, value) => `Wrong value for the input "${input}": ${value}`;
 exports.mkMessageWrongValue = mkMessageWrongValue;
 function getMaxDate({ doUseLastAccessedTime, time }) {
@@ -63322,16 +63320,16 @@ function restoreCaches() {
             return restoredCaches;
         }
         utils.info(`
-        Searching for caches using the "${constants_1.Inputs.RestorePrefixesAllMatches}":
-        
+        Restoring cache(s) using the "${constants_1.Inputs.RestorePrefixesAllMatches}":
         ${utils.stringify(inputs.restorePrefixesAllMatches)}
         `);
-        const caches = yield utils.getCachesByKeys(inputs.restorePrefixesAllMatches);
-        utils.info(`
-        Found ${caches.length} cache(s):
-        
-        ${utils.stringify(caches)}
-        `);
+        const caches = yield utils.getCachesByPrefixes(inputs.restorePrefixesAllMatches);
+        utils.info(caches.length > 0
+            ? `
+            Found ${caches.length} cache(s):
+            ${utils.stringify(caches)}
+            `
+            : "Found no cache(s).");
         for (const cache of caches) {
             if (cache.key) {
                 const cacheKey = yield restoreCache(cache.key);
@@ -63339,6 +63337,9 @@ function restoreCaches() {
                     restoredCaches.push(...[cacheKey]);
                 }
             }
+        }
+        if (caches.length > 0) {
+            utils.info(`Finished restoring cache(s).`);
         }
         return restoredCaches;
     });
