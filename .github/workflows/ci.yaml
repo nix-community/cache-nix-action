@@ -31,7 +31,10 @@ jobs:
         with:
           files: |
             src/**
-            package.*
+            package.json
+            package-lock.json
+            flake.lock
+            flake.nix
 
   # Build the action if there are changes
   # Commit and push the built code
@@ -48,18 +51,21 @@ jobs:
       - name: Restore and save Nix store
         uses: ./.
         with:
-          primary-key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json', 'package.json') }}
+          primary-key: build-${{ runner.os }}-${{ hashFiles('**/package-lock.json', 'package.json') }}
           paths: ~/.npm
           purge: true
-          # purge all versions of the npm cache
-          purge-prefixes: ${{ runner.os }}-npm-
+          # purge all versions of the cache
+          purge-prefixes: build-${{ runner.os }}-
           # created more than 0 seconds ago (basically all previous versions)
           purge-created: 0
           # but don't purge the version with the `primary-key` if it exists
           purge-overwrite: never
 
       - name: Install packages & Build the action
-        run: npm ci
+        run: nix run .#install
+      
+      - name: Update docs
+        run: nix run .#write
 
       - name: Commit & Push changes
         if: github.event_name == 'push'

@@ -30,7 +30,7 @@
 
               description = "write action.yml-s and tables for README-s";
             };
-            init = {
+            install = {
               runtimeInputs = [ pkgs.nodejs ];
               text = "${pkgs.nodejs}/bin/npm i";
               description = "install dependencies";
