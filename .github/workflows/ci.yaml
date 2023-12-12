@@ -87,6 +87,8 @@ jobs:
           git pull --rebase --autostash
           git add dist
           git commit -m "action: build the action" || echo ""
+          git add .
+          git commit -m "action: update docs" || echo ""
           git push
 
   # If ci.yaml changes, need to save a new cache with an updated key
