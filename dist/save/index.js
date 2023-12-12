@@ -63208,12 +63208,14 @@ function collectGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
         if (inputs.gcMaxStoreSize) {
             utils.info("Collecting garbage.");
-            const printStoreSize = `
-            STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
-            printf "Current store size in bytes: $STORE_SIZE\\n"
-            `;
-            const run = (command) => __awaiter(this, void 0, void 0, function* () { return yield (0, exec_1.exec)("bash", ["-c", command]); });
-            yield run(printStoreSize);
+        }
+        const printStoreSize = `
+        STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
+        printf "Current store size in bytes: $STORE_SIZE\\n"
+        `;
+        const run = (command) => __awaiter(this, void 0, void 0, function* () { return yield (0, exec_1.exec)("bash", ["-c", command]); });
+        yield run(printStoreSize);
+        if (inputs.gcMaxStoreSize) {
             yield run(`
             sudo rm -rf /nix/.[!.]* /nix/..?*
 
