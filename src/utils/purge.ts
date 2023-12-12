@@ -113,11 +113,11 @@ async function purgeByTime({
     );
 
     if (
-        inputs.purgeOverwrite == "never" &&
+        inputs.purgePrimaryKey == "never" &&
         caches.filter(x => utils.isExactKeyMatch(primaryKey, x.key)).length > 0
     ) {
         utils.info(
-            `Skipping cache(s) with the key "${primaryKey}" because of "${Inputs.PurgeOverwrite}: never".`
+            `Skipping cache(s) with the key "${primaryKey}" because of "${Inputs.PurgePrimaryKey}: never".`
         );
 
         caches = caches.filter(x => !utils.isExactKeyMatch(primaryKey, x.key));

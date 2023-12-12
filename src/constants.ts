@@ -21,7 +21,7 @@ export enum Inputs {
     GCMaxStoreSizeLinux = "gc-max-store-size-linux", // Input for cache, save actions
 
     Purge = "purge", // Input for cache, save actions
-    PurgeOverwrite = "purge-overwrite", // Input for cache, save actions
+    PurgePrimaryKey = "purge-primary-key", // Input for cache, save actions
     PurgePrefixes = "purge-prefixes", // Input for cache, save actions
     PurgeLastAccessed = "purge-last-accessed", // Input for cache, save actions
     PurgeCreated = "purge-created", // Input for cache, save actions

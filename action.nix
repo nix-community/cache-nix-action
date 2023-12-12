@@ -168,7 +168,7 @@ in
           - When `true`, the action purges (possibly zero) caches.
           - ${noEffectOtherwise}
         default: "false"
-      purge-overwrite:
+      purge-${primary-key}:
         description: |
           - ${effectOnlyWhen ["purge: true"]}
           - When `always`, the action always purges cache with the ${q primary-key}.

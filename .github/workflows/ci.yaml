@@ -71,7 +71,7 @@ jobs:
           # created more than 0 seconds ago (basically all previous versions)
           purge-created: 0
           # but don't purge the version with the `primary-key` if it exists
-          purge-overwrite: never
+          purge-primary-key: never
 
       - name: Install packages & Build the action
         run: nix run .#install
@@ -152,7 +152,7 @@ jobs:
           purge: true
           purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
           purge-created: 0
-          purge-overwrite: never
+          purge-primary-key: never
 
   # Merge similar individual `id` caches
   # Purge individual caches and old `common` caches
@@ -198,8 +198,7 @@ jobs:
           purge-created: 0
           # purge all versions of the common cache
           purge-prefixes: similar-cache-${{ matrix.os }}-common-
-          # but don't purge a version with the `primary-key` if it exists
-          purge-overwrite: never
+          purge-primary-key: never
 
   compare-run-times:
     name: Job with caching
@@ -243,7 +242,7 @@ jobs:
           purge: true
           purge-prefixes: cache-${{ matrix.os }}-
           purge-created: 0
-          purge-overwrite: never
+          purge-primary-key: never
       
       # Uncomment to debug this job
       # - name: Setup tmate session

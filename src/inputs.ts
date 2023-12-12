@@ -75,14 +75,14 @@ export const gcMaxStoreSize = nix
 
 export const purge = utils.getInputAsBool(Inputs.Purge);
 
-export const purgeOverwrite = (() => {
-    const purgeOverwrite = core.getInput(Inputs.PurgeOverwrite);
+export const purgePrimaryKey = (function () {
+    const purgePrimaryKey = core.getInput(Inputs.PurgePrimaryKey);
 
-    if (!(purgeOverwrite == "always" || purgeOverwrite == "never")) {
+    if (!(purgePrimaryKey == "always" || purgePrimaryKey == "never")) {
         return "default";
     }
 
-    return purgeOverwrite;
+    return purgePrimaryKey;
 })();
 
 export const purgePrefixes = utils.getInputAsArray(Inputs.PurgePrefixes);
