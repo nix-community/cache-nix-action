@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "cache-nix-action"
+name = "scripts"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
@@ -14,7 +14,7 @@ lxml = "^4.9.3"
 markdown = "^3.5.1"
 
 [tool.poetry.scripts]
-translate_table = "cache_nix_action.translate_table:main"
+translate_table = "scripts.translate_table:main"
 
 [build-system]
 requires = ["poetry-core"]
