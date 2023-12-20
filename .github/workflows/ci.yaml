@@ -19,6 +19,7 @@ env:
     substituters = https://cache.nixos.org/ https://nix-community.cachix.org
     trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
     keep-outputs = true
+  git_pull: git pull --rebase $(git branch --show-current)
 
 jobs:
   # Check if the action code changed
@@ -84,7 +85,7 @@ jobs:
         run: |
           git config --global user.name github-actions
           git config --global user.email github-actions@github.com
-          git pull --rebase --autostash
+          ${{ env.git_pull }}
           git add dist
           git commit -m "action: build the action" || echo ""
           git add .
@@ -139,7 +140,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Rebase
-        run: git pull --rebase
+        run: ${{ env.git_pull }}
       
       - uses: nixbuild/nix-quick-install-action@v26
         with:
@@ -178,7 +179,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Rebase
-        run: git pull --rebase
+        run: ${{ env.git_pull }}
       
       - uses: nixbuild/nix-quick-install-action@v25
         with:
@@ -224,7 +225,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Rebase
-        run: git pull --rebase
+        run: ${{ env.git_pull }}
 
       - uses: nixbuild/nix-quick-install-action@v25
         with:
