@@ -62917,7 +62917,7 @@ function saveImpl(stateProvider) {
                 }
                 else {
                     utils.info(`Found no cache with this key.`);
-                    yield (0, collectGarbage_1.collectGarbage)();
+                    yield (0, collectGarbage_1.removeGarbage)();
                     utils.info(`Saving a new cache with the key "${primaryKey}".`);
                     // can throw
                     yield cache.saveCache(inputs.paths, primaryKey, {
@@ -63209,25 +63209,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.collectGarbage = void 0;
+exports.removeGarbage = void 0;
 const exec_1 = __nccwpck_require__(1514);
 const inputs = __importStar(__nccwpck_require__(7063));
 const utils = __importStar(__nccwpck_require__(4427));
-function collectGarbage() {
+function removeGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
-        if (inputs.gcMaxStoreSize) {
-            utils.info("Collecting garbage.");
-        }
-        const printStoreSize = `
-        STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
-        printf "Current store size in bytes: $STORE_SIZE\\n"
-        `;
         const run = (command) => __awaiter(this, void 0, void 0, function* () { return yield (0, exec_1.exec)("bash", ["-c", command]); });
+        utils.info("Removing useless files.");
+        yield run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
+        const printStoreSize = `
+    STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
+    printf "Current store size in bytes: $STORE_SIZE\\n"
+    `;
         yield run(printStoreSize);
         if (inputs.gcMaxStoreSize) {
+            utils.info("Collecting garbage.");
             yield run(`
-            sudo rm -rf /nix/.[!.]* /nix/..?*
-
             MAX_STORE_SIZE=${inputs.gcMaxStoreSize}
             
             if (( STORE_SIZE > MAX_STORE_SIZE )); then
@@ -63242,7 +63240,7 @@ function collectGarbage() {
         }
     });
 }
-exports.collectGarbage = collectGarbage;
+exports.removeGarbage = removeGarbage;
 
 
 /***/ }),
