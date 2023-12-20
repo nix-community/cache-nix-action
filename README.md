@@ -18,9 +18,9 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 1. `Restore` phase:
     1. The `cache-nix-action` tries to restore a cache whose key is the same as the primary key.
 
-    1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in the given list of key prefixes.
+    1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in a given list of key prefixes.
 
-    1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in the given list of key prefixes.
+    1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in another given list of key prefixes.
 
 1. Other job steps run.
 
