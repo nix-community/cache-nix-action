@@ -5,7 +5,7 @@ import { Events, Inputs, State } from "./constants";
 import * as inputs from "./inputs";
 import { type IStateProvider } from "./stateProvider";
 import * as utils from "./utils/action";
-import { collectGarbage } from "./utils/collectGarbage";
+import { removeGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCachesByTime } from "./utils/purge";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
@@ -77,7 +77,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             } else {
                 utils.info(`Found no cache with this key.`);
 
-                await collectGarbage();
+                await removeGarbage();
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
