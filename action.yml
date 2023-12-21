@@ -1,4 +1,4 @@
-name: "Restore and save Nix store"
+name: "Cache Nix store"
 description: "Restore and save Nix store using GitHub Actions cache to speed up workflows."
 author: "GitHub"
 inputs:
