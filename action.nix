@@ -2,6 +2,7 @@
 let
   specific = {
     cache = {
+      name = "Cache";
       description = "Restore and save";
       actions = "restoring and saving";
       main = "dist/restore/index.js";
@@ -11,12 +12,14 @@ let
             post-if: success()'';
     };
     save = {
+      name = "Save";
       description = "Save";
       actions = "saving";
       main = "../dist/save-only/index.js";
       post = "";
     };
     restore = {
+      name = "Restore";
       description = "Restore";
       actions = "restoring";
       main = "../dist/restore-only/index.js";
@@ -54,7 +57,7 @@ let
   hit-first-match = "hit-first-match";
 in
 ''
-    name: "${specific.description} Nix store"
+    name: "${specific.name} Nix store"
     description: "${specific.description} Nix store using GitHub Actions cache to speed up workflows."
     author: "GitHub"
     inputs:
