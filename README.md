@@ -1,12 +1,13 @@
 # Cache Nix action
 
-A GitHub Action to cache Nix store paths using GitHub Actions cache.
+A GitHub Action to restore and save (not only) Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
 ## What it can
 
-* Restore and save the Nix store and/or other paths.
+* Restore and save the Nix store on `Linux` and `macOS` runners.
+* Restore and save other directories on `Linux`, `macOS`, and `Windows` runners.
 * Collect garbage in the Nix store before saving a new cache.
 * Merge caches produced by several jobs.
 * Purge caches created or last accessed at least the given time ago.
@@ -30,12 +31,12 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
     1. When there's no cache whose key is the same as the primary key, the `cache-nix-action` collects garbage in the Nix store and saves a new cache.
 
-    1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created more than a given time ago.
+    1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created more than a given time ago relative to the start of the `Post Restore` phase.
 
 ## Limitations
 
 * Requires `nix-quick-install-action`.
-* Supports only `Linux` and `macOS` runners.
+* Supports only `Linux` and `macOS` runners for Nix store caching.
 * `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
   * [Purge old caches](#purge-old-caches)
   * [Merge caches](#merge-caches)
@@ -45,8 +46,8 @@ This action is based on [actions/cache](https://github.com/actions/cache).
   * Provide caches for PRs on the default or base branches.
 * For purging, a workflow requires the permission `action: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
 * Purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
-* Purge time is calculated relative to the start of the `Post Restore` phase of this action.
 * Purges caches by keys without considering caches versions (see [Cache version](#cache-version)).
+* Runs `tar ... --skip-old-files ...` to not overwrite existing files when restoring a cache (see [this comment](https://github.com/nix-community/cache-nix-action/issues/9#issuecomment-1871311709)).
 
 ## Comparison with alternative approaches
 
@@ -72,6 +73,7 @@ See [Caching Approaches](#caching-approaches).
   with:
     primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
     restore-prefixes-first-match: nix-${{ runner.os }}-
+    gc-max-store-size-linux: 1073741824
 
     purge: true
     purge-prefixes: cache-${{ matrix.os }}-
@@ -79,10 +81,10 @@ See [Caching Approaches](#caching-approaches).
     purge-last-accessed: 42
 ```
 
-* Due to `gc-max-store-size-linux: 1073741824`, on `Linux` runners, Nix store will be garbage collected until its size reaches `1GB` or until there's nothing to garbage collect.
-* Since `gc-max-store-size-macos` isn't set to a number, on `macOS` runners, Nix store won't be garbage collected.
+* Due to `gc-max-store-size-linux: 1073741824`, on `Linux` runners, garbage in the Nix store will be collected until store size reaches `1GB` or until there's no garbage to collect.
+* Since `gc-max-store-size-macos` isn't set to a number, on `macOS` runners, no garbage will be collected in the Nix store.
 * The `cache-nix-action` will purge caches:
-  * with a key prefix `cache-${{ matrix.os }}-` **AND** (created more than `42` seconds ago **OR** last accessed more than `42` seconds ago).
+  * (with a key prefix `cache-${{ matrix.os }}-`) **AND** (created more than `42` seconds ago **OR** last accessed more than `42` seconds ago).
 
 ### Example workflow
 
@@ -507,7 +509,8 @@ Cache version is a hash [generated](https://github.com/actions/toolkit/blob/500d
 
 <details>
   <summary>Example</summary>
-The workflow will create 3 unique caches with same keys. Ubuntu and windows runners will use different compression technique and hence create two different caches. And `build-linux` will create two different caches as the `paths` are different.
+
+The workflow will create 3 unique caches with same keys. `Linux` and `Windows` runners will use different compression technique and hence create two different caches. And `build-linux` will create two different caches as the `paths` are different.
 
 ```yaml
 jobs:
@@ -547,7 +550,6 @@ jobs:
         id: cache-primes
         uses: nix-community/cache-nix-action@v5
         with:
-          nix: false
           primary-key: primes
           paths: prime-numbers
 
