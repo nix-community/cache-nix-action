@@ -15,10 +15,6 @@ name: Nix CI
   workflow_dispatch: {}
 
 env:
-  nix_conf: |
-    substituters = https://cache.nixos.org/ https://nix-community.cachix.org
-    trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
-    keep-outputs = true
   # https://stackoverflow.com/a/71158878
   git_pull: git pull --rebase origin ${{ github.head_ref || github.ref_name }}
 
@@ -56,10 +52,9 @@ jobs:
     if: needs.check-action-code-changes.outputs.any_changed
     steps:
       - uses: actions/checkout@v3
+      
       - uses: nixbuild/nix-quick-install-action@v26
-        with:
-          nix_conf: ${{ env.nix_conf }}
-            
+
       - name: Restore and save Nix store
         uses: ./.
         with:
@@ -67,10 +62,11 @@ jobs:
           paths: |
             ~/.npm
             .venv
+          # do purge caches
           purge: true
           # purge all versions of the cache
           purge-prefixes: build-${{ runner.os }}-
-          # created more than 0 seconds ago
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
@@ -110,6 +106,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 2
+
       - uses: tj-actions/changed-files@v38
         id: files-changed
         with:
@@ -144,18 +141,21 @@ jobs:
         run: ${{ env.git_pull }}
       
       - uses: nixbuild/nix-quick-install-action@v26
-        with:
-          nix_conf: ${{ env.nix_conf }}
 
       - name: Restore and save Nix store - ${{ matrix.id }}
         uses: ./.
         with:
           # save a new cache every time `ci.yaml` changes
           primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # otherwise, restore a common cache if and only if it matches the current `ci.yaml`
           restore-prefixes-first-match: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # do purge caches
           purge: true
+          # purge all versions of the cache
           purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
           purge-created: 0
+          # except the version with the `primary-key`, if it exists
           purge-primary-key: never
 
   # Merge similar individual `id` caches
@@ -183,8 +183,6 @@ jobs:
         run: ${{ env.git_pull }}
       
       - uses: nixbuild/nix-quick-install-action@v26
-        with:
-          nix_conf: ${{ env.nix_conf }}
               
       - name: Restore and save Nix store
         uses: ./.
@@ -196,10 +194,11 @@ jobs:
           restore-prefixes-all-matches: |
             similar-cache-${{ matrix.os }}-individual-1-${{ hashFiles('.github/workflows/ci.yaml') }}
             similar-cache-${{ matrix.os }}-individual-2-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # do purge caches
           purge: true
           # purge all versions of the cache
           purge-prefixes: similar-cache-${{ matrix.os }}-common-
-          # created more than 0 seconds ago
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
@@ -229,8 +228,6 @@ jobs:
         run: ${{ env.git_pull }}
 
       - uses: nixbuild/nix-quick-install-action@v26
-        with:
-          nix_conf: ${{ env.nix_conf }}
 
       - name: Restore and save Nix store
         if: ${{ matrix.do-cache }}
@@ -239,10 +236,15 @@ jobs:
           # save a new cache every time ci file changes
           primary-key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           restore-prefixes-first-match: cache-${{ matrix.os }}-
+          # do purge caches
           purge: true
+          # purge all versions of the cache
           purge-prefixes: cache-${{ matrix.os }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
           purge-created: 0
+          # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+          # and collect garbage in the Nix store until it reaches this size in bytes
           gc-max-store-size: 8000000000
       
       # Uncomment to debug this job
