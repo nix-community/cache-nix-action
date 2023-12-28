@@ -44,7 +44,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
   * The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
 * Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)). Workaround:
   * Provide caches for PRs on the default or base branches.
-* For purging, a workflow requires the permission `action: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
+* For purging, a workflow requires the permission `actions: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
 * Purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 * Purges caches by keys without considering caches versions (see [Cache version](#cache-version)).
 * Runs `tar ... --skip-old-files ...` to not overwrite existing files when restoring a cache (see [this comment](https://github.com/nix-community/cache-nix-action/issues/9#issuecomment-1871311709)).
@@ -62,28 +62,30 @@ See [Caching Approaches](#caching-approaches).
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v26
-  with:
-    nix_conf: |
-      substituters = https://cache.nixos.org/ https://nix-community.cachix.org
-      trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
-      keep-outputs = true
 
 - name: Restore and cache Nix store
   uses: nix-community/cache-nix-action@v5
   with:
     primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+    # restore a cache by this prefix
     restore-prefixes-first-match: nix-${{ runner.os }}-
+    # collect garbage until Nix store size (in bytes) is at most this number
+    # before trying to save a new cache
     gc-max-store-size-linux: 1073741824
-
+    # do purge caches
     purge: true
+    # purge all versions of the cache
     purge-prefixes: cache-${{ matrix.os }}-
-    purge-created: 42
-    purge-last-accessed: 42
+    # created more than this number of seconds ago relative to the start of the `Post Restore` phase
+    purge-created: 0
+    # except the version with the `primary-key`, if it exists
+    purge-primary-key: never
 ```
 
-* Due to `gc-max-store-size-linux: 1073741824`, on `Linux` runners, garbage in the Nix store will be collected until store size reaches `1GB` or until there's no garbage to collect.
-* Since `gc-max-store-size-macos` isn't set to a number, on `macOS` runners, no garbage will be collected in the Nix store.
-* The `cache-nix-action` will purge caches:
+* `nix-quick-install-action` loads `nixConfig` from `flake.nix` and writes to [nix.conf](https://nixos.org/manual/nix/unstable/command-ref/conf-file.html) (see [action.yml](https://github.com/nixbuild/nix-quick-install-action/blob/master/action.yml) in `the nix-quick-install` repo).
+* Due to `gc-max-store-size-linux: 1073741824`, on `Linux` runners, garbage in the Nix store is collected until store size reaches `1GB` or until there's no garbage to collect.
+* Since `gc-max-store-size-macos` isn't set to a number, on `macOS` runners, no garbage is collected in the Nix store.
+* The `cache-nix-action` purges caches:
   * (with a key prefix `cache-${{ matrix.os }}-`) **AND** (created more than `42` seconds ago **OR** last accessed more than `42` seconds ago).
 
 ### Example workflow
