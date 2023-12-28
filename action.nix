@@ -32,7 +32,6 @@ let
   pathsDefault = ''`["/nix", "~/.cache/nix", "~root/.cache/nix"]`'';
   nixTrue = "nix: true";
 
-  pathsDefaultWhenNix = ''When ${q nixTrue}, the action uses ${pathsDefault} as default paths, as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7). Otherwise, the action uses an empty list as default paths.'';
   pathsWhen = ''${whenListOf} path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for ${specific.actions} caches.'';
   pathsOtherwise = ''Otherwise, the action uses default paths for ${specific.actions} caches.'';
 
@@ -123,7 +122,8 @@ in
 
       ${paths}:
         description: |
-          - ${pathsDefaultWhenNix}
+          - When ${q nixTrue}, the action uses ${pathsDefault} as default paths, as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
+          - Otherwise, the action uses an empty list as default paths.
           - ${pathsWhen}
           - ${pathsOtherwise}
         default: ""
