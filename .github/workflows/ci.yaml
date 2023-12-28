@@ -182,7 +182,7 @@ jobs:
       - name: Rebase
         run: ${{ env.git_pull }}
       
-      - uses: nixbuild/nix-quick-install-action@v25
+      - uses: nixbuild/nix-quick-install-action@v26
         with:
           nix_conf: ${{ env.nix_conf }}
               
@@ -228,7 +228,7 @@ jobs:
       - name: Rebase
         run: ${{ env.git_pull }}
 
-      - uses: nixbuild/nix-quick-install-action@v25
+      - uses: nixbuild/nix-quick-install-action@v26
         with:
           nix_conf: ${{ env.nix_conf }}
 
