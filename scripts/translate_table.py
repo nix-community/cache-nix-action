@@ -1,79 +1,70 @@
-import sys
-import yaml
-
-from lxml.etree import tostring, fromstring
-from lxml.builder import E
-import markdown
 from pathlib import Path
+import yaml
+import markdown
+
+# See https://github.com/jazzband/prettytable/issues/40#issuecomment-846439234
+import html
+
+html.escape = lambda *args, **kwargs: args[0]
+from prettytable import PrettyTable, MARKDOWN
 
 
-def convert_to_table(attrs, is_inputs=True):
-    columns = ["name", "description"]
-
-    if is_inputs:
-        columns += ["default", "required"]
-
-    root = E.table(
-        E.tr(*[E.th(c) for c in columns]),
-    )
-
+def to_table(attrs, is_inputs=True):
+    rows = []
     for key, value in attrs.items():
-        key_pretty = f"`{key}`"
         description = value.get("description", "")
-        columns = [key_pretty, description]
+        row = [key, description]
 
         if is_inputs:
-            required = (
-                "`true`"
-                if (required := value.get("required", "`false`")) == True
-                else required
-            )
-
-            default = (
-                f"`{default}`"
-                if (default := value.get("default"))
-                else "`''`"
-                if default == ""
-                else ""
-            )
-
-            columns += [
+            required = value.get("required", False)
+            default = value.get("default", "")
+            row += [
                 default,
                 required,
             ]
 
-        root.append(
-            E.tr(
-                *[
-                    E.td(fromstring(f"<div>{markdown.markdown(x)}</div>"))
-                    for x in columns
-                ]
-            )
-        )
+        rows += [row]
+    return rows
 
-    return (
-        tostring(
-            root,
-            encoding="UTF-16",
-            xml_declaration=False,
-        )
-        .decode("UTF-16")
-        .replace("\n", "")
+
+def to_pretty_code(val):
+    match val:
+        case "":
+            return '`""`'
+        case True:
+            return f"`true`"
+        case False:
+            return f"`false`"
+        case _:
+            return f"`{val}`"
+
+
+def to_pretty_table(table, is_inputs=True):
+    x = PrettyTable()
+    x.field_names = ["name", "description"] + (
+        ["default", "required"] if is_inputs else []
     )
-
-
-def main():
-    actions = [
-        ["save/action.yml", False],
-        ["restore/action.yml", True],
-        ["action.yml", True],
+    pretty_rows = [
+        [to_pretty_code(row[0]), row[1]]
+        + ([to_pretty_code(row[2]), to_pretty_code(row[3])] if is_inputs else [])
+        for row in table
     ]
+    markdown_rows = [
+        [markdown.markdown(val).replace("\n", "") for val in row] for row in pretty_rows
+    ]
+    x.add_rows(markdown_rows)
+    x.set_style(MARKDOWN)
+    x.align = "l"
 
-    for path, has_outputs in actions:
+    return x
+
+
+def run(yamls):
+    for path, has_outputs, heading_level in yamls:
         dir = Path(path).parent
         readme_md = dir / "README.md"
         with open(path, "r") as action:
-            action_yaml = yaml.safe_load(action.read())
+            action_yml = yaml.safe_load(action.read())
 
         with open(readme_md, "r") as readme:
             readme_lines = readme.readlines()
@@ -83,15 +74,30 @@ def main():
                 ["inputs", "Inputs", True],
                 ["outputs", "Outputs", False],
             ]:
-                if line.find(f"### {heading}") != -1 and not (
+                if line.find(f'{"#" * heading_level} {heading}') != -1 and not (
                     heading == "Outputs" and not has_outputs
                 ):
-                    readme_lines[i + 2] = convert_to_table(
-                        action_yaml.get(attr), is_inputs=is_inputs
-                    ) + "\n"
+                    table = to_table(action_yml.get(attr), is_inputs=is_inputs)
+                    pretty_table = to_pretty_table(table, is_inputs=is_inputs)
+                    table_html = (
+                        f"{pretty_table.get_html_string()}".replace("\n", "") + "\n"
+                    )
+                    readme_lines[i + 2] = table_html
 
         with open(readme_md, "w") as readme:
             readme.writelines(readme_lines)
+
+
+def main():
+    yamls = [
+        # - yaml path
+        # - whether the action has outputs
+        # - number of `#` in an Inputs/Outputs section heading level
+        ["save/action.yml", False, 3],
+        ["restore/action.yml", True, 3],
+        ["action.yml", True, 3],
+    ]
+    run(yamls=yamls)
 
 
 if __name__ == "__main__":
