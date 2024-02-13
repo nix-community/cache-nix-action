@@ -62380,12 +62380,12 @@ function getTarArgs(tarPath, compressionMethod, type, archivePath = '') {
     });
 }
 // Returns commands to run tar and compression program
-function getCommands(compressionMethod, type, archivePath = '', tarExtraArgs = []) {
+function getCommands(compressionMethod, type, archivePath = '', extraTarArgs = []) {
     return __awaiter(this, void 0, void 0, function* () {
         let args;
         const tarPath = yield getTarPath();
         const tarArgs = yield getTarArgs(tarPath, compressionMethod, type, archivePath);
-        tarArgs.push(...tarExtraArgs);
+        tarArgs.push(...extraTarArgs);
         const compressionArgs = type !== 'create'
             ? yield getDecompressionProgram(tarPath, compressionMethod, archivePath)
             : yield getCompressionProgram(tarPath, compressionMethod);
