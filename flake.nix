@@ -12,32 +12,23 @@
           inherit (inputs.devshell.lib.${system}) mkCommands mkRunCommands mkRunCommandsDir mkShell;
           inherit (inputs.drv-tools.lib.${system}) writeYAML mkShellApps getExe;
 
-          tools = [ pkgs.nodejs_18 pkgs.poetry ];
-
+          
           packages = mkShellApps {
             writeSave = writeYAML "save" "save/action.yml" (import ./action.nix { target = "save"; inherit (pkgs) lib; });
             writeRestore = writeYAML "restore" "restore/action.yml" (import ./action.nix { target = "restore"; inherit (pkgs) lib; });
             writeCache = writeYAML "cache" "action.yml" (import ./action.nix { target = "cache"; inherit (pkgs) lib; });
             write = {
-              runtimeInputs = [ pkgs.poetry ];
-              text = ''
-                ${getExe packages.writeSave}
-                ${getExe packages.writeRestore}
-                ${getExe packages.writeCache}
-
-                poetry run translate_table
-              '';
-
+              runtimeInputs = [ pkgs.nodejs ];
+              text = ''npm run readme'';
               description = "write action.yml-s and tables for README-s";
             };
+
             install = {
-              runtimeInputs = [ pkgs.nodejs pkgs.poetry ];
-              text = ''
-                npm i
-                poetry install
-              '';
+              runtimeInputs = [ pkgs.nodejs ];
+              text = ''npm i'';
               description = "install dependencies";
             };
+
             build = {
               runtimeInputs = [ pkgs.nodejs ];
               text = "npm run build";
@@ -45,7 +36,7 @@
             };
           };
           devShells.default = mkShell {
-            packages = tools;
+            packages = [ pkgs.nodejs_18 ];
             commands = mkRunCommands "scripts" { inherit (packages) write install build; };
           };
         in
