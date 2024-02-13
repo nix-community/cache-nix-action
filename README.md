@@ -66,8 +66,9 @@ See [Caching Approaches](#caching-approaches).
 - name: Restore and cache Nix store
   uses: nix-community/cache-nix-action@v5
   with:
+    # restore and save a cache using this key
     primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
-    # restore a cache by this prefix
+    # if there's no cache hit, restore a cache by this prefix
     restore-prefixes-first-match: nix-${{ runner.os }}-
     # collect garbage until Nix store size (in bytes) is at most this number
     # before trying to save a new cache
@@ -75,7 +76,7 @@ See [Caching Approaches](#caching-approaches).
     # do purge caches
     purge: true
     # purge all versions of the cache
-    purge-prefixes: cache-${{ matrix.os }}-
+    purge-prefixes: cache-${{ runner.os }}-
     # created more than this number of seconds ago relative to the start of the `Post Restore` phase
     purge-created: 0
     # except the version with the `primary-key`, if it exists
