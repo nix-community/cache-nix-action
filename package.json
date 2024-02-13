@@ -11,7 +11,7 @@
     "lint": "eslint **/*.ts --cache",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
-    "readme": "npx action-docs -u; (cd save; npx action-docs -u); (cd restore; npx action-docs -u); prettier --parser markdown --write restore/README.md save/README.md README.md"
+    "readme": "npx action-docs -u; (cd save; npx action-docs -u); (cd restore; npx action-docs -u); prettier --write restore/README.md save/README.md README.md"
   },
   "repository": {
     "type": "git",

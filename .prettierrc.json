@@ -1,11 +1,25 @@
 {
     "printWidth": 80,
-    "tabWidth": 4,
     "useTabs": false,
     "semi": true,
     "singleQuote": false,
     "trailingComma": "none",
     "bracketSpacing": true,
     "arrowParens": "avoid",
-    "parser": "typescript"
+    "overrides": [
+        {
+            "files": "*.ts",
+            "options": {
+                "tabWidth": 4,
+                "parser": "typescript"
+            }
+        },
+        {
+            "files": "*.md",
+            "options": {
+                "tabWidth": 2,
+                "parser": "markdown"
+            }
+        }
+    ]
 }
