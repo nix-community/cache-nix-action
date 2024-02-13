@@ -130,7 +130,7 @@ async function getCommands(
   compressionMethod: CompressionMethod,
   type: string,
   archivePath = '',
-  tarExtraArgs: string[] = []
+  extraTarArgs: string[] = []
 ): Promise<string[]> {
   let args
 
@@ -141,7 +141,7 @@ async function getCommands(
     type,
     archivePath
   )
-  tarArgs.push(...tarExtraArgs)
+  tarArgs.push(...extraTarArgs)
   const compressionArgs =
     type !== 'create'
       ? await getDecompressionProgram(tarPath, compressionMethod, archivePath)
