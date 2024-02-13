@@ -68,7 +68,7 @@ Let's say we have a restore step that computes a key at runtime.
 uses: actions/cache/restore@v3
 id: restore-cache
 with:
-    key: cache-${{ hashFiles('**/lockfiles') }}
+  key: cache-${{ hashFiles('**/lockfiles') }}
 ```
 
 #### Case 1 - Where a user would want to reuse the key as it is
@@ -76,7 +76,7 @@ with:
 ```yaml
 uses: actions/cache/save@v3
 with:
-    key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+  key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 ```
 
 #### Case 2 - Where the user would want to re-evaluate the key
@@ -84,7 +84,7 @@ with:
 ```yaml
 uses: actions/cache/save@v3
 with:
-    key: npm-cache-${{hashfiles(package-lock.json)}}
+  key: npm-cache-${{hashfiles(package-lock.json)}}
 ```
 
 ### Always save cache
