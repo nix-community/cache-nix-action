@@ -18,25 +18,25 @@
             writeRestore = writeYAML "restore" "restore/action.yml" (import ./action.nix { target = "restore"; inherit (pkgs) lib; });
             writeCache = writeYAML "cache" "action.yml" (import ./action.nix { target = "cache"; inherit (pkgs) lib; });
             write = {
-              runtimeInputs = [ pkgs.nodejs ];
+              runtimeInputs = [ pkgs.nodejs_20 ];
               text = ''npm run readme'';
               description = "write action.yml-s and tables for README-s";
             };
 
             install = {
-              runtimeInputs = [ pkgs.nodejs ];
+              runtimeInputs = [ pkgs.nodejs_20 ];
               text = ''npm i'';
               description = "install dependencies";
             };
 
             build = {
-              runtimeInputs = [ pkgs.nodejs ];
+              runtimeInputs = [ pkgs.nodejs_20 ];
               text = "npm run build";
               description = "build project";
             };
           };
           devShells.default = mkShell {
-            packages = [ pkgs.nodejs_18 ];
+            packages = [ pkgs.nodejs_20 ];
             commands = mkRunCommands "scripts" { inherit (packages) write install build; };
           };
         in
