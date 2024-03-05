@@ -71,18 +71,21 @@ jobs:
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
 
-      - name: Install packages & Build the action
-        run: nix run .#install
-      
-      - name: Update docs
-        run: nix run .#write
-
-      - name: Commit & Push changes
+      - name: Configure github-actions bot
         if: github.event_name == 'push'
         run: |
           git config --global user.name github-actions
           git config --global user.email github-actions@github.com
-          ${{ env.git_pull }} --autostash
+          ${{ env.git_pull }}
+      
+      - name: Install packages & Build the action
+        run: nix run .#install
+        
+      - name: Update docs
+        run: nix run .#write
+          
+      - name: Commit & push changes
+        run: |
           git add dist
           git commit -m "action: build the action" || echo ""
           git add .
