@@ -26,11 +26,11 @@ jobs:
     outputs:
       any_changed: ${{ steps.any_changed.outputs.any_changed }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
       
-      - uses: tj-actions/changed-files@v38
+      - uses: tj-actions/changed-files@v42
         id: any_changed
         with:
           files: |
@@ -51,7 +51,7 @@ jobs:
     needs: check-action-code-changes
     if: needs.check-action-code-changes.outputs.any_changed
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - uses: nixbuild/nix-quick-install-action@v26
 
@@ -135,7 +135,7 @@ jobs:
     if: always() && needs.check-cache-changes.outputs.files-changed
     steps:
       - name: Checkout this repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Rebase
         run: ${{ env.git_pull }}
@@ -177,7 +177,7 @@ jobs:
     if: always() && needs.check-cache-changes.outputs.files-changed
     steps:
       - name: Checkout this repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Rebase
         run: ${{ env.git_pull }}
@@ -222,7 +222,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout this repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Rebase
         run: ${{ env.git_pull }}
