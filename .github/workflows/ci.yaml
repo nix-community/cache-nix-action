@@ -103,11 +103,11 @@ jobs:
       # the following line is more fair
       # files-changed: ${{ steps.files-changed.outputs.any_changed }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - uses: tj-actions/changed-files@v38
+      - uses: tj-actions/changed-files@v42
         id: files-changed
         with:
           files: |
