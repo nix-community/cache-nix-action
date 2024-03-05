@@ -391,11 +391,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Cache Primes
         id: cache-primes
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           primary-key: ${{ runner.os }}-primes
           paths: prime-numbers
@@ -422,7 +422,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Restore cached Primes
         id: cache-primes-restore
@@ -528,7 +528,7 @@ Example:
 
 ```yaml
 steps:
-  - uses: actions/checkout@v3
+  - uses: actions/checkout@v4
 
   - uses: nix-community/cache-nix-action@v5
     id: cache
@@ -559,7 +559,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Cache Primes
         id: cache-primes
@@ -586,7 +586,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Cache Primes
         id: cache-primes
@@ -618,7 +618,7 @@ A cache today is immutable and cannot be updated. But some use cases require the
 
 ```yaml
 - name: update cache on every commit
-  uses: actions/cache@v3
+  uses: actions/cache@v4
   with:
     primary-key: primes-${{ runner.os }}
     paths: prime-numbers
@@ -659,7 +659,7 @@ jobs:
       contents: read
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cleanup
         run: |
