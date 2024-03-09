@@ -4,7 +4,7 @@ import * as utils from './internal/cacheUtils'
 import * as cacheHttpClient from './internal/cacheHttpClient'
 import * as cacheTwirpClient from './internal/shared/cacheTwirpClient'
 import {getCacheServiceVersion, isGhes} from './internal/config'
-import {DownloadOptions, UploadOptions} from './options'
+import {DownloadOptions, ExtraTarArgs, UploadOptions} from './options'
 import {createTar, extractTar, listTar} from './internal/tar'
 import {
   CreateCacheEntryRequest,
@@ -75,7 +75,8 @@ export async function restoreCache(
   primaryKey: string,
   restoreKeys?: string[],
   options?: DownloadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  extraTarArgs: ExtraTarArgs = []
 ): Promise<string | undefined> {
   const cacheServiceVersion: string = getCacheServiceVersion()
   core.debug(`Cache service version: ${cacheServiceVersion}`)
@@ -89,7 +90,8 @@ export async function restoreCache(
         primaryKey,
         restoreKeys,
         options,
-        enableCrossOsArchive
+        enableCrossOsArchive,
+        extraTarArgs
       )
     case 'v1':
     default:
@@ -98,7 +100,8 @@ export async function restoreCache(
         primaryKey,
         restoreKeys,
         options,
-        enableCrossOsArchive
+        enableCrossOsArchive,
+        extraTarArgs
       )
   }
 }
@@ -118,7 +121,8 @@ async function restoreCacheV1(
   primaryKey: string,
   restoreKeys?: string[],
   options?: DownloadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  extraTarArgs: ExtraTarArgs = []
 ): Promise<string | undefined> {
   restoreKeys = restoreKeys || []
   const keys = [primaryKey, ...restoreKeys]
@@ -177,7 +181,7 @@ async function restoreCacheV1(
       )} MB (${archiveFileSize} B)`
     )
 
-    await extractTar(archivePath, compressionMethod)
+    await extractTar(archivePath, compressionMethod, extraTarArgs)
     core.info('Cache restored successfully')
 
     return cacheEntry.cacheKey
@@ -216,7 +220,8 @@ async function restoreCacheV2(
   primaryKey: string,
   restoreKeys?: string[],
   options?: DownloadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  extraTarArgs: ExtraTarArgs = []
 ): Promise<string | undefined> {
   // Override UploadOptions to force the use of Azure
   options = {
@@ -264,7 +269,7 @@ async function restoreCacheV2(
       return undefined
     }
 
-    core.info(`Cache hit for: ${request.key}`)
+    core.info(`Cache hit for: ${response.matchedKey}`)
 
     if (options?.lookupOnly) {
       core.info('Lookup only - skipping download')
@@ -295,7 +300,7 @@ async function restoreCacheV2(
       await listTar(archivePath, compressionMethod)
     }
 
-    await extractTar(archivePath, compressionMethod)
+    await extractTar(archivePath, compressionMethod, extraTarArgs)
     core.info('Cache restored successfully')
 
     return response.matchedKey
@@ -333,7 +338,8 @@ export async function saveCache(
   paths: string[],
   key: string,
   options?: UploadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  extraTarArgs: ExtraTarArgs = []
 ): Promise<number> {
   const cacheServiceVersion: string = getCacheServiceVersion()
   core.debug(`Cache service version: ${cacheServiceVersion}`)
@@ -341,10 +347,22 @@ export async function saveCache(
   checkKey(key)
   switch (cacheServiceVersion) {
     case 'v2':
-      return await saveCacheV2(paths, key, options, enableCrossOsArchive)
+      return await saveCacheV2(
+        paths,
+        key,
+        options,
+        enableCrossOsArchive,
+        extraTarArgs
+      )
     case 'v1':
     default:
-      return await saveCacheV1(paths, key, options, enableCrossOsArchive)
+      return await saveCacheV1(
+        paths,
+        key,
+        options,
+        enableCrossOsArchive,
+        extraTarArgs
+      )
   }
 }
 
@@ -361,7 +379,8 @@ async function saveCacheV1(
   paths: string[],
   key: string,
   options?: UploadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  extraTarArgs: ExtraTarArgs = []
 ): Promise<number> {
   const compressionMethod = await utils.getCompressionMethod()
   let cacheId = -1
@@ -385,7 +404,7 @@ async function saveCacheV1(
   core.debug(`Archive Path: ${archivePath}`)
 
   try {
-    await createTar(archiveFolder, cachePaths, compressionMethod)
+    await createTar(archiveFolder, cachePaths, compressionMethod, extraTarArgs)
     if (core.isDebug()) {
       await listTar(archivePath, compressionMethod)
     }
@@ -464,7 +483,8 @@ async function saveCacheV2(
   paths: string[],
   key: string,
   options?: UploadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  extraTarArgs: ExtraTarArgs = []
 ): Promise<number> {
   // Override UploadOptions to force the use of Azure
   // ...options goes first because we want to override the default values
@@ -498,7 +518,7 @@ async function saveCacheV2(
   core.debug(`Archive Path: ${archivePath}`)
 
   try {
-    await createTar(archiveFolder, cachePaths, compressionMethod)
+    await createTar(archiveFolder, cachePaths, compressionMethod, extraTarArgs)
     if (core.isDebug()) {
       await listTar(archivePath, compressionMethod)
     }
