@@ -1,4 +1,4 @@
-import * as cache from "@actions/cache/src/cache";
+import * as cache from "@cache-nix-action/cache";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import dedent from "dedent";

@@ -1,4 +1,4 @@
-import * as cache from "@actions/cache/src/cache";
+import * as cache from "@cache-nix-action/cache";
 import * as core from "@actions/core";
 
 import { Events, Inputs, State } from "./constants";
