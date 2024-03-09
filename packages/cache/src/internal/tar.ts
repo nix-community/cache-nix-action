@@ -4,6 +4,7 @@ import {existsSync, writeFileSync} from 'fs'
 import * as path from 'path'
 import * as utils from './cacheUtils'
 import {ArchiveTool} from './contracts'
+import * as core from '@actions/core'
 import {
   CompressionMethod,
   SystemTarPathOnWindows,
@@ -11,6 +12,7 @@ import {
   TarFilename,
   ManifestFilename
 } from './constants'
+import {ExtraTarArgs} from '../options'
 
 const IS_WINDOWS = process.platform === 'win32'
 
@@ -55,7 +57,8 @@ async function getTarArgs(
   tarPath: ArchiveTool,
   compressionMethod: CompressionMethod,
   type: string,
-  archivePath = ''
+  archivePath = '',
+  extraTarArgs: ExtraTarArgs
 ): Promise<string[]> {
   const args = [`"${tarPath.path}"`]
   const cacheFileName = utils.getCacheFileName(compressionMethod)
@@ -68,6 +71,8 @@ async function getTarArgs(
     IS_WINDOWS
 
   // Method specific args
+  // --exclude-from is a positional argument
+  // It affects and therefore should go before --files-from
   switch (type) {
     case 'create':
       args.push(
@@ -83,6 +88,7 @@ async function getTarArgs(
         '-P',
         '-C',
         workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
+        ...extraTarArgs,
         '--files-from',
         ManifestFilename
       )
@@ -95,7 +101,8 @@ async function getTarArgs(
           : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
         '-P',
         '-C',
-        workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
+        workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
+        ...extraTarArgs
       )
       break
     case 'list':
@@ -104,7 +111,8 @@ async function getTarArgs(
         BSD_TAR_ZSTD
           ? tarFile
           : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
-        '-P'
+        '-P',
+        ...extraTarArgs
       )
       break
   }
@@ -128,7 +136,8 @@ async function getTarArgs(
 async function getCommands(
   compressionMethod: CompressionMethod,
   type: string,
-  archivePath = ''
+  archivePath = '',
+  extraTarArgs: string[] = []
 ): Promise<string[]> {
   let args
 
@@ -137,7 +146,8 @@ async function getCommands(
     tarPath,
     compressionMethod,
     type,
-    archivePath
+    archivePath,
+    extraTarArgs
   )
   const compressionArgs =
     type !== 'create'
@@ -266,18 +276,29 @@ export async function listTar(
   compressionMethod: CompressionMethod
 ): Promise<void> {
   const commands = await getCommands(compressionMethod, 'list', archivePath)
+
+  core.debug(`::group::Archive contents`)
+
   await execCommands(commands)
+
+  core.debug(`::endgroup::`)
 }
 
 // Extract a tar
 export async function extractTar(
   archivePath: string,
-  compressionMethod: CompressionMethod
+  compressionMethod: CompressionMethod,
+  extraTarArgs: ExtraTarArgs = []
 ): Promise<void> {
   // Create directory to extract tar into
   const workingDirectory = getWorkingDirectory()
   await io.mkdirP(workingDirectory)
-  const commands = await getCommands(compressionMethod, 'extract', archivePath)
+  const commands = await getCommands(
+    compressionMethod,
+    'extract',
+    archivePath,
+    extraTarArgs
+  )
   await execCommands(commands)
 }
 
@@ -285,13 +306,19 @@ export async function extractTar(
 export async function createTar(
   archiveFolder: string,
   sourceDirectories: string[],
-  compressionMethod: CompressionMethod
+  compressionMethod: CompressionMethod,
+  extraTarArgs: ExtraTarArgs = []
 ): Promise<void> {
   // Write source directories to manifest.txt to avoid command length limits
   writeFileSync(
     path.join(archiveFolder, ManifestFilename),
     sourceDirectories.join('\n')
   )
-  const commands = await getCommands(compressionMethod, 'create')
+  const commands = await getCommands(
+    compressionMethod,
+    'create',
+    undefined,
+    extraTarArgs
+  )
   await execCommands(commands, archiveFolder)
 }
