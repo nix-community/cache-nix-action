@@ -4,6 +4,7 @@ import {existsSync, writeFileSync} from 'fs'
 import * as path from 'path'
 import * as utils from './cacheUtils'
 import {ArchiveTool} from './contracts'
+import * as core from '@actions/core'
 import {
   CompressionMethod,
   SystemTarPathOnWindows,
@@ -11,6 +12,7 @@ import {
   TarFilename,
   ManifestFilename
 } from './constants'
+import {TarCommandModifiers} from '../options'
 
 const IS_WINDOWS = process.platform === 'win32'
 
@@ -55,7 +57,8 @@ async function getTarArgs(
   tarPath: ArchiveTool,
   compressionMethod: CompressionMethod,
   type: string,
-  archivePath = ''
+  archivePath = '',
+  tarCommandModifiers: TarCommandModifiers
 ): Promise<string[]> {
   const args = [`"${tarPath.path}"`]
   const cacheFileName = utils.getCacheFileName(compressionMethod)
@@ -83,6 +86,10 @@ async function getTarArgs(
         '-P',
         '-C',
         workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
+        // `createArgs` may contain --exclude-from
+        // which is a positional argument.
+        // It affects and therefore should go before `--files-from`
+        ...tarCommandModifiers.createArgs,
         '--files-from',
         ManifestFilename
       )
@@ -95,7 +102,8 @@ async function getTarArgs(
           : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
         '-P',
         '-C',
-        workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
+        workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
+        ...tarCommandModifiers.extractArgs
       )
       break
     case 'list':
@@ -104,7 +112,8 @@ async function getTarArgs(
         BSD_TAR_ZSTD
           ? tarFile
           : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
-        '-P'
+        '-P',
+        ...tarCommandModifiers.listArgs
       )
       break
   }
@@ -128,7 +137,8 @@ async function getTarArgs(
 async function getCommands(
   compressionMethod: CompressionMethod,
   type: string,
-  archivePath = ''
+  archivePath = '',
+  tarCommandModifiers: TarCommandModifiers
 ): Promise<string[]> {
   let args
 
@@ -137,8 +147,10 @@ async function getCommands(
     tarPath,
     compressionMethod,
     type,
-    archivePath
+    archivePath,
+    tarCommandModifiers
   )
+
   const compressionArgs =
     type !== 'create'
       ? await getDecompressionProgram(tarPath, compressionMethod, archivePath)
@@ -151,7 +163,17 @@ async function getCommands(
   if (BSD_TAR_ZSTD && type !== 'create') {
     args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')]
   } else {
-    args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')]
+    let sudo: string[] = []
+
+    switch (process.platform) {
+      case 'linux':
+      case 'darwin':
+        sudo = tarCommandModifiers.useSudo ? ['sudo'] : []
+        break
+      default:
+        sudo = []
+    }
+    args = [[...sudo, ...tarArgs].join(' '), [...compressionArgs].join(' ')]
   }
 
   if (BSD_TAR_ZSTD) {
@@ -263,21 +285,38 @@ async function execCommands(commands: string[], cwd?: string): Promise<void> {
 // List the contents of a tar
 export async function listTar(
   archivePath: string,
-  compressionMethod: CompressionMethod
+  compressionMethod: CompressionMethod,
+  tarCommandModifiers: TarCommandModifiers
 ): Promise<void> {
-  const commands = await getCommands(compressionMethod, 'list', archivePath)
+  const commands = await getCommands(
+    compressionMethod,
+    'list',
+    archivePath,
+    tarCommandModifiers
+  )
+
+  core.debug(`::group::Archive contents`)
+
   await execCommands(commands)
+
+  core.debug(`::endgroup::`)
 }
 
 // Extract a tar
 export async function extractTar(
   archivePath: string,
-  compressionMethod: CompressionMethod
+  compressionMethod: CompressionMethod,
+  tarCommandModifiers: TarCommandModifiers
 ): Promise<void> {
   // Create directory to extract tar into
   const workingDirectory = getWorkingDirectory()
   await io.mkdirP(workingDirectory)
-  const commands = await getCommands(compressionMethod, 'extract', archivePath)
+  const commands = await getCommands(
+    compressionMethod,
+    'extract',
+    archivePath,
+    tarCommandModifiers
+  )
   await execCommands(commands)
 }
 
@@ -285,13 +324,19 @@ export async function extractTar(
 export async function createTar(
   archiveFolder: string,
   sourceDirectories: string[],
-  compressionMethod: CompressionMethod
+  compressionMethod: CompressionMethod,
+  tarCommandModifiers: TarCommandModifiers
 ): Promise<void> {
   // Write source directories to manifest.txt to avoid command length limits
   writeFileSync(
     path.join(archiveFolder, ManifestFilename),
     sourceDirectories.join('\n')
   )
-  const commands = await getCommands(compressionMethod, 'create')
+  const commands = await getCommands(
+    compressionMethod,
+    'create',
+    undefined,
+    tarCommandModifiers
+  )
   await execCommands(commands, archiveFolder)
 }
