@@ -325,7 +325,8 @@ Disadvantages:
     nix run .#write
     ```
 
-- Update [actions-toolkit](./actions-toolkit). It was added via `git subtree`. See [tutorial](https://www.atlassian.com/git/tutorials/git-subtree).
+- Update the `actions-toolkit` branch.
+- Ask for new releases of `@cache-nix-action/cache` if there are changes on the `actions-toolkit` branch.
 
 # Cache action
 
