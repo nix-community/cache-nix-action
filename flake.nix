@@ -17,9 +17,19 @@
             writeSave = writeYAML "save" "save/action.yml" (import ./action.nix { target = "save"; inherit (pkgs) lib; });
             writeRestore = writeYAML "restore" "restore/action.yml" (import ./action.nix { target = "restore"; inherit (pkgs) lib; });
             writeCache = writeYAML "cache" "action.yml" (import ./action.nix { target = "cache"; inherit (pkgs) lib; });
+            writeActions = {
+              text = ''
+                ${getExe packages.writeSave}
+                ${getExe packages.writeRestore}
+                ${getExe packages.writeCache}
+              '';
+            };
             write = {
               runtimeInputs = [ pkgs.nodejs_20 ];
-              text = ''npm run readme'';
+              text = ''
+                ${getExe packages.writeActions}
+                npm run readme
+              '';
               description = "write action.yml-s and tables for README-s";
             };
 
