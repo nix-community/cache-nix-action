@@ -83730,7 +83730,7 @@ function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
         let extraTarArgs = [];
         if (!lookupOnly) {
-            const nixPaths = (0, fs_1.readdirSync)("/nix/store").map(x => `/nix/store/${x}`);
+            const nixPaths = (0, fs_1.readdirSync)("/nix/store").map(x => `../../../../../nix/store/${x}`);
             const tmp = yield cacheUtils.createTempDirectory();
             const excludeFromFile = `${tmp}/nix-store-paths`;
             (0, fs_1.writeFileSync)(excludeFromFile, nixPaths.join("\n"));
