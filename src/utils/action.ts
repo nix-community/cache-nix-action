@@ -69,14 +69,19 @@ export async function restoreCache({
     restoreKeys: string[];
     lookupOnly: boolean;
 }) {
-    return await cache.restoreCache(
+    core.info(`::group::Logs produced while restoring a cache.`);
+
+    const key = await cache.restoreCache(
         inputs.paths,
         primaryKey,
         restoreKeys,
         { lookupOnly },
         false
-        // ["--skip-old-files"]
     );
+
+    core.info(`::endgroup::`);
+
+    return key;
 }
 
 export interface Cache {
