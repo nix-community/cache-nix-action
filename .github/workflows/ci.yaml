@@ -72,11 +72,12 @@ jobs:
           purge-primary-key: never
 
       - name: Configure github-actions bot
-        if: github.event_name == 'push'
         run: |
           git config --global user.name github-actions
           git config --global user.email github-actions@github.com
-          ${{ env.git_pull }}
+      
+      - name: Rebase
+        run: ${{ env.git_pull }}
       
       - name: Install packages & Build the action
         run: nix run .#install
