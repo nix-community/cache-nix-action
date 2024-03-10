@@ -61,7 +61,6 @@ jobs:
           primary-key: build-${{ runner.os }}-${{ hashFiles('**/package-lock.json', 'package.json', 'flake.nix', 'flake.lock') }}
           paths: |
             ~/.npm
-            .venv
           # do purge caches
           purge: true
           # purge all versions of the cache
