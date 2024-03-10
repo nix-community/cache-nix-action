@@ -70,9 +70,9 @@ jobs:
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
           
-      # # Uncomment to debug this job
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
+      # Uncomment to debug this job
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       # - name: Configure github-actions bot
       #   run: |
