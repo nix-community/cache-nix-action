@@ -48,7 +48,6 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - For purging, a workflow requires the permission `actions: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
 - Purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - Purges caches by keys without considering caches versions (see [Cache version](#cache-version)).
-- Runs `tar ... --skip-old-files ...` to not overwrite existing files when restoring a cache (see [this comment](https://github.com/nix-community/cache-nix-action/issues/9#issuecomment-1871311709)).
 
 ## Comparison with alternative approaches
 
