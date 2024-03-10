@@ -36,18 +36,21 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 ## Limitations
 
-- Requires `nix-quick-install-action`.
-- Supports only `Linux` and `macOS` runners for Nix store caching.
+- The action supports only a Nix store located at `/nix/store`.
+- The action requires `nix-quick-install-action`.
+- The action supports only `Linux` and `macOS` runners for Nix store caching.
+- The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
+- The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
+- The action overwrites existing files on the runner when restoring a cache containing these files.
+  - However, the action doesn't overwrite existing Nix store paths.
 - `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
   - [Purge old caches](#purge-old-caches)
   - [Merge caches](#merge-caches)
-- Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)). Workaround:
-  - The [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
-- Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)). Workaround:
-  - Provide caches for PRs on the default or base branches.
-- For purging, a workflow requires the permission `actions: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
-- Purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
-- Purges caches by keys without considering caches versions (see [Cache version](#cache-version)).
+- The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
+  - Workaround: the [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
+- Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
+  - Workaround: provide caches for PRs on the default or base branches.
+- For purging, a workflow must have the permission `actions: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
 
 ## Comparison with alternative approaches
 
