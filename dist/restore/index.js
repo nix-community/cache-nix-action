@@ -83732,7 +83732,9 @@ function isCacheFeatureAvailable() {
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, ["--skip-old-files"]);
+        return yield cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false
+        // ["--skip-old-files"]
+        );
     });
 }
 exports.restoreCache = restoreCache;

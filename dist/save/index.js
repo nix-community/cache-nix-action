@@ -83419,6 +83419,7 @@ const stateProvider_1 = __nccwpck_require__(1527);
 const utils = __importStar(__nccwpck_require__(4427));
 const collectGarbage_1 = __nccwpck_require__(9311);
 const purge_1 = __nccwpck_require__(7612);
+const fs = __importStar(__nccwpck_require__(7147));
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
 // throw an uncaught exception.  Instead of failing this action, just warn.
@@ -83478,6 +83479,10 @@ function saveImpl(stateProvider) {
                         uploadChunkSize: inputs.uploadChunkSize
                     });
                     utils.info(`Saved a new cache.`);
+                    core.debug("\n\nNix store paths:\n\n");
+                    fs.readdirSync("/nix/store").forEach(file => {
+                        core.debug(file);
+                    });
                 }
             }
             // Purge other caches
@@ -83716,7 +83721,9 @@ function isCacheFeatureAvailable() {
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, ["--skip-old-files"]);
+        return yield cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false
+        // ["--skip-old-files"]
+        );
     });
 }
 exports.restoreCache = restoreCache;
