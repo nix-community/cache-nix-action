@@ -57,7 +57,7 @@ export const nix =
     (process.env.RUNNER_OS === "Linux" || process.env.RUNNER_OS === "macOS");
 
 export const paths = (
-    nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []
+    nix ? ["/nix", "~/.cache/nix", "~root/.cache/nix"] : []
 ).concat(
     (function () {
         const paths = utils.getInputAsArray(Inputs.Paths);
