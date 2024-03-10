@@ -70,8 +70,7 @@ export async function restoreCache({
     lookupOnly: boolean;
 }) {
     return await cache.restoreCache(
-        // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-        inputs.paths.slice(),
+        inputs.paths,
         primaryKey,
         restoreKeys,
         { lookupOnly },

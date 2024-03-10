@@ -149,8 +149,6 @@ export async function purgeCachesByTime({
     time: number;
     prefixes: string[];
 }): Promise<void> {
-    // TODO https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-
     for (const doUseLastAccessedTime of [true, false]) {
         if (
             (doUseLastAccessedTime
@@ -160,7 +158,7 @@ export async function purgeCachesByTime({
             await purgeByTime({
                 primaryKey,
                 doUseLastAccessedTime,
-                prefixes: prefixes.slice(),
+                prefixes,
                 time
             });
         }
