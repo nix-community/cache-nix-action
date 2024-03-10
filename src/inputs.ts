@@ -54,7 +54,7 @@ function choose<T>(linuxOption: T, macosOption: T, defaultOption: T): T {
 
 export const nix =
     utils.getInputAsBool(Inputs.Nix) &&
-    (process.platform == "linux" || process.platform == "darwin");
+    (process.env.RUNNER_OS === "Linux" || process.env.RUNNER_OS === "macOS");
 
 export const paths = (
     nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []
