@@ -5,6 +5,8 @@ import dedent from "dedent";
 
 import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
+import { readdirSync, writeFileSync } from "fs";
+import * as cacheUtils from "@cache-nix-action/cache/lib/internal/cacheUtils";
 
 const myDedent = dedent.withOptions({});
 
@@ -77,12 +79,23 @@ export async function restoreCache({
 }) {
     info(`::group::Logs produced while restoring a cache.`);
 
+    let extraTarArgs: string[] = [];
+
+    if (!lookupOnly) {
+        const nixPaths = readdirSync("/nix/store").map(x => `**/${x}`);
+        const tmp = await cacheUtils.createTempDirectory();
+        const excludeFromFile = `${tmp}/nix-store-paths`;
+        writeFileSync(excludeFromFile, nixPaths.join("\n"));
+        extraTarArgs = ["--exclude-from", excludeFromFile];
+    }
+
     const key = await cache.restoreCache(
         inputs.paths,
         primaryKey,
         restoreKeys,
         { lookupOnly },
-        false
+        false,
+        extraTarArgs
     );
 
     info(`::endgroup::`);
