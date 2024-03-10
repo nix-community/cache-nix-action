@@ -45,9 +45,9 @@ jobs:
   build:
     name: Build the action
     runs-on: ubuntu-20.04
-    # permissions:
-    #   contents: write
-    #   actions: write
+    permissions:
+      contents: write
+      actions: write
     # needs: check-action-code-changes
     # if: needs.check-action-code-changes.outputs.any_changed
     steps:
@@ -79,13 +79,13 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
 
-      # - name: Configure github-actions bot
-      #   run: |
-      #     git config --global user.name github-actions
-      #     git config --global user.email github-actions@github.com
+      - name: Configure github-actions bot
+        run: |
+          git config --global user.name github-actions
+          git config --global user.email github-actions@github.com
       
-      # - name: Rebase
-      #   run: ${{ env.git_pull }}
+      - name: Rebase
+        run: ${{ env.git_pull }}
       
       - name: Install packages & Build the action
         run: nix run .#install
@@ -93,13 +93,13 @@ jobs:
       - name: Update docs
         run: nix run .#write
           
-      # - name: Commit & push changes
-      #   run: |
-      #     git add dist
-      #     git commit -m "action: build the action" || echo ""
-      #     git add .
-      #     git commit -m "action: update docs" || echo ""
-      #     git push
+      - name: Commit & push changes
+        run: |
+          git add dist
+          git commit -m "action: build the action" || echo ""
+          git add .
+          git commit -m "action: update docs" || echo ""
+          git push
 
   # # If ci.yaml changes, need to save a new cache with an updated key
   # # For the sake of testing, we assume that ci.yaml changes on every commit
