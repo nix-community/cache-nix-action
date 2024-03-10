@@ -74,8 +74,8 @@ export async function restoreCache({
         primaryKey,
         restoreKeys,
         { lookupOnly },
-        false,
-        ["--skip-old-files"]
+        false
+        // ["--skip-old-files"]
     );
 }
 
