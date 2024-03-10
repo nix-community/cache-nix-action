@@ -77,8 +77,6 @@ export async function restoreCache({
     restoreKeys: string[];
     lookupOnly: boolean;
 }) {
-    info(`::group::Logs produced while restoring a cache.`);
-
     let extraTarArgs: string[] = [];
 
     if (!lookupOnly) {
@@ -87,6 +85,8 @@ export async function restoreCache({
         const excludeFromFile = `${tmp}/nix-store-paths`;
         writeFileSync(excludeFromFile, nixPaths.join("\n"));
         extraTarArgs = ["--exclude-from", excludeFromFile];
+
+        info(`::group::Logs produced while restoring a cache.`);
     }
 
     const key = await cache.restoreCache(
@@ -98,7 +98,9 @@ export async function restoreCache({
         extraTarArgs
     );
 
-    info(`::endgroup::`);
+    if (!lookupOnly) {
+        info(`::endgroup::`);
+    }
 
     return key;
 }
