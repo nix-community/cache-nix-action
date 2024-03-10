@@ -6,6 +6,12 @@ import dedent from "dedent";
 import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
 
+const myDedent = dedent.withOptions({});
+
+export const info = (message: string) => core.info(myDedent(message));
+
+export const warning = (message: string) => core.warning(myDedent(message));
+
 export function isGhes(): boolean {
     const ghUrl = new URL(
         process.env["GITHUB_SERVER_URL"] || "https://github.com"
@@ -69,7 +75,7 @@ export async function restoreCache({
     restoreKeys: string[];
     lookupOnly: boolean;
 }) {
-    core.info(`::group::Logs produced while restoring a cache.`);
+    info(`::group::Logs produced while restoring a cache.`);
 
     const key = await cache.restoreCache(
         inputs.paths,
@@ -79,7 +85,7 @@ export async function restoreCache({
         false
     );
 
-    core.info(`::endgroup::`);
+    info(`::endgroup::`);
 
     return key;
 }
@@ -155,9 +161,3 @@ export function getMaxDate({
 }
 
 export const stringify = (value: any) => JSON.stringify(value, null, 2);
-
-const myDedent = dedent.withOptions({});
-
-export const info = (message: string) => core.info(myDedent(message));
-
-export const warning = (message: string) => core.warning(myDedent(message));
