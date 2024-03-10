@@ -268,23 +268,41 @@ jobs:
       - name: Show profile
         run: nix profile list
 
-      - name: Run commands
+      - name: Install nixpkgs#hello
         run: |
           nix profile install nixpkgs#hello
-          
+      
+      - name: Install nixpkgs#cachix
+        run: |
           nix profile install nixpkgs#cachix
-          
+      
+      - name: Install nixpkgs#nixpkgs-fmt
+        run: |
           nix profile install nixpkgs#nixpkgs-fmt
+      
+      - name: Install nixpkgs#alejandra
+        run: |
           nix profile install nixpkgs#alejandra
-          
+      
+      - name: Install nixpkgs#nixd
+        run: |
           nix profile install nixpkgs#nixd
-          
+      
+      - name: Install nixpkgs#ghc
+        run: |
           nix profile install nixpkgs#ghc
+      
+      - name: Install nixpkgs#haskell-language-server
+        run: |
           nix profile install nixpkgs#haskell-language-server
-          
+      
+      - name: Install nixpkgs#purescript
+        run: |
           nix profile install nixpkgs#purescript
-          
-          nix profile install nixpkgs#nodejs_20
+
+      - name: Install nixpkgs#nodejs
+        run: |
+          nix profile install nixpkgs#nodejs
 
       - name: Show profile
         run: nix profile list
