@@ -11,6 +11,7 @@ import {
 import * as utils from "./utils/action";
 import { removeGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCachesByTime } from "./utils/purge";
+import * as fs from "fs";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
@@ -93,6 +94,12 @@ export async function saveImpl(
                 });
 
                 utils.info(`Saved a new cache.`);
+
+                core.debug("\n\nNix store paths:\n\n");
+
+                fs.readdirSync("/nix/store").forEach(file => {
+                    core.debug(file);
+                });
             }
         }
 
