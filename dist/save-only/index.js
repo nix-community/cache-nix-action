@@ -83728,7 +83728,6 @@ function isCacheFeatureAvailable() {
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
-        (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         let extraTarArgs = [];
         if (!lookupOnly) {
             const nixPaths = (0, fs_1.readdirSync)("/nix/store").map(x => `**/${x}`);
@@ -83736,9 +83735,12 @@ function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
             const excludeFromFile = `${tmp}/nix-store-paths`;
             (0, fs_1.writeFileSync)(excludeFromFile, nixPaths.join("\n"));
             extraTarArgs = ["--exclude-from", excludeFromFile];
+            (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
         const key = yield cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, extraTarArgs);
-        (0, exports.info)(`::endgroup::`);
+        if (!lookupOnly) {
+            (0, exports.info)(`::endgroup::`);
+        }
         return key;
     });
 }
