@@ -80,7 +80,9 @@ export async function restoreCache({
     let extraTarArgs: string[] = [];
 
     if (!lookupOnly) {
-        const nixPaths = readdirSync("/nix/store").map(x => `/nix/store/${x}`);
+        const nixPaths = readdirSync("/nix/store").map(
+            x => `../../../../../nix/store/${x}`
+        );
         const tmp = await cacheUtils.createTempDirectory();
         const excludeFromFile = `${tmp}/nix-store-paths`;
         writeFileSync(excludeFromFile, nixPaths.join("\n"));
