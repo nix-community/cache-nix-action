@@ -69,6 +69,11 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+      
+      - name: Install newer Nix
+        run: |
+          nix profile install nixpkgs#nixVersions.nix_2_19 --priority 1
+          nix profile remove 0
           
       # Uncomment to debug this job
       - name: Setup tmate session
