@@ -83335,8 +83335,8 @@ function choose(linuxOption, macosOption, defaultOption) {
     }
 }
 exports.nix = utils.getInputAsBool(constants_1.Inputs.Nix) &&
-    (process.platform == "linux" || process.platform == "darwin");
-exports.paths = (exports.nix ? ["/nix/", "~/.cache/nix", "~root/.cache/nix"] : []).concat((function () {
+    (process.env.RUNNER_OS === "Linux" || process.env.RUNNER_OS === "macOS");
+exports.paths = (exports.nix ? ["/nix", "~/.cache/nix", "~root/.cache/nix"] : []).concat((function () {
     const paths = utils.getInputAsArray(constants_1.Inputs.Paths);
     const pathsPlatform = utils.getInputAsArray(choose(constants_1.Inputs.PathsLinux, constants_1.Inputs.PathsMacos, constants_1.Inputs.Paths));
     if (pathsPlatform.length > 0) {
@@ -83716,9 +83716,7 @@ function isCacheFeatureAvailable() {
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield cache.restoreCache(
-        // https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
-        inputs.paths.slice(), primaryKey, restoreKeys, { lookupOnly }, false, ["--skip-old-files"]);
+        return yield cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, ["--skip-old-files"]);
     });
 }
 exports.restoreCache = restoreCache;
@@ -84038,7 +84036,6 @@ function purgeByTime({ primaryKey, doUseLastAccessedTime, prefixes, time }) {
 }
 function purgeCachesByTime({ primaryKey, time, prefixes }) {
     return __awaiter(this, void 0, void 0, function* () {
-        // TODO https://github.com/actions/toolkit/pull/1378#issuecomment-1478388929
         for (const doUseLastAccessedTime of [true, false]) {
             if ((doUseLastAccessedTime
                 ? inputs.purgeLastAccessed
@@ -84046,7 +84043,7 @@ function purgeCachesByTime({ primaryKey, time, prefixes }) {
                 yield purgeByTime({
                     primaryKey,
                     doUseLastAccessedTime,
-                    prefixes: prefixes.slice(),
+                    prefixes,
                     time
                 });
             }
