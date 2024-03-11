@@ -41,8 +41,11 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - The action supports only `Linux` and `macOS` runners for Nix store caching.
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
-- The action overwrites existing files on the runner when restoring a cache containing these files.
-  - However, the action doesn't overwrite existing Nix store paths.
+- The action overwrites existing files on the runner when the action restores a cache that also has these files.
+  - The action doesn't overwrite existing `/nix/store` paths.
+- The action overwrites the `/nix/var` on the runner with the cached `/nix/var` to make Nix use the correct info about Nix store.
+  - The action does so because it can't reconstruct a Nix database from paths only ([link](https://github.com/NixOS/nix/issues/3091)).
+  - The action should be used with a fresh store. So, put a step with the action just after a step with the `nix-quick-install-action`.
 - `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
   - [Purge old caches](#purge-old-caches)
   - [Merge caches](#merge-caches)
