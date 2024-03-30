@@ -1,8 +1,22 @@
+import { copyFileSync } from "fs";
 import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
+import * as cacheUtils from "@cache-nix-action/cache/lib/internal/cacheUtils";
+import { mergeStoreDatabases } from "./mergeStoreDatabases";
+import { exec } from "@actions/exec";
 
 export async function restoreCache(key: string, ref?: string) {
+    const tempDir = await cacheUtils.createTempDirectory();
+    const dbPath = "/nix/var/nix/db/db.sqlite";
+    const dbPath1 = `${tempDir}/old.sqlite`;
+    const dbPath2 = `${tempDir}/new.sqlite`;
+
+    if (inputs.nix) {
+        utils.info(`Copying "${dbPath}" to "${dbPath1}".`);
+        copyFileSync(dbPath, dbPath1);
+    }
+
     utils.info(
         `Restoring a cache with the key "${key}"${
             ref ? ` and scoped to "${ref}"` : ""
@@ -17,6 +31,26 @@ export async function restoreCache(key: string, ref?: string) {
 
     if (cacheKey) {
         utils.info(`Finished restoring the cache.`);
+
+        if (inputs.nix) {
+            utils.info(`Copying "${dbPath}" to "${dbPath2}".`);
+
+            copyFileSync(dbPath, dbPath2);
+
+            utils.info(
+                `
+                Merging store databases "${dbPath1}" and "${dbPath2}"
+                into "${dbPath}".
+                `
+            );
+
+            mergeStoreDatabases(dbPath1, dbPath2, dbPath);
+
+            utils.info(`Checking the store database.`);
+
+            await exec(`sqlite3 "${dbPath}" "PRAGMA integrity_check;"`);
+        }
+
         return cacheKey;
     } else {
         utils.info(`Failed to restore the cache.`);
