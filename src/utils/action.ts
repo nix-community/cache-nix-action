@@ -7,6 +7,7 @@ import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
 import { readdirSync, writeFileSync } from "fs";
 import * as cacheUtils from "@cache-nix-action/cache/lib/internal/cacheUtils";
+import { exec } from "@actions/exec";
 
 const myDedent = dedent.withOptions({});
 
@@ -178,3 +179,7 @@ export function getMaxDate({
 }
 
 export const stringify = (value: any) => JSON.stringify(value, null, 2);
+
+export async function run(command: string) {
+    await exec("bash", ["-c", command]);
+}

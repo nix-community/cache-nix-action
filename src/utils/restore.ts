@@ -4,7 +4,6 @@ import * as inputs from "../inputs";
 import * as utils from "./action";
 import * as cacheUtils from "@cache-nix-action/cache/lib/internal/cacheUtils";
 import { mergeStoreDatabases } from "./mergeStoreDatabases";
-import { exec } from "@actions/exec";
 
 export async function restoreCache(key: string, ref?: string) {
     const tempDir = await cacheUtils.createTempDirectory();
@@ -48,7 +47,7 @@ export async function restoreCache(key: string, ref?: string) {
 
             utils.info(`Checking the store database.`);
 
-            await exec(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
+            await utils.run(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
         }
 
         return cacheKey;

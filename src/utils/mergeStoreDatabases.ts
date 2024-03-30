@@ -1,6 +1,6 @@
-import { exec } from "@actions/exec";
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 import Handlebars from "handlebars";
+import * as utils from "./action";
 
 export async function mergeStoreDatabases(
     tempDir: string,
@@ -17,5 +17,5 @@ export async function mergeStoreDatabases(
     const template = Handlebars.compile(mergeSqlTemplate);
     writeFileSync(mergeSqlFile, template({ dbPath1, dbPath2 }));
 
-    await exec(`sqlite3 ${dbPath} < ${mergeSqlFile}`);
+    await utils.run(`sqlite3 ${dbPath} < ${mergeSqlFile}`);
 }

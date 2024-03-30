@@ -1,26 +1,22 @@
-import { exec } from "@actions/exec";
-
 import * as inputs from "../inputs";
 import * as utils from "./action";
 
 export async function removeGarbage() {
-    const run = async (command: string) => await exec("bash", ["-c", command]);
-
     utils.info("Removing useless files.");
 
-    await run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
+    await utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
 
     const printStoreSize = `
     STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
     printf "Current store size in bytes: $STORE_SIZE\\n"
     `;
 
-    await run(printStoreSize);
+    await utils.run(printStoreSize);
 
     if (inputs.gcMaxStoreSize) {
         utils.info("Collecting garbage.");
 
-        await run(
+        await utils.run(
             `
             MAX_STORE_SIZE=${inputs.gcMaxStoreSize}
             
@@ -35,6 +31,6 @@ export async function removeGarbage() {
 
         utils.info(`Finished collecting garbage.`);
 
-        await run(printStoreSize);
+        await utils.run(printStoreSize);
     }
 }
