@@ -116,6 +116,14 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+      
+      - name: Install nixpkgs#bun
+        if: ${{ matrix.id == 1 }}
+        run: nix profile install nixpkgs#bun
+      
+      - name: Install nixpkgs#nodejs
+        if: ${{ matrix.id == 2 }}
+        run: nix profile install nixpkgs#nodejs
 
   # Merge similar individual `id` caches
   # Purge individual caches and old `common` caches
@@ -160,6 +168,12 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+      
+      - name: Run node
+        run: node --version
+      
+      - name: Run bun
+        run: bun --version
 
   compare-run-times:
     name: Job with caching
