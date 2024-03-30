@@ -68,9 +68,9 @@ jobs:
       - name: Commit & push changes
         run: |
           git add dist
-          git commit -m "action: build the action" || echo ""
+          git commit -m "chore: build the action" || echo ""
           git add .
-          git commit -m "action: update docs" || echo ""
+          git commit -m "chore: update docs" || echo ""
           git push
   
   # Make individual caches with an `id` infix (`id` caches)
