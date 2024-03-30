@@ -86435,7 +86435,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgePrimaryKey = exports.purge = exports.gcMaxStoreSize = exports.save = exports.paths = exports.nix = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
+exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgePrimaryKey = exports.purge = exports.gcMaxStoreSize = exports.save = exports.paths = exports.nix = exports.isMacos = exports.isLinux = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const constants_1 = __nccwpck_require__(9042);
 const utils = __importStar(__nccwpck_require__(9378));
@@ -86466,8 +86466,9 @@ function choose(linuxOption, macosOption, defaultOption) {
             return defaultOption;
     }
 }
-exports.nix = utils.getInputAsBool(constants_1.Inputs.Nix) &&
-    (process.env.RUNNER_OS === "Linux" || process.env.RUNNER_OS === "macOS");
+exports.isLinux = process.env.RUNNER_OS === "Linux";
+exports.isMacos = process.env.RUNNER_OS === "macOS";
+exports.nix = utils.getInputAsBool(constants_1.Inputs.Nix) && (exports.isLinux || exports.isMacos);
 exports.paths = (exports.nix ? ["/nix", "~/.cache/nix", "~root/.cache/nix"] : []).concat((function () {
     const paths = utils.getInputAsArray(constants_1.Inputs.Paths);
     const pathsPlatform = utils.getInputAsArray(choose(constants_1.Inputs.PathsLinux, constants_1.Inputs.PathsMacos, constants_1.Inputs.Paths));
