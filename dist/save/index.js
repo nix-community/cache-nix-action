@@ -86801,7 +86801,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByPrefixes = exports.restoreCache = exports.isCacheFeatureAvailable = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = exports.warning = exports.info = void 0;
+exports.run = exports.stringify = exports.getMaxDate = exports.mkMessageWrongValue = exports.getCachesByPrefixes = exports.restoreCache = exports.isCacheFeatureAvailable = exports.isValidEvent = exports.logError = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = exports.warning = exports.info = void 0;
 const cache = __importStar(__nccwpck_require__(3907));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
@@ -86810,6 +86810,7 @@ const constants_1 = __nccwpck_require__(9042);
 const inputs = __importStar(__nccwpck_require__(7063));
 const fs_1 = __nccwpck_require__(7147);
 const cacheUtils = __importStar(__nccwpck_require__(1018));
+const exec_1 = __nccwpck_require__(1514);
 const myDedent = dedent_1.default.withOptions({});
 const info = (message) => core.info(myDedent(message));
 exports.info = info;
@@ -86919,6 +86920,12 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 exports.getMaxDate = getMaxDate;
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
+function run(command) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield (0, exec_1.exec)("bash", ["-c", command]);
+    });
+}
+exports.run = run;
 
 
 /***/ }),
@@ -86962,22 +86969,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.removeGarbage = void 0;
-const exec_1 = __nccwpck_require__(1514);
 const inputs = __importStar(__nccwpck_require__(7063));
 const utils = __importStar(__nccwpck_require__(4427));
 function removeGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
-        const run = (command) => __awaiter(this, void 0, void 0, function* () { return yield (0, exec_1.exec)("bash", ["-c", command]); });
         utils.info("Removing useless files.");
-        yield run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
+        yield utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
         const printStoreSize = `
     STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
     printf "Current store size in bytes: $STORE_SIZE\\n"
     `;
-        yield run(printStoreSize);
+        yield utils.run(printStoreSize);
         if (inputs.gcMaxStoreSize) {
             utils.info("Collecting garbage.");
-            yield run(`
+            yield utils.run(`
             MAX_STORE_SIZE=${inputs.gcMaxStoreSize}
             
             if (( STORE_SIZE > MAX_STORE_SIZE )); then
@@ -86988,7 +86993,7 @@ function removeGarbage() {
             fi
             `);
             utils.info(`Finished collecting garbage.`);
-            yield run(printStoreSize);
+            yield utils.run(printStoreSize);
         }
     });
 }
