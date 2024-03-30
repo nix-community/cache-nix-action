@@ -25,14 +25,17 @@
   "author": "GitHub",
   "license": "MIT",
   "dependencies": {
-    "@cache-nix-action/cache": "^3.3.0",
     "@actions/core": "^1.10.0",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^5.1.1",
     "@actions/io": "^1.1.2",
-    "dedent": "^1.5.1"
+    "@cache-nix-action/cache": "^3.3.0",
+    "better-sqlite3": "^9.4.3",
+    "dedent": "^1.5.1",
+    "handlebars": "^4.7.8"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
     "@types/jest": "^27.5.2",
     "@types/nock": "^11.1.0",
     "@types/node": "^16.18.3",
