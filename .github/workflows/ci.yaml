@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nix-quick-install-action@v27
 
       - name: Restore and save Nix store
         uses: ./.
@@ -99,7 +99,7 @@ jobs:
       - name: Rebase
         run: ${{ env.git_pull }}
       
-      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nix-quick-install-action@v27
 
       - name: Restore and save Nix store - ${{ matrix.id }}
         uses: ./.
@@ -148,7 +148,7 @@ jobs:
       - name: Rebase
         run: ${{ env.git_pull }}
       
-      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nix-quick-install-action@v27
               
       - name: Restore and save Nix store
         uses: ./.
@@ -198,7 +198,7 @@ jobs:
       - name: Rebase
         run: ${{ env.git_pull }}
 
-      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nix-quick-install-action@v27
 
       - name: Restore and save Nix store
         if: ${{ matrix.do-cache }}

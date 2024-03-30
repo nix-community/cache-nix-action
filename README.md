@@ -67,7 +67,7 @@ See [Caching Approaches](#caching-approaches).
 ## Example steps
 
 ```yaml
-- uses: nixbuild/nix-quick-install-action@v26
+- uses: nixbuild/nix-quick-install-action@v27
 
 - name: Restore and cache Nix store
   uses: nix-community/cache-nix-action@v5
