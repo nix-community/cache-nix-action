@@ -17,6 +17,7 @@ name: Nix CI
 env:
   # https://stackoverflow.com/a/71158878
   git_pull: git pull --rebase origin ${{ github.head_ref || github.ref_name }}
+  pin_nixpkgs: nix registry pin nixpkgs github:NixOS/nixpkgs/807c549feabce7eddbf259dbdcec9e0600a0660d
 
 jobs:
   # Build the action
@@ -117,6 +118,9 @@ jobs:
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
       
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+          
       - name: Install nixpkgs#bun
         if: ${{ matrix.id == 1 }}
         run: nix profile install nixpkgs#bun
@@ -225,12 +229,14 @@ jobs:
       - name: Show profile
         run: nix profile list
 
-      - name: Lock and install nixpkgs
-        run: |
-          nix registry add nixpkgs github:NixOS/nixpkgs/5daaa32204e9c46b05cd709218b7ba733d07e80c
-          nix registry list
-
-          nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+      
+      - name: List registry
+        run: nix registry list
+      
+      - name: Install nixpkgs
+        run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
 
       - name: Show profile
         run: nix profile list
