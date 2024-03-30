@@ -44,11 +44,11 @@ export async function restoreCache(key: string, ref?: string) {
                 `
             );
 
-            mergeStoreDatabases(tempDir, dbPath1, dbPath2, dbPath);
+            await mergeStoreDatabases(tempDir, dbPath1, dbPath2, dbPath);
 
             utils.info(`Checking the store database.`);
 
-            await exec(`sqlite3 "${dbPath}" "PRAGMA integrity_check;"`);
+            await exec(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
         }
 
         return cacheKey;
