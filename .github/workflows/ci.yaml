@@ -173,11 +173,20 @@ jobs:
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
       
-      - name: Run node
-        run: node --version
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+          
+      - name: Install nixpkgs#poetry
+        run: nix profile install nixpkgs#poetry
+      
+      - name: Install nixpkgs#nodejs
+        run: nix profile install nixpkgs#nodejs  
       
       - name: Run poetry
         run: poetry --version
+
+      - name: Run node
+        run: node --version
 
   compare-run-times:
     name: Job with caching
