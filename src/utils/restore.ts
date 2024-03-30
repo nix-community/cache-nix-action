@@ -44,7 +44,7 @@ export async function restoreCache(key: string, ref?: string) {
                 `
             );
 
-            mergeStoreDatabases(dbPath1, dbPath2, dbPath);
+            mergeStoreDatabases(tempDir, dbPath1, dbPath2, dbPath);
 
             utils.info(`Checking the store database.`);
 

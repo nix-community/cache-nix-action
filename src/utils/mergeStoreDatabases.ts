@@ -1,8 +1,9 @@
-import sqlite3 from "better-sqlite3";
-import { existsSync, readFileSync, unlinkSync } from "fs";
+import { exec } from "@actions/exec";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 import Handlebars from "handlebars";
 
 export function mergeStoreDatabases(
+    tempDir: string,
     dbPath1: string,
     dbPath2: string,
     dbPath: string
@@ -10,8 +11,11 @@ export function mergeStoreDatabases(
     if (existsSync(dbPath)) {
         unlinkSync(dbPath);
     }
-    const db = new sqlite3(dbPath);
-    const mergeSql = readFileSync("src/templates/merge.sql").toString();
-    const template = Handlebars.compile(mergeSql);
-    db.exec(template({ dbPath1, dbPath2 }));
+    const mergeSqlTemplate = readFileSync("src/templates/merge.sql").toString();
+
+    const mergeSqlFile = `${tempDir}/merge.sql`;
+    const template = Handlebars.compile(mergeSqlTemplate);
+    writeFileSync(mergeSqlFile, template({ dbPath1, dbPath2 }));
+
+    exec(`sqlite3 ${dbPath} ${mergeSqlFile}`);
 }
