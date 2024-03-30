@@ -86863,11 +86863,18 @@ exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     return __awaiter(this, void 0, void 0, function* () {
         let extraTarArgs = [];
-        if (!lookupOnly) {
-            const nixPaths = (0, fs_1.readdirSync)("/nix/store").map(x => `../../../../../nix/store/${x}`);
+        if (inputs.nix && !lookupOnly) {
+            const excludePaths = (0, fs_1.readdirSync)("/nix/store")
+                .map(x => `../../../../../nix/store/${x}`)
+                .concat((0, fs_1.readdirSync)("/nix/var/nix")
+                .filter(x => x != "db")
+                .map(x => `../../../../../nix/var/nix/${x}`))
+                .concat((0, fs_1.readdirSync)("/nix/var/nix/db")
+                .filter(x => x != "db.sqlite")
+                .map(x => `../../../../../nix/var/nix/db/${x}`));
             const tmp = yield cacheUtils.createTempDirectory();
             const excludeFromFile = `${tmp}/nix-store-paths`;
-            (0, fs_1.writeFileSync)(excludeFromFile, nixPaths.join("\n"));
+            (0, fs_1.writeFileSync)(excludeFromFile, excludePaths.join("\n"));
             extraTarArgs = ["--exclude-from", excludeFromFile];
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
