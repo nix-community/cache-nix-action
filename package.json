@@ -30,7 +30,6 @@
     "@actions/github": "^5.1.1",
     "@actions/io": "^1.1.2",
     "@cache-nix-action/cache": "^3.3.0",
-    "better-sqlite3": "^9.4.3",
     "dedent": "^1.5.1",
     "handlebars": "^4.7.8"
   },
