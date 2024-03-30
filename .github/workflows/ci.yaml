@@ -19,28 +19,7 @@ env:
   git_pull: git pull --rebase origin ${{ github.head_ref || github.ref_name }}
 
 jobs:
-  # Check if the action code changed
-  check-action-code-changes:
-    name: Check if action code changed
-    runs-on: ubuntu-latest
-    outputs:
-      any_changed: ${{ steps.any_changed.outputs.any_changed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      
-      - uses: tj-actions/changed-files@v42
-        id: any_changed
-        with:
-          files: |
-            src/**
-            package.json
-            package-lock.json
-            flake.lock
-            flake.nix
-
-  # Build the action if there are changes
+  # Build the action
   # Commit and push the built code
   build:
     name: Build the action
@@ -48,8 +27,6 @@ jobs:
     permissions:
       contents: write
       actions: write
-    needs: check-action-code-changes
-    if: needs.check-action-code-changes.outputs.any_changed
     steps:
       - uses: actions/checkout@v4
       
@@ -95,37 +72,13 @@ jobs:
           git add .
           git commit -m "action: update docs" || echo ""
           git push
-
-  # If ci.yaml changes, need to save a new cache with an updated key
-  # For the sake of testing, we assume that ci.yaml changes on every commit
-  check-cache-changes:
-    name: Check cache changes
-    needs: build
-    runs-on: ubuntu-20.04
-    if: always()
-    outputs:
-      # assume files-changed so that the 'similar-caches' jobs run always
-      files-changed: true
-      
-      # the following line is more fair
-      # files-changed: ${{ steps.files-changed.outputs.any_changed }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - uses: tj-actions/changed-files@v42
-        id: files-changed
-        with:
-          files: |
-            .github/workflows/ci.yaml
   
   # Make individual caches with an `id` infix (`id` caches)
   # Restore `id` or `common` caches
   # Usually, there should be no `id` caches as they're purged by `merge-similar-caches`
   make-similar-caches:
     name: Make similar caches
-    needs: check-cache-changes
+    needs: build
     permissions:
       actions: write
     strategy:
@@ -139,7 +92,6 @@ jobs:
           - 1
           - 2
     runs-on: ${{ matrix.os }}
-    if: always() && needs.check-cache-changes.outputs.files-changed
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v4
@@ -170,7 +122,7 @@ jobs:
   # Save new `common` caches
   merge-similar-caches:
     name: Merge similar caches
-    needs: [check-cache-changes, make-similar-caches]
+    needs: make-similar-caches
     permissions:
       actions: write
     strategy:
@@ -181,7 +133,6 @@ jobs:
           - ubuntu-20.04
           - ubuntu-22.04
     runs-on: ${{ matrix.os }}
-    if: always() && needs.check-cache-changes.outputs.files-changed
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v4
@@ -226,7 +177,6 @@ jobs:
           - ubuntu-20.04
           - ubuntu-22.04
     runs-on: ${{ matrix.os }}
-    if: always()
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v4
