@@ -9,6 +9,7 @@ import {
 } from "./stateProvider";
 import * as utils from "./utils/action";
 import * as restore from "./utils/restore";
+import * as install from "./utils/install";
 
 export async function restoreImpl(
     stateProvider: IStateProvider
@@ -32,6 +33,8 @@ export async function restoreImpl(
                 } is not supported because it's not tied to a branch or tag ref.`
             );
         }
+
+        await install.installSQLite3();
 
         let restoredKey: string | undefined;
         let lookedUpKey: string | undefined;
