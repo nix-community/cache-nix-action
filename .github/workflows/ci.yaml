@@ -121,9 +121,9 @@ jobs:
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
           
-      - name: Install nixpkgs#bun
+      - name: Install nixpkgs#poetry
         if: ${{ matrix.id == 1 }}
-        run: nix profile install nixpkgs#bun
+        run: nix profile install nixpkgs#poetry
       
       - name: Install nixpkgs#nodejs
         if: ${{ matrix.id == 2 }}
@@ -176,8 +176,8 @@ jobs:
       - name: Run node
         run: node --version
       
-      - name: Run bun
-        run: bun --version
+      - name: Run poetry
+        run: poetry --version
 
   compare-run-times:
     name: Job with caching
