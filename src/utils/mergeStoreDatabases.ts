@@ -17,5 +17,5 @@ export async function mergeStoreDatabases(
     const template = Handlebars.compile(mergeSqlTemplate);
     writeFileSync(mergeSqlFile, template({ dbPath1, dbPath2 }));
 
-    await exec(`sqlite3 ${dbPath} ${mergeSqlFile}`);
+    await exec(`sqlite3 ${dbPath} < ${mergeSqlFile}`);
 }
