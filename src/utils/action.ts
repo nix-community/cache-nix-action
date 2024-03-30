@@ -80,13 +80,23 @@ export async function restoreCache({
 }) {
     let extraTarArgs: string[] = [];
 
-    if (!lookupOnly) {
-        const nixPaths = readdirSync("/nix/store").map(
-            x => `../../../../../nix/store/${x}`
-        );
+    if (inputs.nix && !lookupOnly) {
+        const excludePaths = readdirSync("/nix/store")
+            .map(x => `../../../../../nix/store/${x}`)
+            .concat(
+                readdirSync("/nix/var/nix")
+                    .filter(x => x != "db")
+                    .map(x => `../../../../../nix/var/nix/${x}`)
+            )
+            .concat(
+                readdirSync("/nix/var/nix/db")
+                    .filter(x => x != "db.sqlite")
+                    .map(x => `../../../../../nix/var/nix/db/${x}`)
+            );
+
         const tmp = await cacheUtils.createTempDirectory();
         const excludeFromFile = `${tmp}/nix-store-paths`;
-        writeFileSync(excludeFromFile, nixPaths.join("\n"));
+        writeFileSync(excludeFromFile, excludePaths.join("\n"));
         extraTarArgs = ["--exclude-from", excludeFromFile];
 
         info(`::group::Logs produced while restoring a cache.`);
