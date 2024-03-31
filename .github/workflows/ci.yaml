@@ -176,12 +176,20 @@ jobs:
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
 
+      # Stuff in a profile can survive garbage collection.
+      # Therefore, profiles are ignored when restoring a cache.
+      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # The default profile should contain only nix.
       - name: List profile (should be empty)
         run: nix profile list
 
       - name: Check that the profile is empty
+        shell: bash
         run: |
-          [[ -z "$(nix profile list)" ]] || printf "Profile isn't empty!"
+          nix profile list \
+          | grep 'Index' \
+          | wc -l \
+          | xargs test 1 -eq
 
       - name: Install nixpkgs#poetry
         run: nix profile install nixpkgs#poetry
