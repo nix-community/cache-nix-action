@@ -86879,7 +86879,7 @@ function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
         const key = yield cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, extraTarArgs);
-        if (!lookupOnly) {
+        if (inputs.nix && !lookupOnly) {
             (0, exports.info)(`::endgroup::`);
         }
         return key;
