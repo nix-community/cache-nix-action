@@ -111,7 +111,7 @@ export async function restoreCache({
         extraTarArgs
     );
 
-    if (!lookupOnly) {
+    if (inputs.nix && !lookupOnly) {
         info(`::endgroup::`);
     }
 
