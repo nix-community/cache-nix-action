@@ -9,7 +9,7 @@
     "build": "tsc && ncc build -o dist/restore src/restore.ts && ncc build -o dist/save src/save.ts && ncc build -o dist/restore-only src/restoreOnly.ts && ncc build -o dist/save-only src/saveOnly.ts",
     "test": "tsc --noEmit && jest --coverage",
     "lint": "eslint **/*.ts --cache",
-    "format": "prettier --write **/*.ts",
+    "format": "prettier --write **/*.ts .github/workflows/ci.yaml **/*.md",
     "format-check": "prettier --check **/*.ts",
     "readme": "npx action-docs -u; (cd save; npx action-docs -u); (cd restore; npx action-docs -u); prettier --write restore/README.md save/README.md README.md"
   },
