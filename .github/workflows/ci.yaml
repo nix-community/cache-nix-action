@@ -3,10 +3,10 @@ name: Nix CI
   push:
     # don't run on tags, run on commits
     # https://github.com/orgs/community/discussions/25615
-    tags-ignore: 
-      - '**'
+    tags-ignore:
+      - "**"
     branches:
-      - '**'
+      - "**"
   pull_request: {}
   release:
     types: [edited]
@@ -30,7 +30,7 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: nixbuild/nix-quick-install-action@v27
 
       - name: Restore and save Nix store
@@ -47,7 +47,7 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
-          
+
       # # Uncomment to debug this job
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
@@ -56,16 +56,16 @@ jobs:
         run: |
           git config --global user.name github-actions
           git config --global user.email github-actions@github.com
-      
+
       - name: Rebase
         run: ${{ env.git_pull }}
-      
+
       - name: Install packages & Build the action
         run: nix run .#install
-        
+
       - name: Update docs
         run: nix run .#write
-          
+
       - name: Commit & push changes
         run: |
           git add dist
@@ -73,7 +73,7 @@ jobs:
           git add .
           git commit -m "chore: update docs" || echo ""
           git push
-  
+
   # Make individual caches with an `id` infix (`id` caches)
   # Restore `id` or `common` caches
   # Usually, there should be no `id` caches as they're purged by `merge-similar-caches`
@@ -99,7 +99,7 @@ jobs:
 
       - name: Rebase
         run: ${{ env.git_pull }}
-      
+
       - uses: nixbuild/nix-quick-install-action@v27
 
       - name: Restore and save Nix store - ${{ matrix.id }}
@@ -117,14 +117,14 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
-      
+
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
-          
+
       - name: Install nixpkgs#poetry
         if: ${{ matrix.id == 1 }}
         run: nix profile install nixpkgs#poetry
-      
+
       - name: Install nixpkgs#nodejs
         if: ${{ matrix.id == 2 }}
         run: nix profile install nixpkgs#nodejs
@@ -151,9 +151,9 @@ jobs:
 
       - name: Rebase
         run: ${{ env.git_pull }}
-      
+
       - uses: nixbuild/nix-quick-install-action@v27
-              
+
       - name: Restore and save Nix store
         uses: ./.
         with:
@@ -172,23 +172,23 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
-      
+
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
 
       - name: List profile (should be empty)
         run: nix profile list
-      
+
       - name: Check that the profile is empty
         run: |
-         [[ -z "$(nix profile list)" ]] || printf "Profile isn't empty!"
+          [[ -z "$(nix profile list)" ]] || printf "Profile isn't empty!"
 
       - name: Install nixpkgs#poetry
         run: nix profile install nixpkgs#poetry
-      
+
       - name: Install nixpkgs#nodejs
-        run: nix profile install nixpkgs#nodejs  
-      
+        run: nix profile install nixpkgs#nodejs
+
       - name: Run poetry
         run: poetry --version
 
@@ -214,7 +214,7 @@ jobs:
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v4
-      
+
       - name: Rebase
         run: ${{ env.git_pull }}
 
@@ -237,7 +237,7 @@ jobs:
           purge-primary-key: never
           # and collect garbage in the Nix store until it reaches this size in bytes
           gc-max-store-size: 8000000000
-      
+
       # Uncomment to debug this job
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
@@ -247,10 +247,10 @@ jobs:
 
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
-      
+
       - name: List registry
         run: nix registry list
-      
+
       - name: Install nixpkgs
         run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
 
@@ -260,31 +260,31 @@ jobs:
       - name: Install nixpkgs#hello
         run: |
           nix profile install nixpkgs#hello
-      
+
       - name: Install nixpkgs#cachix
         run: |
           nix profile install nixpkgs#cachix
-      
+
       - name: Install nixpkgs#nixpkgs-fmt
         run: |
           nix profile install nixpkgs#nixpkgs-fmt
-      
+
       - name: Install nixpkgs#alejandra
         run: |
           nix profile install nixpkgs#alejandra
-      
+
       - name: Install nixpkgs#nixd
         run: |
           nix profile install nixpkgs#nixd
-      
+
       - name: Install nixpkgs#ghc
         run: |
           nix profile install nixpkgs#ghc
-      
+
       - name: Install nixpkgs#haskell-language-server
         run: |
           nix profile install nixpkgs#haskell-language-server
-      
+
       - name: Install nixpkgs#purescript
         run: |
           nix profile install nixpkgs#purescript
