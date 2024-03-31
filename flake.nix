@@ -29,6 +29,7 @@
               text = ''
                 ${getExe packages.writeActions}
                 npm run readme
+                npm run format
               '';
               description = "write action.yml-s and tables for README-s";
             };
