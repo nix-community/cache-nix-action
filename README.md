@@ -14,7 +14,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 ## A typical job
 
-1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) installs Nix and makes `/nix/store` owned by an unpriviliged user.
+1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) installs Nix in single-user mode.
 
 1. `Restore` phase:
 
@@ -36,23 +36,22 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 ## Limitations
 
-- The action supports only a Nix store located at `/nix/store`.
+- The action caches and restores `/nix`.
+  - The action doesn't manage stores specified via the `--store` flag ([link](https://nixos.org/manual/nix/unstable/store/types/local-store.html#local-store)).
+  - The action ignores existing `/nix/store` paths when restoring a cache.
+  - The action ignores cached `/nix/var` except `/nix/var/nix/db/db.sqlite`.
+  - The action merges existing and new databases when restoring a cache.
 - The action requires `nix-quick-install-action`.
 - The action supports only `Linux` and `macOS` runners for Nix store caching.
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
-- The action overwrites existing files on the runner when the action restores a cache that also has these files.
-  - The action doesn't overwrite existing `/nix/store` paths.
-- The action overwrites the `/nix/var` on the runner with the cached `/nix/var` to make Nix use the correct info about Nix store.
-  - The action does so because it can't reconstruct a Nix database from paths only ([link](https://github.com/NixOS/nix/issues/3091)).
-  - The action should be used with a fresh store. So, put a step with the action just after a step with the `nix-quick-install-action`.
 - `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
   - [Purge old caches](#purge-old-caches)
   - [Merge caches](#merge-caches)
 - The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
   - Workaround: the [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
 - Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
-  - Workaround: provide caches for PRs on the default or base branches.
+  - Workaround: provide caches for PRs on default or base branches.
 - For purging, a workflow must have the permission `actions: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
 
 ## Comparison with alternative approaches
