@@ -175,7 +175,14 @@ jobs:
       
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
-          
+
+      - name: List profile (should be empty)
+        run: nix profile list
+      
+      - name: Check that the profile is empty
+        run: |
+         [[ -z "$(nix profile list)" ]] || printf "Profile isn't empty!"
+
       - name: Install nixpkgs#poetry
         run: nix profile install nixpkgs#poetry
       
