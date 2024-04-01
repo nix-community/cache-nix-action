@@ -6,7 +6,7 @@
   "main": "dist/restore/index.js",
   "scripts": {
     "postinstall": "npm run build",
-    "build": "tsc && ncc build -o dist/restore src/restore.ts && ncc build -o dist/save src/save.ts && ncc build -o dist/restore-only src/restoreOnly.ts && ncc build -o dist/save-only src/saveOnly.ts",
+    "build": "MERGE=\"$(cat src/templates/merge.sql)\"; printf 'export const mergeSqlTemplate = `\n%s\n`' \"$MERGE\" > src/templates/merge.ts; tsc && ncc build -o dist/restore src/restore.ts && ncc build -o dist/save src/save.ts && ncc build -o dist/restore-only src/restoreOnly.ts && ncc build -o dist/save-only src/saveOnly.ts",
     "test": "tsc --noEmit && jest --coverage",
     "lint": "eslint **/*.ts --cache",
     "format": "prettier --write **/*.ts .github/workflows/ci.yaml **/*.md",
