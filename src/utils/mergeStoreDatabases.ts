@@ -1,6 +1,7 @@
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from "fs";
+import { existsSync, unlinkSync, writeFileSync } from "fs";
 import Handlebars from "handlebars";
 import * as utils from "./action";
+import { mergeSqlTemplate } from "../templates/merge";
 
 export async function mergeStoreDatabases(
     tempDir: string,
@@ -11,7 +12,6 @@ export async function mergeStoreDatabases(
     if (existsSync(dbPath)) {
         unlinkSync(dbPath);
     }
-    const mergeSqlTemplate = readFileSync("src/templates/merge.sql").toString();
 
     const mergeSqlFile = `${tempDir}/merge.sql`;
     const template = Handlebars.compile(mergeSqlTemplate);
