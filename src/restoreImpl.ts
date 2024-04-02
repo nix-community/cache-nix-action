@@ -12,7 +12,8 @@ import * as restore from "./utils/restore";
 import * as install from "./utils/install";
 
 export async function restoreImpl(
-    stateProvider: IStateProvider
+    stateProvider: IStateProvider,
+    earlyExit?: boolean | undefined
 ): Promise<string | undefined> {
     try {
         core.setOutput(Outputs.Hit, false);
@@ -154,6 +155,9 @@ export async function restoreImpl(
         return restoredKey;
     } catch (error: unknown) {
         core.setFailed((error as Error).message);
+        if (earlyExit) {
+            process.exit(1);
+        }
     }
 }
 
@@ -161,14 +165,7 @@ async function run(
     stateProvider: IStateProvider,
     earlyExit: boolean | undefined
 ): Promise<void> {
-    try {
-        await restoreImpl(stateProvider);
-    } catch (err) {
-        console.error(err);
-        if (earlyExit) {
-            process.exit(1);
-        }
-    }
+    await restoreImpl(stateProvider, earlyExit);
 
     // node will stay alive if any promises are not resolved,
     // which is a possibility if HTTP requests are dangling
