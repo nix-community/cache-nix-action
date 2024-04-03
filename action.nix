@@ -38,9 +38,7 @@ let
   effectOnlyOn = platform: ''Can have an effect only when the action runs on a ${q platform} runner.'';
   linux = "Linux";
   macos = "macOS";
-  effectOnlyWhenHasEffect = input: "Can have an effect only when ${q input} has effect.";
   effectOnlyWhen = conditions: "Can have an effect only when ${lib.concatMapStringsSep ", " q conditions}.";
-  effectOnlyWhenNixEnabled = effectOnlyWhen [ nixTrue ];
 
   noEffectOtherwise = ''Otherwise, this input has no effect.'';
 
@@ -179,13 +177,13 @@ in
       purge-last-accessed:
         description: |
           - ${effectOnlyWhen ["purge: true"]}
-          - When a number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the `Post Restore` phase.
+          - When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the `Post Restore` phase.
           - ${noEffectOtherwise}
         default: ""
       purge-created:
         description: |
           - ${effectOnlyWhen ["purge: true"]}
-          - When a number, the action purges caches created more than this number of seconds ago relative to the start of the `Post Restore` phase.
+          - When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the `Post Restore` phase.
           - ${noEffectOtherwise}
         default: ""
     
@@ -193,7 +191,7 @@ in
         # The original default value may be provided here (https://github.com/actions/cache/issues/1292)
         # 32MB
         description: |
-          - When a number, the action uses it as the chunk size (in bytes) to split up large files during upload.
+          - When a non-negative number, the action uses it as the chunk size (in bytes) to split up large files during upload.
           - Otherwise, the action uses the default value `33554432` (32MB).
         default: ""
       
