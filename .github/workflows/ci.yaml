@@ -72,9 +72,9 @@ jobs:
           git commit -m "chore: update docs" || echo ""
           git push
 
-  # Make individual caches with an `id` infix (`id` caches)
-  # Restore `id` or `common` caches
-  # Usually, there should be no `id` caches as they're purged by `merge-similar-caches`
+  # Make `individual` caches
+  # Restore `individual` or `common` caches
+  # Usually, there should be no `individual` caches to restore as they're purged by `merge-similar-caches`
   make-similar-caches:
     name: Make similar caches
     needs: build
@@ -127,8 +127,8 @@ jobs:
         if: ${{ matrix.id == 2 }}
         run: nix profile install nixpkgs#nodejs
 
-  # Merge similar individual `id` caches
-  # Purge individual caches and old `common` caches
+  # Merge similar `individual` caches
+  # Purge `individual` caches and old `common` caches
   # Save new `common` caches
   merge-similar-caches:
     name: Merge similar caches
