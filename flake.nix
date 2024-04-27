@@ -1,33 +1,77 @@
 {
-  inputs.flakes.url = "github:deemp/flakes";
-  outputs = inputs:
-    let flakes = inputs.flakes; in
-    flakes.makeFlake {
-      inputs = {
-        inherit (flakes.all) nixpkgs devshell drv-tools;
-      };
-      perSystem = { inputs, system }:
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    systems.url = "github:nix-systems/default";
+    devshell.url = "github:deemp/devshell";
+    flakes.url = "github:deemp/flakes";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+  };
+  outputs =
+    inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = with inputs; [
+        devshell.flakeModule
+        treefmt-nix.flakeModule
+      ];
+      systems = import inputs.systems;
+      perSystem =
+        {
+          pkgs,
+          lib,
+          system,
+          config,
+          ...
+        }:
         let
-          pkgs = inputs.nixpkgs.legacyPackages.${system};
-          inherit (inputs.devshell.lib.${system}) mkCommands mkRunCommands mkRunCommandsDir mkShell;
-          inherit (inputs.drv-tools.lib.${system}) writeYAML mkShellApps getExe;
+          inherit (inputs.flakes.lib.${system}.drv-tools) mkShellApps;
 
-          
-          packages = mkShellApps {
-            writeSave = writeYAML "save" "save/action.yml" (import ./action.nix { target = "save"; inherit (pkgs) lib; });
-            writeRestore = writeYAML "restore" "restore/action.yml" (import ./action.nix { target = "restore"; inherit (pkgs) lib; });
-            writeCache = writeYAML "cache" "action.yml" (import ./action.nix { target = "cache"; inherit (pkgs) lib; });
-            writeActions = {
+          writeYAML =
+            path: value:
+            pkgs.writeShellApplication {
+              name = "write";
               text = ''
-                ${getExe packages.writeSave}
-                ${getExe packages.writeRestore}
-                ${getExe packages.writeCache}
+                cat > ${path} <<'EOF'
+                ${value}
+                EOF
               '';
             };
+        in
+        {
+          packages = mkShellApps {
+            writeSave = writeYAML "save/action.yml" (
+              import ./action.nix {
+                target = "save";
+                inherit (pkgs) lib;
+              }
+            );
+
+            writeRestore = writeYAML "restore/action.yml" (
+              import ./action.nix {
+                target = "restore";
+                inherit (pkgs) lib;
+              }
+            );
+
+            writeCache = writeYAML "action.yml" (
+              import ./action.nix {
+                target = "cache";
+                inherit (pkgs) lib;
+              }
+            );
+
+            writeActions = {
+              text = ''
+                ${lib.getExe config.packages.writeSave}
+                ${lib.getExe config.packages.writeRestore}
+                ${lib.getExe config.packages.writeCache}
+              '';
+            };
+
             write = {
               runtimeInputs = [ pkgs.nodejs_20 ];
               text = ''
-                ${getExe packages.writeActions}
+                ${lib.getExe config.packages.writeActions}
                 npm run readme
                 npm run format
               '';
@@ -46,13 +90,23 @@
               description = "build project";
             };
           };
-          devShells.default = mkShell {
+
+          devshells.default = {
             packages = [ pkgs.nodejs_20 ];
-            commands = mkRunCommands "scripts" { inherit (packages) write install build; };
+            commands.scripts = [
+              {
+                prefix = "nix run .#";
+                packages = {
+                  inherit (config.packages) write install build;
+                };
+              }
+            ];
           };
-        in
-        {
-          inherit packages devShells;
+
+          treefmt = {
+            projectRootFile = "flake.nix";
+            programs.nixfmt-rfc-style.enable = true;
+          };
         };
     };
 
