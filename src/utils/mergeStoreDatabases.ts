@@ -1,7 +1,8 @@
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import Handlebars from "handlebars";
-import * as utils from "./action";
+
 import { mergeSqlTemplate } from "../templates/merge";
+import * as utils from "./action";
 
 export async function mergeStoreDatabases(
     tempDir: string,
