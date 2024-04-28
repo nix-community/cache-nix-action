@@ -316,12 +316,12 @@ Disadvantages:
 
 - Improve README.
 - Report errors, suggest improvements in issues.
-- Upgrade code.
+- Improve code.
   - Read about [JavaScript actions](https://docs.github.com/en/actions/creating-actions/about-custom-actions?learn=create_actions&learnProduct=actions#javascript-actions)
   - See main files:
     - [restoreImpl.ts](./src/restoreImpl.ts)
     - [saveImpl.ts](./src/saveImpl.ts)
-- Upgrade docs.
+- Improve docs.
 
   - Edit [action.nix](./action.nix).
   - Update `action.yml`-s and `README.md`-s:
@@ -330,8 +330,10 @@ Disadvantages:
     nix run .#write
     ```
 
-- Update the `actions-toolkit` branch.
-- Ask for new releases of `@cache-nix-action/cache` if there are changes on the `actions-toolkit` branch.
+- Update deps:
+  - Update the `actions-toolkit` branch that contains a patched version of [actions/toolkit](https://github.com/actions/toolkit).
+  - Update the `buildjet-toolkit` branch that contains a patched version of [BuildJet/toolkit](https://github.com/BuildJet/toolkit) synchronized with [actions/toolkit](https://github.com/actions/toolkit).
+  - Update submodules for the mentioned branches on the `main` branch.
 
 # Cache action
 
