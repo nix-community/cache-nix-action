@@ -1,7 +1,16 @@
+// https://stackoverflow.com/a/57678771
 {
-  "env": { "node": true, "jest": true },
+  "env": {
+    "node": true,
+    "jest": true
+  },
   "parser": "@typescript-eslint/parser",
-  "parserOptions": { "ecmaVersion": 2020, "sourceType": "module" },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "project": "./tsconfig.json",
+    "tsconfigRootDir": "./"
+  },
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/eslint-recommended",
@@ -11,7 +20,19 @@
     "plugin:import/typescript",
     "plugin:prettier/recommended"
   ],
-  "plugins": ["@typescript-eslint", "simple-import-sort", "jest"],
+  "settings": {
+    "import/resolver": {
+      "typescript": {
+        "extensions": [".ts"]
+      }
+    }
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "simple-import-sort",
+    "jest",
+    "import"
+  ],
   "rules": {
     "import/first": "error",
     "import/newline-after-import": "error",
