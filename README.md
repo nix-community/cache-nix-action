@@ -315,6 +315,12 @@ Disadvantages:
 
 ## Contribute
 
+Clone the repository.
+
+```console
+git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
+```
+
 - Improve README.
 - Report errors, suggest improvements in issues.
 - Improve code.
