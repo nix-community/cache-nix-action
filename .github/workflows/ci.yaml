@@ -52,10 +52,15 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - name: Configure github-actions bot
+      - name: Configure git
+        env:
+          # required for gh
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name github-actions
-          git config --global user.email github-actions@github.com
+          ${{ github.head_ref && format('gh pr checkout {0}', github.event.pull_request.number) || ''}}
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Rebase
         run: ${{ env.git_pull }}
@@ -69,9 +74,9 @@ jobs:
       - name: Commit & push changes
         run: |
           git add dist
-          git commit -m "chore: build the action" || echo ""
+          git commit -m "chore: build the action" || echo "Nothing to commit"
           git add .
-          git commit -m "chore: update docs" || echo ""
+          git commit -m "chore: update docs" || echo "Nothing to commit"
           git push
 
   # Make `individual` caches
