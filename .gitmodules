@@ -1,0 +1,8 @@
+[submodule "deps/actions/toolkit"]
+	path = deps/actions/toolkit
+	url = https://github.com/nix-community/cache-nix-action
+	branch = actions-toolkit
+[submodule "deps/buildjet/toolkit"]
+	path = deps/buildjet/toolkit
+	url = https://github.com/nix-community/cache-nix-action
+	branch = buildjet-toolkit
