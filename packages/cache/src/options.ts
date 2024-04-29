@@ -71,6 +71,17 @@ export interface DownloadOptions {
 }
 
 /**
+ * Options to control tar extraction
+ */
+
+export class TarCommandModifiers {
+  listArgs: string[] = []
+  createArgs: string[] = []
+  extractArgs: string[] = []
+  useSudo: boolean = false
+}
+
+/**
  * Returns a copy of the upload options with defaults filled in.
  *
  * @param copy the original upload options

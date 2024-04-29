@@ -19,24 +19,38 @@ export interface ArtifactCacheList {
   artifactCaches?: ArtifactCacheEntry[]
 }
 
+export interface UploadPart {
+  partNumber: number,
+  eTag: string
+}
+
 export interface CommitCacheRequest {
-  size: number
+  key: string
+  version: string
+  uploadId: string
+  cacheSize: number
+  archiveTimeMs: number
+  uploadTimeMs: number
+  parts: UploadPart[]
 }
 
 export interface ReserveCacheRequest {
   key: string
-  version?: string
-  cacheSize?: number
+  version: string
+  cacheSize: number
+  chunks: number
 }
 
 export interface ReserveCacheResponse {
-  cacheId: number
+  uploadId: string,
+  urls: string[]
 }
 
 export interface InternalCacheOptions {
   compressionMethod?: CompressionMethod
   enableCrossOsArchive?: boolean
   cacheSize?: number
+  uploadConcurrency?: number
 }
 
 export interface ArchiveTool {

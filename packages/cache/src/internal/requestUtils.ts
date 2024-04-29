@@ -57,10 +57,12 @@ export async function retry<T>(
       response = await method()
     } catch (error) {
       if (onError) {
+        // @ts-ignore
         response = onError(error)
       }
 
       isRetryable = true
+      // @ts-ignore
       errorMessage = error.message
     }
 

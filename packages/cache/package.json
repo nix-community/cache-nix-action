@@ -1,8 +1,8 @@
 {
-  "name": "@actions/cache",
-  "version": "3.2.4",
+  "name": "github-actions.cache-buildjet",
+  "version": "0.2.0",
   "preview": true,
-  "description": "Actions cache lib",
+  "description": "A mostly drop-in replacement for @actions/cache used for BuildJet runners",
   "keywords": [
     "github",
     "actions",
@@ -31,7 +31,8 @@
   "scripts": {
     "audit-moderate": "npm install && npm audit --json --audit-level=moderate > audit.json",
     "test": "echo \"Error: run tests from root\" && exit 1",
-    "tsc": "tsc"
+    "prebuild": "node -p \"'export const LIB_VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/internal/version.ts",
+    "build": "tsc"
   },
   "bugs": {
     "url": "https://github.com/actions/toolkit/issues"
@@ -42,9 +43,6 @@
     "@actions/glob": "^0.1.0",
     "@actions/http-client": "^2.1.1",
     "@actions/io": "^1.0.1",
-    "@azure/abort-controller": "^1.1.0",
-    "@azure/ms-rest-js": "^2.6.0",
-    "@azure/storage-blob": "^12.13.0",
     "semver": "^6.3.1",
     "uuid": "^3.3.3"
   },

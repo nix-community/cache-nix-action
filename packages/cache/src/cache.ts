@@ -2,8 +2,8 @@ import * as core from '@actions/core'
 import * as path from 'path'
 import * as utils from './internal/cacheUtils'
 import * as cacheHttpClient from './internal/cacheHttpClient'
-import {createTar, extractTar, listTar} from './internal/tar'
-import {DownloadOptions, UploadOptions} from './options'
+import { createTar, extractTar, listTar } from './internal/tar'
+import { DownloadOptions, TarCommandModifiers, UploadOptions } from './options'
 
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -68,7 +68,8 @@ export async function restoreCache(
   primaryKey: string,
   restoreKeys?: string[],
   options?: DownloadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  tarCommandModifiers: TarCommandModifiers = new TarCommandModifiers(),
 ): Promise<string | undefined> {
   checkPaths(paths)
 
@@ -112,14 +113,16 @@ export async function restoreCache(
     core.debug(`Archive Path: ${archivePath}`)
 
     // Download the cache from the cache entry
+    const beforeDownload = Date.now()
     await cacheHttpClient.downloadCache(
       cacheEntry.archiveLocation,
       archivePath,
       options
     )
+    const downloadTimeMs = Date.now() - beforeDownload
 
     if (core.isDebug()) {
-      await listTar(archivePath, compressionMethod)
+      await listTar(archivePath, compressionMethod, tarCommandModifiers)
     }
 
     const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath)
@@ -128,10 +131,19 @@ export async function restoreCache(
         archiveFileSize / (1024 * 1024)
       )} MB (${archiveFileSize} B)`
     )
-
-    await extractTar(archivePath, compressionMethod)
+    const beforeExtract = Date.now()
+    await extractTar(archivePath, compressionMethod, tarCommandModifiers)
+    const extractTimeMs = Date.now() - beforeExtract
     core.info('Cache restored successfully')
-
+    await cacheHttpClient.reportCacheRestore({
+      cacheKey: cacheEntry.cacheKey!,
+      cacheVersion: cacheEntry.cacheVersion!,
+      scope: cacheEntry.scope!,
+      size: archiveFileSize,
+      downloadConcurrency: options?.downloadConcurrency ?? 8,
+      downloadTimeMs,
+      extractTimeMs
+    })
     return cacheEntry.cacheKey
   } catch (error) {
     const typedError = error as Error
@@ -166,14 +178,13 @@ export async function saveCache(
   paths: string[],
   key: string,
   options?: UploadOptions,
-  enableCrossOsArchive = false
+  enableCrossOsArchive = false,
+  tarCommandModifiers: TarCommandModifiers = new TarCommandModifiers(),
 ): Promise<number> {
   checkPaths(paths)
   checkKey(key)
 
   const compressionMethod = await utils.getCompressionMethod()
-  let cacheId = -1
-
   const cachePaths = await utils.resolvePaths(paths)
   core.debug('Cache Paths:')
   core.debug(`${JSON.stringify(cachePaths)}`)
@@ -193,11 +204,13 @@ export async function saveCache(
   core.debug(`Archive Path: ${archivePath}`)
 
   try {
-    await createTar(archiveFolder, cachePaths, compressionMethod)
+    const beforeArchive = Date.now()
+    await createTar(archiveFolder, cachePaths, compressionMethod, tarCommandModifiers)
+    const archiveTimeMs = Date.now() - beforeArchive
     if (core.isDebug()) {
-      await listTar(archivePath, compressionMethod)
+      await listTar(archivePath, compressionMethod, tarCommandModifiers)
     }
-    const fileSizeLimit = 10 * 1024 * 1024 * 1024 // 10GB per repo limit
+    const fileSizeLimit = 4.99 * 1024 * 1024 * 1024 // 4.99 per cache limit
     const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath)
     core.debug(`File Size: ${archiveFileSize}`)
 
@@ -211,24 +224,33 @@ export async function saveCache(
     }
 
     core.debug('Reserving Cache')
+    const version = cacheHttpClient.getCacheVersion(
+      paths,
+      compressionMethod,
+      enableCrossOsArchive
+    )
     const reserveCacheResponse = await cacheHttpClient.reserveCache(
       key,
-      paths,
+      version,
       {
         compressionMethod,
         enableCrossOsArchive,
-        cacheSize: archiveFileSize
+        cacheSize: archiveFileSize,
+        uploadConcurrency: options?.uploadConcurrency
       }
     )
 
-    if (reserveCacheResponse?.result?.cacheId) {
-      cacheId = reserveCacheResponse?.result?.cacheId
+    let uploadId
+    let urls
+    if (reserveCacheResponse?.result?.uploadId) {
+      uploadId = reserveCacheResponse?.result?.uploadId
+      urls = reserveCacheResponse?.result?.urls
     } else if (reserveCacheResponse?.statusCode === 400) {
       throw new Error(
         reserveCacheResponse?.error?.message ??
-          `Cache size of ~${Math.round(
-            archiveFileSize / (1024 * 1024)
-          )} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`
+        `Cache size of ~${Math.round(
+          archiveFileSize / (1024 * 1024)
+        )} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`
       )
     } else {
       throw new ReserveCacheError(
@@ -236,8 +258,16 @@ export async function saveCache(
       )
     }
 
-    core.debug(`Saving Cache (ID: ${cacheId})`)
-    await cacheHttpClient.saveCache(cacheId, archivePath, options)
+    core.debug(`Saving Cache (ID: ${uploadId})`)
+    await cacheHttpClient.saveCache(
+      key,
+      version,
+      uploadId,
+      urls,
+      archivePath,
+      archiveTimeMs,
+      options
+    )
   } catch (error) {
     const typedError = error as Error
     if (typedError.name === ValidationError.name) {
@@ -256,5 +286,21 @@ export async function saveCache(
     }
   }
 
-  return cacheId
+  //Return a 0 for competibility
+  return 0
+}
+
+/**
+ * Delete a list of caches with the specified keys
+ * @param keys a list of keys for deleting the cache
+ */
+export async function deleteCache(keys: string[]) {
+  core.debug('Deleting Cache')
+  core.debug(`Cache Keys: ${keys}`)
+  try {
+    await cacheHttpClient.deleteCache(keys)
+  }
+  catch (error) {
+    core.warning(`Failed to delete: ${(error as Error).message}`)
+  }
 }
