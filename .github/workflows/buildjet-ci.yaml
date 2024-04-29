@@ -1,14 +1,5 @@
-name: Nix CI
+name: Nix CI with BuildJet backend
 on:
-  push:
-    # don't run on tags, run on commits
-    # https://github.com/orgs/community/discussions/25615
-    tags-ignore:
-      - "**"
-    branches:
-      - "**"
-  schedule:
-    - cron: 0 0 * * *
   pull_request:
   workflow_dispatch:
 
@@ -47,6 +38,8 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+          # use BuildJet backend
+          backend: buildjet
 
       # # Uncomment to debug this job
       # - name: Setup tmate session
@@ -122,6 +115,8 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+          # use BuildJet backend
+          backend: buildjet
 
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
@@ -177,6 +172,8 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+          # use BuildJet backend
+          backend: buildjet
 
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
@@ -250,6 +247,8 @@ jobs:
           purge-primary-key: never
           # and collect garbage in the Nix store until it reaches this size in bytes
           gc-max-store-size: 8000000000
+          # use BuildJet backend
+          backend: buildjet
 
       # Uncomment to debug this job
       # - name: Setup tmate session
