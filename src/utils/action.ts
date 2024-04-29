@@ -1,5 +1,3 @@
-import * as cache from "@actions/cache";
-import * as cacheUtils from "@actions/cache/cacheUtils";
 import * as core from "@actions/core";
 import { exec } from "@actions/exec";
 import * as github from "@actions/github";
@@ -8,6 +6,7 @@ import { readdirSync, writeFileSync } from "fs";
 
 import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
+import { cache, cacheUtils } from "./cacheBackend";
 
 const myDedent = dedent.withOptions({});
 

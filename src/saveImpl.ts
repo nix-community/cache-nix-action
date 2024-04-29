@@ -1,4 +1,3 @@
-import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 import * as fs from "fs";
 
@@ -10,6 +9,7 @@ import {
     StateProvider
 } from "./stateProvider";
 import * as utils from "./utils/action";
+import { cache } from "./utils/cacheBackend";
 import { removeGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCachesByTime } from "./utils/purge";
 

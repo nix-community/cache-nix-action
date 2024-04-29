@@ -27,7 +27,9 @@ export enum Inputs {
     PurgeCreated = "purge-created", // Input for cache, save actions
 
     UploadChunkSize = "upload-chunk-size", // Input for cache, save actions
-    Token = "token" // Input for cache, save actions
+    Token = "token", // Input for cache, save actions
+
+    Backend = "backend" // Input for cache, save, restore actions
 }
 
 export enum Outputs {
