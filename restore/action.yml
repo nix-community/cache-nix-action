@@ -7,7 +7,7 @@ inputs:
       - When a non-empty string, the action uses this key for restoring a cache.
       - Otherwise, the action fails.
     required: true
-  
+
   restore-prefixes-first-match:
     description: |
       - When a newline-separated non-empty list of non-empty key prefixes, when there's a miss on the `primary-key`, 
@@ -74,16 +74,14 @@ inputs:
       - Overrides `paths`.
       - Can have an effect only when the action runs on a `Linux` runner.
     default: ""
-  
+
   backend:
     description: |
       Choose an implementation of the `cache` package.
       - When `actions`, use the [actions version](https://github.com/actions/toolkit/tree/main/packages/cache) from [here](https://github.com/nix-community/cache-nix-action/tree/actions-toolkit/packages/cache).
       - When `buildjet`, use the [BuildJet version](https://github.com/BuildJet/toolkit/tree/main/packages/cache-buildjet) from [here](https://github.com/nix-community/cache-nix-action/tree/buildjet-toolkit/packages/cache).
-    default: 'actions'
+    default: "actions"
     required: false
-
-  
 
   token:
     description: The action uses it to communicate with GitHub API.
@@ -124,7 +122,7 @@ outputs:
 runs:
   using: "node20"
   main: "../dist/restore-only/index.js"
-  
+
 branding:
   icon: "archive"
   color: "gray-dark"
