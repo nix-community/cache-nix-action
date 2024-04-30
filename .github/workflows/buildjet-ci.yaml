@@ -182,16 +182,19 @@ jobs:
       # Therefore, profiles are ignored when restoring a cache.
       # So, the current profile should be the default profile created by nix-quick-install-action.
       # The default profile should contain only nix.
-      - name: List profile (should be empty)
+      - name: List profile
         run: nix profile list
 
-      - name: Check that the profile is empty
+      - name: Check that the profile doesn't have anything apart from `nix`
         shell: bash
         run: |
-          nix profile list \
-          | grep 'Index' \
-          | wc -l \
-          | xargs test 1 -eq
+          nix profile list --json \
+            | jq '
+              .elements 
+                | keys 
+                | map(select(. != "nix")) 
+                | if . != [] then error(.) end
+              '
 
       - name: Install nixpkgs#poetry
         run: nix profile install nixpkgs#poetry
