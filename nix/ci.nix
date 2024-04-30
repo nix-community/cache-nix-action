@@ -180,9 +180,7 @@ in
           uses: ./.
           with:
             primary-key: similar-cache-''${{ matrix.os }}-common-''${{ hashFiles('.github/workflows/ci.yaml') }}
-            # when there's a common cache hit, don't restore individual caches
-            skip-restore-on-hit-primary-key: true
-            # otherwise, restore individual caches, but not their old versions
+            # if no hit, restore current versions of individual caches
             restore-prefixes-all-matches: |
               similar-cache-''${{ matrix.os }}-individual-1-''${{ hashFiles('.github/workflows/ci.yaml') }}
               similar-cache-''${{ matrix.os }}-individual-2-''${{ hashFiles('.github/workflows/ci.yaml') }}
