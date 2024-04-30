@@ -41,6 +41,13 @@ let
               && format('gh pr checkout {0}', github.event.pull_request.number) 
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}'';
+          
+  nix-quick-install-action = ''
+    - uses: deemp/nix-quick-install-action@v27
+      with:
+        nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+        nix_version: 2.21.0
+  '';
 in
 ''
   name: Nix CI ${name}
@@ -67,7 +74,7 @@ in
           with:
             submodules: true
 
-        - uses: nixbuild/nix-quick-install-action@v27
+        ${indent 6 nix-quick-install-action}
 
         - name: Restore and save Nix store
           uses: ./.
@@ -137,7 +144,7 @@ in
           run: |
             ${ git_pull }
 
-        - uses: nixbuild/nix-quick-install-action@v27
+        ${indent 6 nix-quick-install-action}
 
         - name: Restore and save Nix store - ''${{ matrix.id }}
           uses: ./.
@@ -181,7 +188,7 @@ in
           # Purge `individual` caches and old `common` caches
           # Save new `common` caches''}
         merge-similar-caches${choose "-check" ""}:
-          name: Merge similar caches
+          name: ${choose "Ensure a `common` cache is restored correctly" "Merge similar caches"}
           needs: ${choose "merge-similar-caches" "make-similar-caches"}
           permissions:
             actions: write
@@ -201,7 +208,7 @@ in
               run: |
                 ${ git_pull }
 
-            - uses: nixbuild/nix-quick-install-action@v27
+            ${indent 4 nix-quick-install-action}
 
             - name: Restore${choose "" " and save"} Nix store
               uses: ./${if check then "restore" else "."}
@@ -241,13 +248,7 @@ in
             - name: Check that the profile doesn't have anything apart from `nix`
               shell: bash
               run: |
-                nix profile list --json \
-                  | jq '
-                    .elements 
-                      | keys 
-                      | map(select(. != "nix")) 
-                      | if . != [] then error(.) else . end
-                    '
+                [[ "$(nix profile list --json | jq -rc '.elements | keys.[]')" == "nix" ]]
 
             - name: Install nixpkgs#poetry
               run: nix profile install nixpkgs#poetry
@@ -293,7 +294,7 @@ in
           run: |
             ${ git_pull }
 
-        - uses: nixbuild/nix-quick-install-action@v27
+        ${indent 6 nix-quick-install-action}
 
         - name: Restore and save Nix store
           if: ''${{ matrix.do-cache }}

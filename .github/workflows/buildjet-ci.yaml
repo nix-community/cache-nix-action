@@ -21,7 +21,10 @@ jobs:
         with:
           submodules: true
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore and save Nix store
         uses: ./.
@@ -100,7 +103,10 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore and save Nix store - ${{ matrix.id }}
         uses: ./.
@@ -159,7 +165,10 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore and save Nix store
         uses: ./.
@@ -195,13 +204,7 @@ jobs:
       - name: Check that the profile doesn't have anything apart from `nix`
         shell: bash
         run: |
-          nix profile list --json \
-            | jq '
-              .elements 
-                | keys 
-                | map(select(. != "nix")) 
-                | if . != [] then error(.) else . end
-              '
+          [[ "$(nix profile list --json | jq -rc '.elements | keys.[]')" == "nix" ]]
 
       - name: Install nixpkgs#poetry
         run: nix profile install nixpkgs#poetry
@@ -217,7 +220,7 @@ jobs:
 
   # Check that the `common` cache is restored correctly
   merge-similar-caches-check:
-    name: Merge similar caches
+    name: Ensure a `common` cache is restored correctly
     needs: merge-similar-caches
     permissions:
       actions: write
@@ -241,7 +244,10 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore Nix store
         uses: ./restore
@@ -264,13 +270,7 @@ jobs:
       - name: Check that the profile doesn't have anything apart from `nix`
         shell: bash
         run: |
-          nix profile list --json \
-            | jq '
-              .elements 
-                | keys 
-                | map(select(. != "nix")) 
-                | if . != [] then error(.) else . end
-              '
+          [[ "$(nix profile list --json | jq -rc '.elements | keys.[]')" == "nix" ]]
 
       - name: Install nixpkgs#poetry
         run: nix profile install nixpkgs#poetry
@@ -313,7 +313,10 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore and save Nix store
         if: ${{ matrix.do-cache }}
