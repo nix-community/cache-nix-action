@@ -57,7 +57,7 @@ export async function restoreCache(key: string, ref?: string) {
     }
 }
 
-export async function restoreCaches() {
+export async function restoreAllMatches() {
     const restoredCaches: string[] = [];
 
     if (inputs.restorePrefixesAllMatches.length == 0) {

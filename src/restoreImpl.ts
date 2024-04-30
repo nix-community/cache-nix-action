@@ -38,7 +38,7 @@ export async function restoreImpl(
         await install.installSQLite3();
 
         let restoredKey: string | undefined;
-        let lookedUpKey: string | undefined;
+        let lookedUpPrimaryKey: string | undefined;
         const restoredKeys: string[] = [];
 
         const errorNot = (message: string) =>
@@ -57,13 +57,13 @@ export async function restoreImpl(
             stateProvider.setState(State.CachePrimaryKey, primaryKey);
 
             utils.info(`Searching for a cache with the key "${primaryKey}".`);
-            lookedUpKey = await utils.restoreCache({
+            lookedUpPrimaryKey = await utils.restoreCache({
                 primaryKey,
                 restoreKeys: [],
                 lookupOnly: true
             });
 
-            if (!lookedUpKey) {
+            if (!lookedUpPrimaryKey) {
                 if (
                     inputs.failOn?.keyType == "primary" &&
                     inputs.failOn?.result == "miss"
@@ -72,7 +72,7 @@ export async function restoreImpl(
                 } else {
                     utils.info(`Could not find a cache.`);
                 }
-            } else if (utils.isExactKeyMatch(primaryKey, lookedUpKey)) {
+            } else if (utils.isExactKeyMatch(primaryKey, lookedUpPrimaryKey)) {
                 utils.info(
                     `Found a cache with the given "${Inputs.PrimaryKey}".`
                 );
@@ -95,7 +95,7 @@ export async function restoreImpl(
         if (
             inputs.restorePrefixesFirstMatch.length > 0 &&
             !restoredKey &&
-            !(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)
+            !(lookedUpPrimaryKey && inputs.skipRestoreOnHitPrimaryKey)
         ) {
             utils.info(
                 `
@@ -106,13 +106,14 @@ export async function restoreImpl(
                 `
             );
 
-            const foundKey = await utils.restoreCache({
-                primaryKey: "",
-                restoreKeys: inputs.restorePrefixesFirstMatch,
-                lookupOnly: true
-            });
+            const lookedUpRestorePrefixesFirstMatchKey =
+                await utils.restoreCache({
+                    primaryKey: "",
+                    restoreKeys: inputs.restorePrefixesFirstMatch,
+                    lookupOnly: true
+                });
 
-            if (!foundKey) {
+            if (!lookedUpRestorePrefixesFirstMatchKey) {
                 if (
                     inputs.failOn?.keyType == "first-match" &&
                     inputs.failOn.result == "miss"
@@ -127,7 +128,9 @@ export async function restoreImpl(
                 );
                 core.setOutput(Outputs.HitFirstMatch, true);
 
-                restoredKey = await restore.restoreCache(foundKey);
+                restoredKey = await restore.restoreCache(
+                    lookedUpRestorePrefixesFirstMatchKey
+                );
                 if (restoredKey) {
                     restoredKeys.push(...[restoredKey]);
                 } else if (
@@ -139,8 +142,8 @@ export async function restoreImpl(
             }
         }
 
-        if (!(inputs.skipRestoreOnHitPrimaryKey && lookedUpKey)) {
-            restoredKeys.push(...(await restore.restoreCaches()));
+        if (!(lookedUpPrimaryKey && inputs.skipRestoreOnHitPrimaryKey)) {
+            restoredKeys.push(...(await restore.restoreAllMatches()));
         }
 
         restoredKey ||= "";
