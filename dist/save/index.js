@@ -86363,7 +86363,7 @@ var Inputs;
     Inputs["PrimaryKey"] = "primary-key";
     Inputs["RestorePrefixesFirstMatch"] = "restore-prefixes-first-match";
     Inputs["RestorePrefixesAllMatches"] = "restore-prefixes-all-matches";
-    Inputs["SkipRestoreOnHitPrimaryKey"] = "skip-restore-on-primary-key-hit";
+    Inputs["SkipRestoreOnHitPrimaryKey"] = "skip-restore-on-hit-primary-key";
     Inputs["FailOn"] = "fail-on";
     Inputs["Nix"] = "nix";
     Inputs["Save"] = "save";
