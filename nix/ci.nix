@@ -50,6 +50,8 @@ in
 
   env:
     pin_nixpkgs: nix registry pin nixpkgs github:NixOS/nixpkgs/807c549feabce7eddbf259dbdcec9e0600a0660d
+    # required for gh
+    GITHUB_TOKEN: ''${{ secrets.GITHUB_TOKEN }}
 
   jobs:
     # Build the action
@@ -88,9 +90,6 @@ in
         #   uses: mxschmitt/action-tmate@v3
 
         - name: Configure git
-          env:
-            # required for gh
-            GITHUB_TOKEN: ''${{ secrets.GITHUB_TOKEN }}
           run: |
             ${ git_pull }
 
