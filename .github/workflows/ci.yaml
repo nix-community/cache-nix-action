@@ -224,7 +224,7 @@ jobs:
 
   # Check that the `common` cache is restored correctly
   merge-similar-caches-check:
-    name: Ensure a `common` cache is restored correctly
+    name: Check a `common` cache is restored correctly
     needs: merge-similar-caches
     permissions:
       actions: write
@@ -288,7 +288,9 @@ jobs:
   #
   compare-run-times:
     name: Job with caching
-    needs: merge-similar-caches
+    needs:
+      - merge-similar-caches
+      - merge-similar-caches-check
     permissions:
       actions: write
     strategy:

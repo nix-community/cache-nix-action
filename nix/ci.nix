@@ -188,7 +188,7 @@ in
           # Purge `individual` caches and old `common` caches
           # Save new `common` caches''}
         merge-similar-caches${choose "-check" ""}:
-          name: ${choose "Ensure a `common` cache is restored correctly" "Merge similar caches"}
+          name: ${choose "Check a `common` cache is restored correctly" "Merge similar caches"}
           needs: ${choose "merge-similar-caches" "make-similar-caches"}
           permissions:
             actions: write
@@ -272,7 +272,9 @@ in
   # 
     compare-run-times:
       name: Job with caching
-      needs: merge-similar-caches
+      needs:
+        - merge-similar-caches
+        - merge-similar-caches-check
       permissions:
         actions: write
       strategy:
