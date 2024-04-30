@@ -1,6 +1,5 @@
 name: Nix CI with BuildJet backend
 on:
-  pull_request:
   workflow_dispatch:
 
 env:

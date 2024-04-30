@@ -30,6 +30,7 @@ let
         - "**"
       branches:
         - main
+    pull_request:
     schedule:
       - cron: 0 0 * * *'') "";
 
@@ -45,7 +46,6 @@ in
   name: Nix CI ${name}
   on:
     ${on}
-    pull_request:
     workflow_dispatch:
 
   env:
