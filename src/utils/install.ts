@@ -1,6 +1,7 @@
+import { which } from "@actions/io";
+
 import * as inputs from "../inputs";
 import * as utils from "./action";
-import { which } from "@actions/io";
 
 export async function installSQLite3() {
     if (inputs.nix && inputs.isMacos) {

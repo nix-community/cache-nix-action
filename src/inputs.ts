@@ -112,3 +112,17 @@ export const uploadChunkSize =
     utils.getInputAsInt(Inputs.UploadChunkSize) || 32 * 1024 * 1024;
 
 export const token = core.getInput(Inputs.Token, { required: true });
+
+export enum Backend {
+    Actions,
+    BuildJet
+}
+
+export const backend: Backend = (() => {
+    const backend = core.getInput(Inputs.Backend);
+    if (backend === "buildjet") {
+        return Backend.BuildJet;
+    } else {
+        return Backend.Actions;
+    }
+})();

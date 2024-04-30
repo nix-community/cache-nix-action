@@ -1,5 +1,5 @@
-import * as cache from "@cache-nix-action/cache";
 import * as core from "@actions/core";
+import * as fs from "fs";
 
 import { Events, Inputs, State } from "./constants";
 import * as inputs from "./inputs";
@@ -9,9 +9,9 @@ import {
     StateProvider
 } from "./stateProvider";
 import * as utils from "./utils/action";
+import { cache } from "./utils/cacheBackend";
 import { removeGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCachesByTime } from "./utils/purge";
-import * as fs from "fs";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to

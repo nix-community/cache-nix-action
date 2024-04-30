@@ -1,8 +1,9 @@
 import { copyFileSync } from "fs";
+
 import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
-import * as cacheUtils from "@cache-nix-action/cache/lib/internal/cacheUtils";
+import { cacheUtils } from "./cacheBackend";
 import { mergeStoreDatabases } from "./mergeStoreDatabases";
 
 export async function restoreCache(key: string, ref?: string) {

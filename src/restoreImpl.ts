@@ -94,7 +94,6 @@ export async function restoreImpl(
 
         if (
             inputs.restorePrefixesFirstMatch.length > 0 &&
-            !restoredKey &&
             !(lookedUpPrimaryKey && inputs.skipRestoreOnHitPrimaryKey)
         ) {
             utils.info(

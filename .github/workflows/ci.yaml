@@ -1,21 +1,21 @@
 name: Nix CI
-"on":
+on:
   push:
     # don't run on tags, run on commits
     # https://github.com/orgs/community/discussions/25615
     tags-ignore:
       - "**"
     branches:
-      - "**"
+      - main
   pull_request:
   schedule:
     - cron: 0 0 * * *
   workflow_dispatch:
 
 env:
-  # https://stackoverflow.com/a/71158878
-  git_pull: git pull --rebase origin ${{ github.head_ref || github.ref_name }}
   pin_nixpkgs: nix registry pin nixpkgs github:NixOS/nixpkgs/807c549feabce7eddbf259dbdcec9e0600a0660d
+  # required for gh
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   # Build the action
@@ -28,8 +28,13 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore and save Nix store
         uses: ./.
@@ -50,13 +55,16 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - name: Configure github-actions bot
+      - name: Configure git
         run: |
-          git config --global user.name github-actions
-          git config --global user.email github-actions@github.com
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
 
-      - name: Rebase
-        run: ${{ env.git_pull }}
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install packages & Build the action
         run: nix run .#install
@@ -67,9 +75,9 @@ jobs:
       - name: Commit & push changes
         run: |
           git add dist
-          git commit -m "chore: build the action" || echo ""
+          git commit -m "chore: build the action" || echo "Nothing to commit"
           git add .
-          git commit -m "chore: update docs" || echo ""
+          git commit -m "chore: update docs" || echo "Nothing to commit"
           git push
 
   # Make `individual` caches
@@ -96,9 +104,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Rebase
-        run: ${{ env.git_pull }}
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore and save Nix store - ${{ matrix.id }}
         uses: ./.
@@ -148,24 +164,32 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Rebase
-        run: ${{ env.git_pull }}
+        run: |
+          ${{
+              github.head_ref
+                && format('gh pr checkout {0}', github.event.pull_request.number) 
+                || format('git pull --rebase origin {0}', github.ref_name) 
+            }}
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore and save Nix store
         uses: ./.
         with:
           primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
-          # when there's a common cache hit, don't restore individual caches
-          skip-restore-on-hit-primary-key: true
-          # otherwise, restore individual caches, but not their old versions
+          # if no hit, restore current versions of individual caches
           restore-prefixes-all-matches: |
             similar-cache-${{ matrix.os }}-individual-1-${{ hashFiles('.github/workflows/ci.yaml') }}
             similar-cache-${{ matrix.os }}-individual-2-${{ hashFiles('.github/workflows/ci.yaml') }}
           # do purge caches
           purge: true
-          # purge all versions of the cache
-          purge-prefixes: similar-cache-${{ matrix.os }}-common-
+          # purge old versions of the `common` cache and any versions of individual caches
+          purge-prefixes: |
+            similar-cache-${{ matrix.os }}-common-
+            similar-cache-${{ matrix.os }}-individual-
           # created more than 0 seconds ago relative to the start of the `Post Restore` phase
           purge-created: 0
           # except the version with the `primary-key`, if it exists
@@ -178,16 +202,13 @@ jobs:
       # Therefore, profiles are ignored when restoring a cache.
       # So, the current profile should be the default profile created by nix-quick-install-action.
       # The default profile should contain only nix.
-      - name: List profile (should be empty)
+      - name: List profile
         run: nix profile list
 
-      - name: Check that the profile is empty
+      - name: Check that the profile doesn't have anything apart from `nix`
         shell: bash
         run: |
-          nix profile list \
-          | grep 'Index' \
-          | wc -l \
-          | xargs test 1 -eq
+          [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
 
       - name: Install nixpkgs#poetry
         run: nix profile install nixpkgs#poetry
@@ -201,9 +222,75 @@ jobs:
       - name: Run node
         run: node --version
 
+  # Check that the `common` cache is restored correctly
+  merge-similar-caches-check:
+    name: Check a `common` cache is restored correctly
+    needs: merge-similar-caches
+    permissions:
+      actions: write
+    strategy:
+      matrix:
+        os:
+          - macos-11
+          - macos-12
+          - ubuntu-20.04
+          - ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Rebase
+        run: |
+          ${{
+              github.head_ref
+                && format('gh pr checkout {0}', github.event.pull_request.number) 
+                || format('git pull --rebase origin {0}', github.ref_name) 
+            }}
+
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
+
+      - name: Restore Nix store
+        uses: ./restore
+        with:
+          primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
+
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+
+      # Stuff in a profile can survive garbage collection.
+      # Therefore, profiles are ignored when restoring a cache.
+      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # The default profile should contain only nix.
+      - name: List profile
+        run: nix profile list
+
+      - name: Check that the profile doesn't have anything apart from `nix`
+        shell: bash
+        run: |
+          [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
+
+      - name: Install nixpkgs#poetry
+        run: nix profile install nixpkgs#poetry
+
+      - name: Install nixpkgs#nodejs
+        run: nix profile install nixpkgs#nodejs
+
+      - name: Run poetry
+        run: poetry --version
+
+      - name: Run node
+        run: node --version
+
+  #
   compare-run-times:
     name: Job with caching
-    needs: merge-similar-caches
+    needs:
+      - merge-similar-caches
+      - merge-similar-caches-check
     permissions:
       actions: write
     strategy:
@@ -222,9 +309,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Rebase
-        run: ${{ env.git_pull }}
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
 
-      - uses: nixbuild/nix-quick-install-action@v27
+      - uses: deemp/nix-quick-install-action@v27
+        with:
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
+          nix_version: 2.21.0
 
       - name: Restore and save Nix store
         if: ${{ matrix.do-cache }}

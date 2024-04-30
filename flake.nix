@@ -31,6 +31,7 @@
             pkgs.writeShellApplication {
               name = "write";
               text = ''
+                mkdir -p "$(dirname ${path})"
                 cat > ${path} <<'EOF'
                 ${value}
                 EOF
@@ -78,6 +79,23 @@
               description = "write action.yml-s and tables for README-s";
             };
 
+            writeBuildjetCI = writeYAML ".github/workflows/buildjet-ci.yaml" (
+              import ./nix/ci.nix { backend = "buildjet"; inherit lib; }
+            );
+
+            writeActionsCI = writeYAML ".github/workflows/ci.yaml" (
+              import ./nix/ci.nix { backend = "actions"; inherit lib; }
+            );
+
+            writeCI = {
+              text = ''
+                ${lib.getExe config.packages.writeBuildjetCI}
+                ${lib.getExe config.packages.writeActionsCI}
+                npm run format-ci
+              '';
+              description = "write CI files";
+            };
+
             install = {
               runtimeInputs = [ pkgs.nodejs_20 ];
               text = ''npm i'';
@@ -97,7 +115,7 @@
               {
                 prefix = "nix run .#";
                 packages = {
-                  inherit (config.packages) write install build;
+                  inherit (config.packages) write install build writeCI;
                 };
               }
             ];

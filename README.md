@@ -118,6 +118,7 @@ See [action.yml](action.yml).
 | `paths`                           | <ul> <li>When <code>nix: true</code>, the action uses <code>["/nix", "~/.cache/nix", "~root/.cache/nix"]</code> as default paths, as suggested <a href="https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7">here</a>.</li> <li>Otherwise, the action uses an empty list as default paths.</li> <li>When a newline-separated non-empty list of non-empty path patterns (see <a href="https://github.com/actions/toolkit/tree/main/packages/glob"><code>@actions/glob</code></a> for supported patterns), the action appends it to default paths and uses the resulting list for restoring and saving caches.</li> <li>Otherwise, the action uses default paths for restoring and saving caches.</li> </ul> | `false`  | `""`                  |
 | `paths-macos`                     | <ul> <li>Overrides <code>paths</code>.</li> <li>Can have an effect only when the action runs on a <code>macOS</code> runner.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `false`  | `""`                  |
 | `paths-linux`                     | <ul> <li>Overrides <code>paths</code>.</li> <li>Can have an effect only when the action runs on a <code>Linux</code> runner.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `false`  | `""`                  |
+| `backend`                         | <p>Choose an implementation of the <code>cache</code> package.</p> <ul> <li>When <code>actions</code>, use the <a href="https://github.com/actions/toolkit/tree/main/packages/cache">actions version</a> from <a href="https://github.com/nix-community/cache-nix-action/tree/actions-toolkit/packages/cache">here</a>.</li> <li>When <code>buildjet</code>, use the <a href="https://github.com/BuildJet/toolkit/tree/main/packages/cache-buildjet">BuildJet version</a> from <a href="https://github.com/nix-community/cache-nix-action/tree/buildjet-toolkit/packages/cache">here</a>.</li> </ul>                                                                                                                                                          | `false`  | `actions`             |
 | `gc-max-store-size`               | <ul> <li>Can have an effect only when <code>nix: true</code>, <code>save: true</code>.</li> <li>When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.</li> <li>Otherwise, this input has no effect.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `false`  | `""`                  |
 | `gc-max-store-size-macos`         | <ul> <li>Overrides <code>gc-max-store-size</code>.</li> <li>Can have an effect only when the action runs on a <code>macOS</code> runner.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `false`  | `""`                  |
 | `gc-max-store-size-linux`         | <ul> <li>Overrides <code>gc-max-store-size</code>.</li> <li>Can have an effect only when the action runs on a <code>Linux</code> runner.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `false`  | `""`                  |
@@ -314,14 +315,20 @@ Disadvantages:
 
 ## Contribute
 
+Clone the repository.
+
+```console
+git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
+```
+
 - Improve README.
 - Report errors, suggest improvements in issues.
-- Upgrade code.
+- Improve code.
   - Read about [JavaScript actions](https://docs.github.com/en/actions/creating-actions/about-custom-actions?learn=create_actions&learnProduct=actions#javascript-actions)
   - See main files:
     - [restoreImpl.ts](./src/restoreImpl.ts)
     - [saveImpl.ts](./src/saveImpl.ts)
-- Upgrade docs.
+- Improve docs.
 
   - Edit [action.nix](./action.nix).
   - Update `action.yml`-s and `README.md`-s:
@@ -330,8 +337,10 @@ Disadvantages:
     nix run .#write
     ```
 
-- Update the `actions-toolkit` branch.
-- Ask for new releases of `@cache-nix-action/cache` if there are changes on the `actions-toolkit` branch.
+- Update deps:
+  - Update the `actions-toolkit` branch that contains a patched version of [actions/toolkit](https://github.com/actions/toolkit).
+  - Update the `buildjet-toolkit` branch that contains a patched version of [BuildJet/toolkit](https://github.com/BuildJet/toolkit) synchronized with [actions/toolkit](https://github.com/actions/toolkit).
+  - Update submodules for the mentioned branches on the `main` branch.
 
 # Cache action
 
