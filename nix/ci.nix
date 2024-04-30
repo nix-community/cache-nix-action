@@ -29,11 +29,17 @@ let
       tags-ignore:
         - "**"
       branches:
-        - "**"
+        - main
     schedule:
       - cron: 0 0 * * *'') "";
 
   name = choose "" ''with BuildJet backend'';
+  # https://stackoverflow.com/a/71158878
+  git_pull = ''''${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}'';
 in
 ''
   name: Nix CI ${name}
@@ -43,8 +49,6 @@ in
     workflow_dispatch:
 
   env:
-    # https://stackoverflow.com/a/71158878
-    git_pull: git pull --rebase origin ''${{ github.head_ref || github.ref_name }}
     pin_nixpkgs: nix registry pin nixpkgs github:NixOS/nixpkgs/807c549feabce7eddbf259dbdcec9e0600a0660d
 
   jobs:
@@ -88,13 +92,10 @@ in
             # required for gh
             GITHUB_TOKEN: ''${{ secrets.GITHUB_TOKEN }}
           run: |
-            ''${{ github.head_ref && format('gh pr checkout {0}', github.event.pull_request.number) || ${"''"}}}
+            ${ git_pull }
 
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-        - name: Rebase
-          run: ''${{ env.git_pull }}
 
         - name: Install packages & Build the action
           run: nix run .#install
@@ -134,7 +135,8 @@ in
           uses: actions/checkout@v4
 
         - name: Rebase
-          run: ''${{ env.git_pull }}
+          run: |
+            ${ git_pull }
 
         - uses: nixbuild/nix-quick-install-action@v27
 
@@ -197,7 +199,8 @@ in
               uses: actions/checkout@v4
 
             - name: Rebase
-              run: ''${{ env.git_pull }}
+              run: |
+                ${ git_pull }
 
             - uses: nixbuild/nix-quick-install-action@v27
 
@@ -244,7 +247,7 @@ in
                     .elements 
                       | keys 
                       | map(select(. != "nix")) 
-                      | if . != [] then error(.) end
+                      | if . != [] then error(.) else . end
                     '
 
             - name: Install nixpkgs#poetry
@@ -288,7 +291,8 @@ in
           uses: actions/checkout@v4
 
         - name: Rebase
-          run: ''${{ env.git_pull }}
+          run: |
+            ${ git_pull }
 
         - uses: nixbuild/nix-quick-install-action@v27
 
