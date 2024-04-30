@@ -248,7 +248,7 @@ in
             - name: Check that the profile doesn't have anything apart from `nix`
               shell: bash
               run: |
-                [[ "$(nix profile list --json | jq -rc '.elements | keys.[]')" == "nix" ]]
+                [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
 
             - name: Install nixpkgs#poetry
               run: nix profile install nixpkgs#poetry
