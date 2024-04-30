@@ -1,22 +1,37 @@
-{ backend }:
+{ lib, backend }:
 let
-  choose =
-    optionActions: optionBuildjet: if backend == "actions" then optionActions else optionBuildjet;
+  mkIndents = indentationLevel: lib.concatMapStrings (x: " ") (lib.genList (x: x) indentationLevel);
+  indent =
+    indentationLevel: s:
+    lib.trivial.pipe s [
+      (lib.splitString "\n")
+      (
+        x:
+        lib.head x + "\n" + (lib.concatMapStringsSep "\n" (y: mkIndents indentationLevel + y) (lib.tail x))
+      )
+    ];
 
-  backend_ = choose "" ''
+  mkChoose =
+    cond: option1: option2:
+    if cond then option1 else option2;
+
+  choose = mkChoose (backend == "actions");
+
+  backend_ = choose "" (''
     # use BuildJet backend
-              backend: buildjet'';
+    backend: buildjet
+  '');
 
-  on = choose ''
+  on = choose (indent 2 ''
     push:
-        # don't run on tags, run on commits
-        # https://github.com/orgs/community/discussions/25615
-        tags-ignore:
-          - "**"
-        branches:
-          - "**"
-      schedule:
-        - cron: 0 0 * * *'' "";
+      # don't run on tags, run on commits
+      # https://github.com/orgs/community/discussions/25615
+      tags-ignore:
+        - "**"
+      branches:
+        - "**"
+    schedule:
+      - cron: 0 0 * * *'') "";
 
   name = choose "" ''with BuildJet backend'';
 in
@@ -62,7 +77,7 @@ in
             purge-created: 0
             # except the version with the `primary-key`, if it exists
             purge-primary-key: never
-            ${backend_}
+            ${indent 10 backend_}
 
         # # Uncomment to debug this job
         # - name: Setup tmate session
@@ -138,7 +153,7 @@ in
             purge-created: 0
             # except the version with the `primary-key`, if it exists
             purge-primary-key: never
-            ${backend_}
+            ${indent 10 backend_}
 
         - name: Pin nixpkgs
           run: ''${{ env.pin_nixpkgs }}
@@ -150,83 +165,108 @@ in
         - name: Install nixpkgs#nodejs
           if: ''${{ matrix.id == 2 }}
           run: nix profile install nixpkgs#nodejs
+''
++ (
+  let
+    mergeSimilarCaches =
+      check:
+      let
+        choose = mkChoose check;
+      in
+      indent 2 ''
 
-    # Merge similar `individual` caches
-    # Purge `individual` caches and old `common` caches
-    # Save new `common` caches
-    merge-similar-caches:
-      name: Merge similar caches
-      needs: make-similar-caches
-      permissions:
-        actions: write
-      strategy:
-        matrix:
-          os:
-            - macos-11
-            - macos-12
-            - ubuntu-20.04
-            - ubuntu-22.04
-      runs-on: ''${{ matrix.os }}
-      steps:
-        - name: Checkout this repo
-          uses: actions/checkout@v4
+        ${choose "# Check that the `common` cache is restored correctly" ''
+          # Merge similar `individual` caches
+          # Purge `individual` caches and old `common` caches
+          # Save new `common` caches''}
+        merge-similar-caches${choose "-check" ""}:
+          name: Merge similar caches
+          needs: ${choose "merge-similar-caches" "make-similar-caches"}
+          permissions:
+            actions: write
+          strategy:
+            matrix:
+              os:
+                - macos-11
+                - macos-12
+                - ubuntu-20.04
+                - ubuntu-22.04
+          runs-on: ''${{ matrix.os }}
+          steps:
+            - name: Checkout this repo
+              uses: actions/checkout@v4
 
-        - name: Rebase
-          run: ''${{ env.git_pull }}
+            - name: Rebase
+              run: ''${{ env.git_pull }}
 
-        - uses: nixbuild/nix-quick-install-action@v27
+            - uses: nixbuild/nix-quick-install-action@v27
 
-        - name: Restore and save Nix store
-          uses: ./.
-          with:
-            primary-key: similar-cache-''${{ matrix.os }}-common-''${{ hashFiles('.github/workflows/ci.yaml') }}
-            # if no hit, restore current versions of individual caches
-            restore-prefixes-all-matches: |
-              similar-cache-''${{ matrix.os }}-individual-1-''${{ hashFiles('.github/workflows/ci.yaml') }}
-              similar-cache-''${{ matrix.os }}-individual-2-''${{ hashFiles('.github/workflows/ci.yaml') }}
-            # do purge caches
-            purge: true
-            # purge all versions of the cache
-            purge-prefixes: similar-cache-''${{ matrix.os }}-common-
-            # created more than 0 seconds ago relative to the start of the `Post Restore` phase
-            purge-created: 0
-            # except the version with the `primary-key`, if it exists
-            purge-primary-key: never
-            ${backend_}
+            - name: Restore${choose "" " and save"} Nix store
+              uses: ./${if check then "restore" else "."}
+              with:
+                primary-key: similar-cache-''${{ matrix.os }}-common-''${{ hashFiles('.github/workflows/ci.yaml') }}
+                ${
+                  choose "" (
+                    indent 8 ''
+                      # if no hit, restore current versions of individual caches
+                      restore-prefixes-all-matches: |
+                        similar-cache-''${{ matrix.os }}-individual-1-''${{ hashFiles('.github/workflows/ci.yaml') }}
+                        similar-cache-''${{ matrix.os }}-individual-2-''${{ hashFiles('.github/workflows/ci.yaml') }}
+                      # do purge caches
+                      purge: true
+                      # purge old versions of the `common` cache and any versions of individual caches
+                      purge-prefixes: |
+                        similar-cache-''${{ matrix.os }}-common-
+                        similar-cache-''${{ matrix.os }}-individual-
+                      # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+                      purge-created: 0
+                      # except the version with the `primary-key`, if it exists
+                      purge-primary-key: never''
+                  )
+                }
+                ${indent 8 backend_}
+            
+            - name: Pin nixpkgs
+              run: ''${{ env.pin_nixpkgs }}
 
-        - name: Pin nixpkgs
-          run: ''${{ env.pin_nixpkgs }}
+            # Stuff in a profile can survive garbage collection.
+            # Therefore, profiles are ignored when restoring a cache.
+            # So, the current profile should be the default profile created by nix-quick-install-action.
+            # The default profile should contain only nix.
+            - name: List profile
+              run: nix profile list
 
-        # Stuff in a profile can survive garbage collection.
-        # Therefore, profiles are ignored when restoring a cache.
-        # So, the current profile should be the default profile created by nix-quick-install-action.
-        # The default profile should contain only nix.
-        - name: List profile
-          run: nix profile list
+            - name: Check that the profile doesn't have anything apart from `nix`
+              shell: bash
+              run: |
+                nix profile list --json \
+                  | jq '
+                    .elements 
+                      | keys 
+                      | map(select(. != "nix")) 
+                      | if . != [] then error(.) end
+                    '
 
-        - name: Check that the profile doesn't have anything apart from `nix`
-          shell: bash
-          run: |
-            nix profile list --json \
-              | jq '
-                .elements 
-                  | keys 
-                  | map(select(. != "nix")) 
-                  | if . != [] then error(.) end
-                '
+            - name: Install nixpkgs#poetry
+              run: nix profile install nixpkgs#poetry
 
-        - name: Install nixpkgs#poetry
-          run: nix profile install nixpkgs#poetry
+            - name: Install nixpkgs#nodejs
+              run: nix profile install nixpkgs#nodejs
 
-        - name: Install nixpkgs#nodejs
-          run: nix profile install nixpkgs#nodejs
+            - name: Run poetry
+              run: poetry --version
 
-        - name: Run poetry
-          run: poetry --version
-
-        - name: Run node
-          run: node --version
-
+            - name: Run node
+              run: node --version
+      '';
+  in
+  ''
+    ${mergeSimilarCaches false}
+    ${mergeSimilarCaches true}
+  ''
+)
++ ''
+  # 
     compare-run-times:
       name: Job with caching
       needs: merge-similar-caches
@@ -269,7 +309,7 @@ in
             purge-primary-key: never
             # and collect garbage in the Nix store until it reaches this size in bytes
             gc-max-store-size: 8000000000
-            ${backend_}
+            ${indent 10 backend_}
 
         # Uncomment to debug this job
         # - name: Setup tmate session

@@ -158,14 +158,16 @@ jobs:
         uses: ./.
         with:
           primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
-          # if no hit, try to restore current versions of individual caches
+          # if no hit, restore current versions of individual caches
           restore-prefixes-all-matches: |
             similar-cache-${{ matrix.os }}-individual-1-${{ hashFiles('.github/workflows/ci.yaml') }}
             similar-cache-${{ matrix.os }}-individual-2-${{ hashFiles('.github/workflows/ci.yaml') }}
           # do purge caches
           purge: true
-          # purge all versions of the cache
-          purge-prefixes: similar-cache-${{ matrix.os }}-common-
+          # purge old versions of the `common` cache and any versions of individual caches
+          purge-prefixes: |
+            similar-cache-${{ matrix.os }}-common-
+            similar-cache-${{ matrix.os }}-individual-
           # created more than 0 seconds ago relative to the start of the `Post Restore` phase
           purge-created: 0
           # except the version with the `primary-key`, if it exists
@@ -206,6 +208,71 @@ jobs:
       - name: Run node
         run: node --version
 
+  # Check that the `common` cache is restored correctly
+  merge-similar-caches-check:
+    name: Merge similar caches
+    needs: merge-similar-caches
+    permissions:
+      actions: write
+    strategy:
+      matrix:
+        os:
+          - macos-11
+          - macos-12
+          - ubuntu-20.04
+          - ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Rebase
+        run: ${{ env.git_pull }}
+
+      - uses: nixbuild/nix-quick-install-action@v27
+
+      - name: Restore Nix store
+        uses: ./restore
+        with:
+          primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
+
+          # use BuildJet backend
+          backend: buildjet
+
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+
+      # Stuff in a profile can survive garbage collection.
+      # Therefore, profiles are ignored when restoring a cache.
+      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # The default profile should contain only nix.
+      - name: List profile
+        run: nix profile list
+
+      - name: Check that the profile doesn't have anything apart from `nix`
+        shell: bash
+        run: |
+          nix profile list --json \
+            | jq '
+              .elements 
+                | keys 
+                | map(select(. != "nix")) 
+                | if . != [] then error(.) end
+              '
+
+      - name: Install nixpkgs#poetry
+        run: nix profile install nixpkgs#poetry
+
+      - name: Install nixpkgs#nodejs
+        run: nix profile install nixpkgs#nodejs
+
+      - name: Run poetry
+        run: poetry --version
+
+      - name: Run node
+        run: node --version
+
+  #
   compare-run-times:
     name: Job with caching
     needs: merge-similar-caches

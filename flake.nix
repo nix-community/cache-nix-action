@@ -80,11 +80,11 @@
             };
 
             writeBuildjetCI = writeYAML ".github/workflows/buildjet-ci.yaml" (
-              import ./nix/ci.nix { backend = "buildjet"; }
+              import ./nix/ci.nix { backend = "buildjet"; inherit lib; }
             );
 
             writeActionsCI = writeYAML ".github/workflows/ci.yaml" (
-              import ./nix/ci.nix { backend = "actions"; }
+              import ./nix/ci.nix { backend = "actions"; inherit lib; }
             );
 
             writeCI = {
