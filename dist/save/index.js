@@ -86137,12 +86137,12 @@ function saveImpl(stateProvider) {
             }
             else {
                 utils.info(`Searching for a cache with the key "${primaryKey}".`);
-                const foundKey = yield utils.restoreCache({
+                const lookedUpPrimaryKey = yield utils.restoreCache({
                     primaryKey,
                     restoreKeys: [],
                     lookupOnly: true
                 });
-                if (utils.isExactKeyMatch(primaryKey, foundKey)) {
+                if (utils.isExactKeyMatch(primaryKey, lookedUpPrimaryKey)) {
                     utils.info(`
                     Cache hit occurred on the "${constants_1.Inputs.PrimaryKey}".
                     Not saving a new cache.
