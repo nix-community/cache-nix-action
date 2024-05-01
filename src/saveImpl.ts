@@ -68,13 +68,13 @@ export async function saveImpl(
         } else {
             utils.info(`Searching for a cache with the key "${primaryKey}".`);
 
-            const foundKey = await utils.restoreCache({
+            const lookedUpPrimaryKey = await utils.restoreCache({
                 primaryKey,
                 restoreKeys: [],
                 lookupOnly: true
             });
 
-            if (utils.isExactKeyMatch(primaryKey, foundKey)) {
+            if (utils.isExactKeyMatch(primaryKey, lookedUpPrimaryKey)) {
                 utils.info(
                     `
                     Cache hit occurred on the "${Inputs.PrimaryKey}".

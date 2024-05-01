@@ -8,8 +8,8 @@ import {
     StateProvider
 } from "./stateProvider";
 import * as utils from "./utils/action";
-import * as restore from "./utils/restore";
 import * as install from "./utils/install";
+import * as restore from "./utils/restore";
 
 export async function restoreImpl(
     stateProvider: IStateProvider,
@@ -105,14 +105,13 @@ export async function restoreImpl(
                 `
             );
 
-            const lookedUpRestorePrefixesFirstMatchKey =
-                await utils.restoreCache({
-                    primaryKey: "",
-                    restoreKeys: inputs.restorePrefixesFirstMatch,
-                    lookupOnly: true
-                });
+            const lookedUpFirstMatch = await utils.restoreCache({
+                primaryKey: "",
+                restoreKeys: inputs.restorePrefixesFirstMatch,
+                lookupOnly: true
+            });
 
-            if (!lookedUpRestorePrefixesFirstMatchKey) {
+            if (!lookedUpFirstMatch) {
                 if (
                     inputs.failOn?.keyType == "first-match" &&
                     inputs.failOn.result == "miss"
@@ -127,9 +126,7 @@ export async function restoreImpl(
                 );
                 core.setOutput(Outputs.HitFirstMatch, true);
 
-                restoredKey = await restore.restoreCache(
-                    lookedUpRestorePrefixesFirstMatchKey
-                );
+                restoredKey = await restore.restoreCache(lookedUpFirstMatch);
                 if (restoredKey) {
                     restoredKeys.push(...[restoredKey]);
                 } else if (
