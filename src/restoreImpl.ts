@@ -16,12 +16,6 @@ export async function restoreImpl(
     earlyExit?: boolean | undefined
 ): Promise<string | undefined> {
     try {
-        core.setOutput(Outputs.Hit, false);
-        core.setOutput(Outputs.HitPrimaryKey, false);
-        core.setOutput(Outputs.HitFirstMatch, false);
-        core.setOutput(Outputs.RestoredKey, false);
-        core.setOutput(Outputs.RestoredKeys, []);
-
         if (!utils.isCacheFeatureAvailable()) {
             return;
         }
@@ -52,6 +46,8 @@ export async function restoreImpl(
         const errorNotFound = errorNot("was found");
         const errorNotRestored = errorNot("could be restored");
 
+        let hitPrimaryKey = false;
+
         {
             const primaryKey = inputs.primaryKey;
             stateProvider.setState(State.CachePrimaryKey, primaryKey);
@@ -76,7 +72,7 @@ export async function restoreImpl(
                 utils.info(
                     `Found a cache with the given "${Inputs.PrimaryKey}".`
                 );
-                core.setOutput(Outputs.HitPrimaryKey, true);
+                hitPrimaryKey = true;
 
                 if (!inputs.skipRestoreOnHitPrimaryKey) {
                     restoredKey = await restore.restoreCache(primaryKey);
@@ -91,6 +87,8 @@ export async function restoreImpl(
                 }
             }
         }
+
+        let hitFirstMatch = false;
 
         if (
             inputs.restorePrefixesFirstMatch.length > 0 &&
@@ -124,7 +122,7 @@ export async function restoreImpl(
                 utils.info(
                     `Found a cache using the "${Inputs.RestorePrefixesFirstMatch}".`
                 );
-                core.setOutput(Outputs.HitFirstMatch, true);
+                hitFirstMatch = true;
 
                 restoredKey = await restore.restoreCache(lookedUpFirstMatch);
                 if (restoredKey) {
@@ -142,12 +140,14 @@ export async function restoreImpl(
             restoredKeys.push(...(await restore.restoreAllMatches()));
         }
 
-        restoredKey ||= "";
+        restoredKey ??= "";
 
         // Store the matched cache key in states
         stateProvider.setState(State.CacheRestoredKey, restoredKey);
 
-        core.setOutput(Outputs.Hit, true);
+        core.setOutput(Outputs.HitPrimaryKey, hitPrimaryKey);
+        core.setOutput(Outputs.HitFirstMatch, hitFirstMatch);
+        core.setOutput(Outputs.Hit, hitPrimaryKey || hitFirstMatch);
         core.setOutput(Outputs.RestoredKey, restoredKey);
         core.setOutput(Outputs.RestoredKeys, restoredKeys);
 
