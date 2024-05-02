@@ -110,21 +110,14 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v28
 
-      - name: Restore and save Nix store - ${{ matrix.id }}
-        uses: ./.
+      - name: Restore Nix store - ${{ matrix.id }}
+        id: restore
+        uses: ./restore
         with:
           # save a new cache every time `ci.yaml` changes
           primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           # otherwise, restore a common cache if and only if it matches the current `ci.yaml`
           restore-prefixes-first-match: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
-          # do purge caches
-          purge: true
-          # purge all versions of the cache
-          purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
-          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
-          purge-created: 0
-          # except the version with the `primary-key`, if it exists
-          purge-primary-key: never
 
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
@@ -136,6 +129,21 @@ jobs:
       - name: Install nixpkgs#nodejs
         if: ${{ matrix.id == 2 }}
         run: nix profile install nixpkgs#nodejs
+
+      - name: Save Nix store - ${{ matrix.id }}
+        if: steps.restore.outputs.hit == 'false'
+        uses: ./save
+        with:
+          # save a new cache every time `ci.yaml` changes
+          primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # do purge caches
+          purge: true
+          # purge all versions of the cache
+          purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
 
   # Merge similar `individual` caches
   # Purge `individual` caches and old `common` caches
