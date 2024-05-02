@@ -31,10 +31,7 @@ jobs:
         with:
           submodules: true
 
-      - uses: deemp/nix-quick-install-action@v27
-        with:
-          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
-          nix_version: 2.21.0
+      - uses: nixbuild/nix-quick-install-action@v28
 
       - name: Restore and save Nix store
         uses: ./.
@@ -111,10 +108,7 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: deemp/nix-quick-install-action@v27
-        with:
-          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
-          nix_version: 2.21.0
+      - uses: nixbuild/nix-quick-install-action@v28
 
       - name: Restore and save Nix store - ${{ matrix.id }}
         uses: ./.
@@ -171,10 +165,7 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: deemp/nix-quick-install-action@v27
-        with:
-          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
-          nix_version: 2.21.0
+      - uses: nixbuild/nix-quick-install-action@v28
 
       - name: Restore and save Nix store
         uses: ./.
@@ -248,10 +239,7 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: deemp/nix-quick-install-action@v27
-        with:
-          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
-          nix_version: 2.21.0
+      - uses: nixbuild/nix-quick-install-action@v28
 
       - name: Restore Nix store
         uses: ./restore
@@ -316,10 +304,7 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: deemp/nix-quick-install-action@v27
-        with:
-          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
-          nix_version: 2.21.0
+      - uses: nixbuild/nix-quick-install-action@v28
 
       - name: Restore and save Nix store
         if: ${{ matrix.do-cache }}

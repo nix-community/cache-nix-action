@@ -43,10 +43,7 @@ let
           }}'';
           
   nix-quick-install-action = ''
-    - uses: deemp/nix-quick-install-action@v27
-      with:
-        nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v27
-        nix_version: 2.21.0
+    - uses: nixbuild/nix-quick-install-action@v28
   '';
 in
 ''
