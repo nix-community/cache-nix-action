@@ -156,11 +156,11 @@ in
           run: ''${{ env.pin_nixpkgs }}
 
         - name: Install nixpkgs#poetry
-          if: ''${{ matrix.id == 1 }}
+          if: matrix.id == 1
           run: nix profile install nixpkgs#poetry
 
         - name: Install nixpkgs#nodejs
-          if: ''${{ matrix.id == 2 }}
+          if: matrix.id == 2
           run: nix profile install nixpkgs#nodejs
           
         - name: Save Nix store - ''${{ matrix.id }}
@@ -304,7 +304,7 @@ in
         ${indent 6 nix-quick-install-action}
 
         - name: Restore and save Nix store
-          if: ''${{ matrix.do-cache }}
+          if: matrix.do-cache
           uses: ./.
           with:
             # save a new cache every time ci file changes
