@@ -29,7 +29,7 @@ inputs:
     description: |
       - Can have an effect only when `restore-prefixes-first-match` has no effect.
       - When `true`, when there's a hit on the `primary-key`, the action doesn't restore caches.
-      - Otherwise, this input has no effect.
+      - Otherwise, the action restores caches.
     default: "false"
 
   fail-on:
