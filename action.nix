@@ -91,7 +91,7 @@ in
               description: |
                 - Can have an effect only when ${q restore-prefixes-first-match} has no effect.
                 - When `true`, when there's a hit on the ${q primary-key}, the action doesn't restore caches.
-                - ${noEffectOtherwise}
+                - Otherwise, the action restores caches.
               default: "false"
 
             fail-on:

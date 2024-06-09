@@ -92,7 +92,7 @@ export async function restoreImpl(
 
         if (
             inputs.restorePrefixesFirstMatch.length > 0 &&
-            !(lookedUpPrimaryKey && inputs.skipRestoreOnHitPrimaryKey)
+            !(lookedUpPrimaryKey || inputs.skipRestoreOnHitPrimaryKey)
         ) {
             utils.info(
                 `
@@ -136,7 +136,7 @@ export async function restoreImpl(
             }
         }
 
-        if (!(lookedUpPrimaryKey && inputs.skipRestoreOnHitPrimaryKey)) {
+        if (!(lookedUpPrimaryKey || inputs.skipRestoreOnHitPrimaryKey)) {
             restoredKeys.push(...(await restore.restoreAllMatches()));
         }
 
