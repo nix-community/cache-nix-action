@@ -146,7 +146,9 @@ inputs:
 
 
   token:
-    description: The action uses it to communicate with GitHub API.
+    description: |
+      - The action uses it to communicate with GitHub API.
+      - If you use a personal access token, it must have the `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
     default: ${{ github.token }}
 outputs:
   primary-key:
