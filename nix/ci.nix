@@ -125,8 +125,8 @@ in
       strategy:
         matrix:
           os:
-            - macos-11
             - macos-12
+            - macos-13
             - ubuntu-20.04
             - ubuntu-22.04
           id:
@@ -200,8 +200,8 @@ in
           strategy:
             matrix:
               os:
-                - macos-11
                 - macos-12
+                - macos-13
                 - ubuntu-20.04
                 - ubuntu-22.04
           runs-on: ''${{ matrix.os }}
@@ -288,8 +288,8 @@ in
             - true
             - false
           os:
-            - macos-11
             - macos-12
+            - macos-13
             - ubuntu-20.04
             - ubuntu-22.04
       runs-on: ''${{ matrix.os }}
