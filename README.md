@@ -52,7 +52,6 @@ This action is based on [actions/cache](https://github.com/actions/cache).
   - Workaround: the [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
 - Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
   - Workaround: provide caches for PRs on default or base branches.
-- For purging, a workflow must have the permission `actions: write` and the `token` must have a `repo` scope ([link](https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key)).
 
 ## Comparison with alternative approaches
 
@@ -64,6 +63,8 @@ See [Caching Approaches](#caching-approaches).
 - [Save action](./save/README.md)
 
 ## Example steps
+
+- For purging, the workflow or the job must have the [permission](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#permissions) `actions: write`.
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v27
@@ -87,6 +88,8 @@ See [Caching Approaches](#caching-approaches).
     # except the version with the `primary-key`, if it exists
     purge-primary-key: never
 ```
+
+### Explanation
 
 - `nix-quick-install-action` loads `nixConfig` from `flake.nix` and writes to [nix.conf](https://nixos.org/manual/nix/unstable/command-ref/conf-file.html) (see [action.yml](https://github.com/nixbuild/nix-quick-install-action/blob/master/action.yml) in `the nix-quick-install` repo).
 - Due to `gc-max-store-size-linux: 1073741824`, on `Linux` runners, garbage in the Nix store is collected until store size reaches `1GB` or until there's no garbage to collect.
