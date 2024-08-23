@@ -183,7 +183,7 @@ in
                 - ${effectOnlyWhen [ "purge: true" ]}
                 - When `always`, the action always purges cache with the ${q primary-key}.
                 - When `never`, the action never purges cache with the ${q primary-key}.
-                - ${noEffectOtherwise}.
+                - ${noEffectOtherwise}
               default: ""
             purge-prefixes:
               description: |

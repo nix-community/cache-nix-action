@@ -110,7 +110,7 @@ inputs:
       - Can have an effect only when `purge: true`.
       - When `always`, the action always purges cache with the `primary-key`.
       - When `never`, the action never purges cache with the `primary-key`.
-      - Otherwise, this input has no effect..
+      - Otherwise, this input has no effect.
     default: ""
   purge-prefixes:
     description: |
