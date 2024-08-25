@@ -138,7 +138,7 @@ export async function restoreImpl(
             }
         }
 
-        if (!(lookedUpPrimaryKey || inputs.skipRestoreOnHitPrimaryKey)) {
+        if (!lookedUpPrimaryKey) {
             restoredKeys.push(...(await restore.restoreAllMatches()));
         }
 
