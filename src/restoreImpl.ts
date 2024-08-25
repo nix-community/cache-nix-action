@@ -66,7 +66,9 @@ export async function restoreImpl(
                 ) {
                     throw errorNotFound;
                 } else {
-                    utils.info(`Could not find a cache.`);
+                    utils.info(
+                        `Could not find a cache with the given "${Inputs.PrimaryKey}".`
+                    );
                 }
             } else if (utils.isExactKeyMatch(primaryKey, lookedUpPrimaryKey)) {
                 utils.info(
