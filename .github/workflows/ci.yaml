@@ -138,7 +138,7 @@ jobs:
           primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
           # do purge caches
           purge: true
-          # purge all versions of the cache
+          # purge all versions of the individual cache
           purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
           # created more than 0 seconds ago relative to the start of the `Post Restore` phase
           purge-created: 0
@@ -179,7 +179,7 @@ jobs:
         uses: ./.
         with:
           primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
-          # if no hit, restore current versions of individual caches
+          # if no hit on the primary key, restore individual caches that match `ci.yaml`
           restore-prefixes-all-matches: |
             similar-cache-${{ matrix.os }}-individual-1-${{ hashFiles('.github/workflows/ci.yaml') }}
             similar-cache-${{ matrix.os }}-individual-2-${{ hashFiles('.github/workflows/ci.yaml') }}
@@ -320,6 +320,7 @@ jobs:
         with:
           # save a new cache every time ci file changes
           primary-key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # if no hit, restore current versions of individual caches
           restore-prefixes-first-match: cache-${{ matrix.os }}-
           # do purge caches
           purge: true
