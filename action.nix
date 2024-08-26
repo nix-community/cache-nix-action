@@ -73,14 +73,16 @@ in
           ${restore-prefixes-first-match}:
               description: |
                 - ${whenListOf} key prefixes, when there's a miss on the ${q primary-key}, 
-                  the action searches in this list for the first prefix for which there exists a cache 
-                  with a matching key and the action tries to restore that cache.
+                  the action searches in this list for the first prefix
+                  for which there exists a cache whose key has this prefix,
+                  and the action tries to restore that cache.
                 - ${noEffectOtherwise}
               default: ""
+
             restore-prefixes-all-matches:
               description: |
-                - ${whenListOf} key prefixes, the action tries to restore 
-                  all caches whose keys match these prefixes.
+                - ${whenListOf} key prefixes, when there's a miss on the ${q primary-key},
+                  the action tries to restore all caches whose keys have these prefixes.
                   - Tries caches across all refs to make use of caches created 
                     on the current, base, and default branches 
                     (see [docs](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
@@ -89,9 +91,8 @@ in
 
             skip-restore-on-hit-primary-key:
               description: |
-                - Can have an effect only when ${q restore-prefixes-first-match} has no effect.
-                - When `true`, when there's a hit on the ${q primary-key}, the action doesn't restore caches.
-                - Otherwise, the action restores caches.
+                - When `true`, when there's a hit on the ${q primary-key}, the action doesn't restore the found cache.
+                - Otherwise, the action restores the cache.
               default: "false"
 
             fail-on:
