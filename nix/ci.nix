@@ -43,7 +43,7 @@ let
           }}'';
           
   nix-quick-install-action = ''
-    - uses: nixbuild/nix-quick-install-action@v28
+    - uses: nixbuild/nix-quick-install-action@v29
   '';
 in
 ''
