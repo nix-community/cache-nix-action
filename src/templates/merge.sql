@@ -7,6 +7,7 @@ attach database '{{ dbPath1 }}' as store1;
 attach database '{{ dbPath2 }}' as store2;
 
 drop table if exists ValidPaths1;
+
 create table ValidPaths1 as
 select *
 from store1.ValidPaths;
@@ -69,6 +70,7 @@ create table ValidPaths
 -- =====
 
 drop table if exists Refs;
+
 create table Refs
 (
     referrer  integer not null,
@@ -83,6 +85,7 @@ create table Refs
 -- =====
 
 drop table if exists DerivationOutputs;
+
 create table DerivationOutputs
 (
     drv  integer not null,
@@ -127,6 +130,7 @@ from Refs1;
 
 -- referrer | hash
 drop view if exists ReferrerHash;
+
 create view ReferrerHash as
 select distinct referrer, hash
 from Refs2
@@ -134,6 +138,7 @@ from Refs2
 
 -- referrer | new referrer
 drop view if exists ReferrerId;
+
 create view ReferrerId as
 select referrer, referrerNew
 from ReferrerHash
@@ -141,6 +146,7 @@ from ReferrerHash
 
 -- reference | hash
 drop view if exists ReferenceHash;
+
 create view ReferenceHash as
 select distinct reference, hash
 from Refs2
@@ -148,6 +154,7 @@ from Refs2
 
 -- reference | new reference
 drop view if exists ReferenceId;
+
 create view ReferenceId as
 select reference, referenceNew
 from ReferenceHash
@@ -155,6 +162,7 @@ from ReferenceHash
 
 -- referrer | new referrer | reference
 drop view if exists ReferrerReferrerIdReference;
+
 create view ReferrerReferrerIdReference as
 select distinct Refs2.referrer, ReferrerId.referrerNew, reference
 from Refs2
@@ -162,6 +170,7 @@ from Refs2
 
 -- referrer | new referrer | reference | new reference
 drop view if exists ReferrerReferrerIdReferenceReferenceId;
+
 create view ReferrerReferrerIdReferenceReferenceId as
 select distinct referrer, referrerNew, ReferrerReferrerIdReference.reference, referenceNew
 from ReferrerReferrerIdReference
@@ -169,6 +178,7 @@ from ReferrerReferrerIdReference
 
 -- new referrer | new reference
 drop view if exists Refs2Updated;
+
 create view Refs2Updated as
 select distinct referrerNew as referrer, referenceNew as reference
 from ReferrerReferrerIdReferenceReferenceId;
@@ -195,6 +205,10 @@ from DerivationOutputs1;
 
 -- drv | id | path | hash
 drop view if exists DerivationOutputsHash;
+
+
+-- TODO what is drv?
+
 create view DerivationOutputsHash as
 select drv, DerivationOutputs2.id, path, hash
 from DerivationOutputs2
@@ -202,6 +216,7 @@ from DerivationOutputs2
 
 -- new drv | id | path
 drop view if exists DerivationOutputs2Updated;
+
 create view DerivationOutputs2Updated as
 select ValidPaths_.drvNew as drv, id, path
 from (select id, path, hash from DerivationOutputsHash) as DerivationOutputsHash_
