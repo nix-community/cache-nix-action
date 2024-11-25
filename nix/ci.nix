@@ -62,7 +62,7 @@ in
     # Commit and push the built code
     build:
       name: Build the action
-      runs-on: ubuntu-20.04
+      runs-on: ubuntu-24.04
       permissions:
         contents: write
         actions: write
@@ -125,10 +125,10 @@ in
       strategy:
         matrix:
           os:
-            - macos-12
             - macos-13
-            - ubuntu-20.04
+            - macos-14
             - ubuntu-22.04
+            - ubuntu-24.04
           id:
             - 1
             - 2
@@ -200,10 +200,10 @@ in
           strategy:
             matrix:
               os:
-                - macos-12
                 - macos-13
-                - ubuntu-20.04
+                - macos-14
                 - ubuntu-22.04
+                - ubuntu-24.04
           runs-on: ''${{ matrix.os }}
           steps:
             - name: Checkout this repo
@@ -288,10 +288,10 @@ in
             - true
             - false
           os:
-            - macos-12
             - macos-13
-            - ubuntu-20.04
+            - macos-14
             - ubuntu-22.04
+            - ubuntu-24.04
       runs-on: ''${{ matrix.os }}
       steps:
         - name: Checkout this repo
