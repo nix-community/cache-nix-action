@@ -2,8 +2,8 @@ import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 
 import { Events, RefKey } from "../src/constants";
-import * as actionUtils from "../src/utils/actionUtils";
-import * as testUtils from "../src/utils/testUtils";
+import * as actionUtils from "./utils/actionUtils";
+import * as testUtils from "./utils/testUtils";
 
 jest.mock("@actions/core");
 jest.mock("@actions/cache");
