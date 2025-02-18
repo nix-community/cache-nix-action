@@ -4,7 +4,6 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     systems.url = "github:nix-systems/default";
     devshell.url = "github:deemp/devshell";
-    flakes.url = "github:deemp/flakes";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
   outputs =
@@ -24,7 +23,13 @@
           ...
         }:
         let
-          inherit (inputs.flakes.lib.${system}.drv-tools) mkShellApps;
+          mkShellApps = lib.mapAttrs (
+            name: value:
+            if !(lib.isDerivation value) && lib.isAttrs value then
+              pkgs.writeShellApplication (value // { inherit name; })
+            else
+              value
+          );
 
           writeYAML =
             path: value:
@@ -37,6 +42,8 @@
                 EOF
               '';
             };
+            
+          nodejs = pkgs.nodejs_23;
         in
         {
           packages = mkShellApps {
@@ -70,13 +77,13 @@
             };
 
             write = {
-              runtimeInputs = [ pkgs.nodejs_20 ];
+              runtimeInputs = [ nodejs ];
               text = ''
                 ${lib.getExe config.packages.writeActions}
                 npm run readme
                 npm run format
               '';
-              description = "write action.yml-s and tables for README-s";
+              meta.description = "write action.yml-s and tables for README-s";
             };
 
             writeBuildjetCI = writeYAML ".github/workflows/buildjet-ci.yaml" (
@@ -93,24 +100,24 @@
                 ${lib.getExe config.packages.writeActionsCI}
                 npm run format-ci
               '';
-              description = "write CI files";
+              meta.description = "write CI files";
             };
 
             install = {
-              runtimeInputs = [ pkgs.nodejs_20 ];
+              runtimeInputs = [ nodejs ];
               text = ''npm i'';
-              description = "install dependencies";
+              meta.description = "install dependencies";
             };
 
             build = {
-              runtimeInputs = [ pkgs.nodejs_20 ];
+              runtimeInputs = [ nodejs ];
               text = "npm run build";
-              description = "build project";
+              meta.description = "build project";
             };
           };
 
           devshells.default = {
-            packages = [ pkgs.nodejs_20 ];
+            packages = [ nodejs ];
             commands.scripts = [
               {
                 prefix = "nix run .#";
