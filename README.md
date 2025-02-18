@@ -70,7 +70,7 @@ See [Caching Approaches](#caching-approaches).
 - uses: nixbuild/nix-quick-install-action@v27
 
 - name: Restore and cache Nix store
-  uses: nix-community/cache-nix-action@v5
+  uses: nix-community/cache-nix-action@v6
   with:
     # restore and save a cache using this key
     primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
@@ -471,7 +471,7 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: nix-community/cache-nix-action@v5
+        uses: nix-community/cache-nix-action@v6
         with:
           primary-key: ${{ runner.os }}-primes
           paths: prime-numbers
@@ -502,7 +502,7 @@ jobs:
 
       - name: Restore cached Primes
         id: cache-primes-restore
-        uses: nix-community/cache-nix-action/restore@v5
+        uses: nix-community/cache-nix-action/restore@v6
         with:
           primary-key: ${{ runner.os }}-primes
           paths: |
@@ -513,7 +513,7 @@ jobs:
 
       - name: Save Primes
         id: cache-primes-save
-        uses: nix-community/cache-nix-action/save@v5
+        uses: nix-community/cache-nix-action/save@v6
         with:
           primary-key: ${{ steps.cache-primes-restore.outputs.cache-primary-key }}
           paths: |
@@ -568,7 +568,7 @@ A cache key can include any of the contexts, functions, literals, and operators 
 For example, using the [`hashFiles`](https://docs.github.com/en/actions/learn-github-actions/expressions#hashfiles) function allows you to create a new cache when dependencies change.
 
 ```yaml
-- uses: nix-community/cache-nix-action@v5
+- uses: nix-community/cache-nix-action@v6
   with:
     primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
     paths: |
@@ -585,7 +585,7 @@ Additionally, you can use arbitrary command output in a cache key, such as a dat
   run: echo "date=$(/bin/date -u "+%Y%m%d")" >> $GITHUB_OUTPUT
   shell: bash
 
-- uses: nix-community/cache-nix-action@v5
+- uses: nix-community/cache-nix-action@v6
   with:
     primary-key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('**/lockfiles') }}
     paths: path/to/dependencies
@@ -611,7 +611,7 @@ Example:
 steps:
   - uses: actions/checkout@v4
 
-  - uses: nix-community/cache-nix-action@v5
+  - uses: nix-community/cache-nix-action@v6
     id: cache
     with:
       path: path/to/dependencies
@@ -644,7 +644,7 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: nix-community/cache-nix-action@v5
+        uses: nix-community/cache-nix-action@v6
         with:
           primary-key: primes
           paths: prime-numbers
@@ -655,7 +655,7 @@ jobs:
 
       - name: Cache Numbers
         id: cache-numbers
-        uses: nix-community/cache-nix-action@v5
+        uses: nix-community/cache-nix-action@v6
         with:
           primary-key: primes
           paths: numbers
@@ -671,7 +671,7 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: nix-community/cache-nix-action@v5
+        uses: nix-community/cache-nix-action@v6
         with:
           primary-key: primes
           paths: prime-numbers

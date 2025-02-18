@@ -115,7 +115,7 @@ jobs:
 
       - name: Restore cached Prime Numbers
         id: cache-prime-numbers-restore
-        uses: nix-community/cache-nix-action/restore@v5
+        uses: nix-community/cache-nix-action/restore@v6
         with:
           primary-key: ${{ runner.os }}-prime-numbers
           paths: |
@@ -127,7 +127,7 @@ jobs:
       - name: Always Save Prime Numbers
         id: cache-prime-numbers-save
         if: always() && steps.cache-prime-numbers-restore.outputs.hit-primary-key != 'true'
-        uses: nix-community/cache-nix-action/save@v5
+        uses: nix-community/cache-nix-action/save@v6
         with:
           primary-key: ${{ steps.cache-prime-numbers-restore.outputs.primary-key }}
           paths: |
