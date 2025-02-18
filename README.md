@@ -347,6 +347,13 @@ git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
 
 # Cache action
 
+This action allows caching dependencies and build outputs to improve workflow execution time.
+
+>Two other actions are available in addition to the primary `cache` action:
+>
+>- [Restore action](./restore/README.md)
+>- [Save action](./save/README.md)
+
 [![Tests](https://github.com/actions/cache/actions/workflows/workflow.yml/badge.svg)](https://github.com/actions/cache/actions/workflows/workflow.yml)
 
 ## Documentation
@@ -355,10 +362,26 @@ See ["Caching dependencies to speed up workflows"](https://docs.github.com/en/ac
 
 ## What's New
 
+### ⚠️ Important changes
+
+The cache backend service has been rewritten from the ground up for improved performance and reliability. [actions/cache](https://github.com/actions/cache) now integrates with the new cache service (v2) APIs.
+
+The new service will gradually roll out as of **February 1st, 2025**. The legacy service will also be sunset on the same date. Changes in these release are **fully backward compatible**.
+
+**We are deprecating some versions of this action**. We recommend upgrading to version `v4` or `v3` as soon as possible before **February 1st, 2025.** (Upgrade instructions below).
+
+If you are using pinned SHAs, please use the SHAs of versions `v4.2.0` or `v3.4.0`
+
+If you do not upgrade, all workflow runs using any of the deprecated [actions/cache](https://github.com/actions/cache) will fail.
+
+Upgrading to the recommended versions will not break your workflows.
+
+Read more about the change & access the migration guide: [reference to the announcement](https://github.com/actions/cache/discussions/1510).
+
 ### v4
 
+- Integrated with the new cache service (v2) APIs.
 - Updated to node 20
-- Added a `save-always` flag to save the cache even if a prior step fails
 
 ### v3
 
@@ -373,6 +396,7 @@ See ["Caching dependencies to speed up workflows"](https://docs.github.com/en/ac
 - Fix zstd not working for windows on gnu tar in issues.
 - Allowing users to provide a custom timeout as input for aborting download of a cache segment using an environment variable `SEGMENT_DOWNLOAD_TIMEOUT_MINS`. Default is 10 minutes.
 - New actions are available for granular control over caches - [restore](restore/action.yml) and [save](save/action.yml).
+- Support cross-os caching as an opt-in feature. See [Cross OS caching](./tips-and-workarounds.md#cross-os-cache) for more info.
 - Added option to fail job on cache miss. See [Exit workflow on cache miss](./restore/README.md#exit-workflow-on-cache-miss) for more info.
 - Fix zstd not being used after zstd version upgrade to 1.5.4 on hosted runners
 - Added option to lookup cache without downloading it.
@@ -390,9 +414,26 @@ If you are using this inside a container, a POSIX-compliant `tar` needs to be in
 
 If you are using a `self-hosted` Windows runner, `GNU tar` and `zstd` are required for [Cross-OS caching](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cross-os-cache) to work. They are also recommended to be installed in general so the performance is on par with `hosted` Windows runners.
 
+### Inputs
+
+- `key` - An explicit key for a cache entry. See [creating a cache key](#creating-a-cache-key).
+- `path` - A list of files, directories, and wildcard patterns to cache and restore. See [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns.
+- `restore-keys` - An ordered list of prefix-matched keys to use for restoring stale cache if no cache hit occurred for key.
+- `enableCrossOsArchive` - An optional boolean when enabled, allows Windows runners to save or restore caches that can be restored or saved respectively on other platforms. Default: `false`
+- `fail-on-cache-miss` - Fail the workflow if cache entry is not found. Default: `false`
+- `lookup-only` - If true, only checks if cache entry exists and skips download. Does not change save cache behavior. Default: `false`
+
 #### Environment Variables
 
 - `SEGMENT_DOWNLOAD_TIMEOUT_MINS` - Segment download timeout (in minutes, default `10`) to abort download of the segment if not completed in the defined number of minutes. [Read more](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cache-segment-restore-timeout)
+
+### Outputs
+
+- `cache-hit` - A boolean value to indicate an exact match was found for the key.
+
+    > **Note** `cache-hit` will only be set to `true` when a cache hit occurs for the exact `key` match. For a partial key match via `restore-keys` or a cache miss, it will be set to `false`.
+
+See [Skipping steps based on cache-hit](#skipping-steps-based-on-cache-hit) for info on using this output
 
 ### Cache scopes
 
@@ -414,7 +455,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
       - name: Cache Primes
         id: cache-primes
@@ -445,7 +486,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
       - name: Restore cached Primes
         id: cache-primes-restore
