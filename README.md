@@ -1,6 +1,6 @@
 # Cache Nix action
 
-A GitHub Action to restore and save (not only) Nix store paths using GitHub Actions cache.
+A GitHub Action to restore and save Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
@@ -131,7 +131,6 @@ See [action.yml](action.yml).
 | `purge-last-accessed`             | <ul> <li>Can have an effect only when <code>purge: true</code>.</li> <li>When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the <code>Post Restore</code> phase.</li> <li>Otherwise, this input has no effect.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                    | `false`  | `""`                  |
 | `purge-created`                   | <ul> <li>Can have an effect only when <code>purge: true</code>.</li> <li>When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the <code>Post Restore</code> phase.</li> <li>Otherwise, this input has no effect.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                          | `false`  | `""`                  |
 | `upload-chunk-size`               | <ul> <li>When a non-negative number, the action uses it as the chunk size (in bytes) to split up large files during upload.</li> <li>Otherwise, the action uses the default value <code>33554432</code> (32MB).</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `false`  | `""`                  |
-| `save-always`                     | <p>Run the post step to save the cache even if another step before fails.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `false`  | `false`               |
 | `token`                           | <ul> <li>The action uses it to communicate with GitHub API.</li> <li>If you use a personal access token, it must have the <code>repo</code> scope (<a href="https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key">link</a>).</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                        | `false`  | `${{ github.token }}` |
 
 <!-- action-docs-inputs action="action.yml" -->
@@ -228,11 +227,23 @@ These distances affect the restore and save speed.
 
 **Cons**:
 
-- Collects telemetry ([link](https://github.com/DeterminateSystems/magic-nix-cache))
+- Works only on GitHub Enterprise Server as of Feb 19, 2025 ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
+- Collects telemetry ([link](https://github.com/DeterminateSystems/magic-nix-cache#telemetry))
 - May trigger rate limit errors ([link](https://github.com/DeterminateSystems/magic-nix-cache#usage-notes)).
 - Follows the GitHub Actions Cache semantics ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
   - Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
 - Saves a cache for each path in a store and quickly litters `Caches`.
+
+#### FlakeHub Cache
+
+**Pros** ([link](https://flakehub.com/cache)):
+
+- Free for one month with a coupon code ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
+- Easy to set up.
+
+**Cons**:
+
+- Not free ([link](https://flakehub.com/cache))
 
 #### actions/cache
 
@@ -345,7 +356,14 @@ git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
   - Update the `buildjet-toolkit` branch that contains a patched version of [BuildJet/toolkit](https://github.com/BuildJet/toolkit) synchronized with [actions/toolkit](https://github.com/actions/toolkit).
   - Update submodules for the mentioned branches on the `main` branch.
 
-# Cache action
+# Cache action (mostly legacy description)
+
+This action allows caching dependencies and build outputs to improve workflow execution time.
+
+> Two other actions are available in addition to the primary `cache` action:
+>
+> - [Restore action](./restore/README.md)
+> - [Save action](./save/README.md)
 
 [![Tests](https://github.com/actions/cache/actions/workflows/workflow.yml/badge.svg)](https://github.com/actions/cache/actions/workflows/workflow.yml)
 
@@ -355,13 +373,30 @@ See ["Caching dependencies to speed up workflows"](https://docs.github.com/en/ac
 
 ## What's New
 
+### ⚠️ Important changes
+
+The cache backend service has been rewritten from the ground up for improved performance and reliability. [actions/cache](https://github.com/actions/cache) now integrates with the new cache service (v2) APIs.
+
+The new service will gradually roll out as of **February 1st, 2025**. The legacy service will also be sunset on the same date. Changes in these release are **fully backward compatible**.
+
+**We are deprecating some versions of this action**. We recommend upgrading to version `v4` or `v3` as soon as possible before **February 1st, 2025.** (Upgrade instructions below).
+
+If you are using pinned SHAs, please use the SHAs of versions `v4.2.0` or `v3.4.0`
+
+If you do not upgrade, all workflow runs using any of the deprecated [actions/cache](https://github.com/actions/cache) will fail.
+
+Upgrading to the recommended versions will not break your workflows.
+
+Read more about the change & access the migration guide: [reference to the announcement](https://github.com/actions/cache/discussions/1510).
+
 ### v4
 
+- Integrated with the new cache service (v2) APIs.
 - Updated to node 20
-- Added a `save-always` flag to save the cache even if a prior step fails
 
 ### v3
 
+- Integrated with the new cache service (v2) APIs.
 - Added support for caching in GHES 3.5+.
 - Fixed download issue for files > 2GB during restore.
 - Updated the minimum runner version support from node 12 -> node 16.
@@ -373,6 +408,7 @@ See ["Caching dependencies to speed up workflows"](https://docs.github.com/en/ac
 - Fix zstd not working for windows on gnu tar in issues.
 - Allowing users to provide a custom timeout as input for aborting download of a cache segment using an environment variable `SEGMENT_DOWNLOAD_TIMEOUT_MINS`. Default is 10 minutes.
 - New actions are available for granular control over caches - [restore](restore/action.yml) and [save](save/action.yml).
+- Support cross-os caching as an opt-in feature. See [Cross OS caching](./tips-and-workarounds.md#cross-os-cache) for more info.
 - Added option to fail job on cache miss. See [Exit workflow on cache miss](./restore/README.md#exit-workflow-on-cache-miss) for more info.
 - Fix zstd not being used after zstd version upgrade to 1.5.4 on hosted runners
 - Added option to lookup cache without downloading it.
@@ -390,9 +426,26 @@ If you are using this inside a container, a POSIX-compliant `tar` needs to be in
 
 If you are using a `self-hosted` Windows runner, `GNU tar` and `zstd` are required for [Cross-OS caching](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cross-os-cache) to work. They are also recommended to be installed in general so the performance is on par with `hosted` Windows runners.
 
+### Inputs
+
+- `primary-key` - An explicit key for a cache entry. See [creating a cache key](#creating-a-cache-key).
+- `paths` - A list of files, directories, and wildcard patterns to cache and restore. See [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns.
+- `restore-keys` - An ordered multiline string listing the prefix-matched keys, that are used for restoring stale cache if no cache hit occurred for `primary-key`.
+- `enableCrossOsArchive` - An optional boolean when enabled, allows Windows runners to save or restore caches that can be restored or saved respectively on other platforms. Default: `false`
+- `fail-on-cache-miss` - Fail the workflow if cache entry is not found. Default: `false`
+- `lookup-only` - If true, only checks if cache entry exists and skips download. Does not change save cache behavior. Default: `false`
+
 #### Environment Variables
 
 - `SEGMENT_DOWNLOAD_TIMEOUT_MINS` - Segment download timeout (in minutes, default `10`) to abort download of the segment if not completed in the defined number of minutes. [Read more](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cache-segment-restore-timeout)
+
+### Outputs
+
+- `hit-primary-key` - A string value to indicate an exact match was found for the key.
+  - If there's a cache hit, this will be 'true' or 'false' to indicate if there's an exact match for `primary-key`.
+  - If there's a cache miss, this will be an empty string.
+
+See [Skipping steps based on hit-primary-key](#skipping-steps-based-on-hit-primary-key) for info on using this output
 
 ### Cache scopes
 
@@ -418,20 +471,20 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: actions/cache@v4
+        uses: nix-community/cache-nix-action@v5
         with:
           primary-key: ${{ runner.os }}-primes
           paths: prime-numbers
 
       - name: Generate Prime Numbers
-        if: steps.cache-primes.outputs.cache-hit != 'true'
+        if: steps.cache-primes.outputs.hit-primary-key != 'true'
         run: /generate-primes.sh -d prime-numbers
 
       - name: Use Prime Numbers
         run: /primes.sh -d prime-numbers
 ```
 
-The `cache` action provides a `cache-hit` output which is set to `true` when the cache is restored using the primary `key` and `false` when the cache is restored using `restore-keys` or no cache is restored.
+The `cache` action provides a `hit-primary-key` output which is set to `true` when the cache is restored using the primary `key` and `false` when the cache is restored using `restore-keys` or no cache is restored.
 
 #### Using a combination of restore and save actions
 
@@ -481,6 +534,7 @@ Every programming language and framework has its own way of caching.
 
 See [Examples](examples.md) for a list of `actions/cache` implementations for use with:
 
+- [Bun](./examples.md#bun)
 - [C# - NuGet](./examples.md#c---nuget)
 - [Clojure - Lein Deps](./examples.md#clojure---lein-deps)
 - [D - DUB](./examples.md#d---dub)
@@ -541,11 +595,15 @@ See [Using contexts to create cache keys](https://help.github.com/en/actions/con
 
 ## Cache Limits
 
-A repository can have up to 10GB of caches. Once the 10GB limit is reached, older caches will be evicted based on when the cache was last accessed. Caches that are not accessed within the last week will also be evicted.
+A repository can have up to 10GB of caches. Once the 10GB limit is reached, older caches will be evicted based on when the cache was last accessed.
 
-## Skipping steps based on cache hit
+Caches that are not accessed within the last week will also be evicted.
 
-Using the `hit-primary-key` output, subsequent steps (such as install or build) can be skipped when a cache hit occurs on the primary key. It is recommended to install missing/updated dependencies in case of a partial key match when the key is dependent on the `hash` of the package file.
+## Skipping steps based on hit-primary-key
+
+Using the `hit-primary-key` output, subsequent steps (such as install or build) can be skipped when a cache hit occurs on the key.
+
+It is recommended to install missing/updated dependencies in case of a partial key match when the key is dependent on the `hash` of the package file.
 
 Example:
 
@@ -556,11 +614,11 @@ steps:
   - uses: nix-community/cache-nix-action@v5
     id: cache
     with:
-      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
       path: path/to/dependencies
+      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
   - name: Install Dependencies
-    if: steps.cache.outputs.hit-primary-key != true
+    if: steps.cache.outputs.hit-primary-key != 'true'
     run: /install.sh
 ```
 
@@ -575,7 +633,7 @@ Cache version is a hash [generated](https://github.com/actions/toolkit/blob/500d
 <details>
   <summary>Example</summary>
 
-The workflow will create 3 unique caches with same keys. `Linux` and `Windows` runners will use different compression technique and hence create two different caches. And `build-linux` will create two different caches as the `paths` are different.
+The workflow will create 3 unique caches with same keys. `Ubuntu` and `Windows` runners will use different compression technique and hence create two different caches. And `build-linux` will create two different caches as the `paths` are different.
 
 ```yaml
 jobs:
@@ -592,7 +650,7 @@ jobs:
           paths: prime-numbers
 
       - name: Generate Prime Numbers
-        if: steps.cache-primes.outputs.cache-hit != 'true'
+        if: steps.cache-primes.outputs.hit-primary-key != 'true'
         run: ./generate-primes.sh -d prime-numbers
 
       - name: Cache Numbers
@@ -603,7 +661,7 @@ jobs:
           paths: numbers
 
       - name: Generate Numbers
-        if: steps.cache-numbers.outputs.cache-hit != 'true'
+        if: steps.cache-numbers.outputs.hit-primary-key != 'true'
         run: ./generate-primes.sh -d numbers
 
   build-windows:
@@ -619,7 +677,7 @@ jobs:
           paths: prime-numbers
 
       - name: Generate Prime Numbers
-        if: steps.cache-primes.outputs.cache-hit != 'true'
+        if: steps.cache-primes.outputs.hit-primary-key != 'true'
         run: ./generate-primes -d prime-numbers
 ```
 
@@ -629,84 +687,19 @@ jobs:
 
 There are a number of community practices/workarounds to fulfill specific requirements. You may choose to use them if they suit your use case. Note these are not necessarily the only solution or even a recommended solution.
 
-## Cache segment restore timeout
+- [Cache segment restore timeout](./tips-and-workarounds.md#cache-segment-restore-timeout)
+- [Update a cache](./tips-and-workarounds.md#update-a-cache)
+- [Use cache across feature branches](./tips-and-workarounds.md#use-cache-across-feature-branches)
+- [Cross OS cache](./tips-and-workarounds.md#cross-os-cache)
+- [Force deletion of caches overriding default cache eviction policy](./tips-and-workarounds.md#force-deletion-of-caches-overriding-default-cache-eviction-policy)
 
-A cache gets downloaded in multiple segments of fixed sizes (`1GB` for a `32-bit` runner and `2GB` for a `64-bit` runner). Sometimes, a segment download gets stuck which causes the workflow job to be stuck forever and fail. Version `v3.0.8` of `actions/cache` introduces a segment download timeout. The segment download timeout will allow the segment download to get aborted and hence allow the job to proceed with a cache miss.
+### Windows environment variables
 
-Default value of this timeout is 10 minutes and can be customized by specifying an [environment variable](https://docs.github.com/en/actions/learn-github-actions/environment-variables) named `SEGMENT_DOWNLOAD_TIMEOUT_MINS` with timeout value in minutes.
+Please note that Windows environment variables (like `%LocalAppData%`) will NOT be expanded by this action. Instead, prefer using `~` in your paths which will expand to the HOME directory. For example, instead of `%LocalAppData%`, use `~\AppData\Local`. For a list of supported default environment variables, see the [Learn GitHub Actions: Variables](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables) page.
 
-## Update a cache
+## Contributing
 
-A cache today is immutable and cannot be updated. But some use cases require the cache to be saved even though there was a hit during the `Restore phase`. To do so, always purge old versions of that cache:
-
-```yaml
-- name: update cache on every commit
-  uses: actions/cache@v4
-  with:
-    primary-key: primes-${{ runner.os }}
-    paths: prime-numbers
-    purge: true
-    purge-primary-key: always
-```
-
-Please note that this will create a new cache on every run and hence will consume the cache [quota](./README.md#cache-limits).
-
-## Use cache across feature branches
-
-Reusing cache across feature branches is not allowed today to provide cache [isolation](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache). However if both feature branches are from the default branch, a good way to achieve this is to ensure that the default branch has a cache. This cache will then be consumable by both feature branches.
-
-## Force deletion of caches overriding default cache eviction policy
-
-Caches have [branch scope restriction](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache) in place. This means that if caches for a specific branch are using a lot of storage quota, it may result into more frequently used caches from `default` branch getting thrashed. For example, if there are many pull requests happening on a repo and are creating caches, these cannot be used in default branch scope but will still occupy a lot of space till they get cleaned up by [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy). But sometime we want to clean them up on a faster cadence so as to ensure default branch is not thrashing. In order to achieve this, [gh-actions-cache cli](https://github.com/actions/gh-actions-cache/) can be used to delete caches for specific branches.
-
-This workflow uses `gh-actions-cache` to delete all the caches created by a branch.
-
-<details>
-  <summary>Example</summary>
-
-```yaml
-name: cleanup caches by a branch
-on:
-  pull_request:
-    types:
-      - closed
-  workflow_dispatch:
-
-jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    permissions:
-      # `actions:write` permission is required to delete caches
-      #   See also: https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-a-github-actions-cache-for-a-repository-using-a-cache-id
-      actions: write
-      contents: read
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Cleanup
-        run: |
-          gh extension install actions/gh-actions-cache
-
-          REPO=${{ github.repository }}
-          BRANCH=refs/pull/${{ github.event.pull_request.number }}/merge
-
-          echo "Fetching list of cache key"
-          cacheKeysForPR=$(gh actions-cache list -R $REPO -B $BRANCH | cut -f 1 )
-
-          ## Setting this to not fail the workflow while deleting cache keys. 
-          set +e
-          echo "Deleting caches..."
-          for cacheKey in $cacheKeysForPR
-          do
-              gh actions-cache delete $cacheKey -R $REPO -B $BRANCH --confirm
-          done
-          echo "Done"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-</details>
+We would love for you to contribute to `actions/cache`. Pull requests are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
 ## License
 

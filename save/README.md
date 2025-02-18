@@ -26,7 +26,6 @@ The save action saves a cache. It works similarly to the `cache` action except t
 | `purge-last-accessed`     | <ul> <li>Can have an effect only when <code>purge: true</code>.</li> <li>When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the <code>Post Restore</code> phase.</li> <li>Otherwise, this input has no effect.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                        | `false`  | `""`                  |
 | `purge-created`           | <ul> <li>Can have an effect only when <code>purge: true</code>.</li> <li>When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the <code>Post Restore</code> phase.</li> <li>Otherwise, this input has no effect.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                              | `false`  | `""`                  |
 | `upload-chunk-size`       | <ul> <li>When a non-negative number, the action uses it as the chunk size (in bytes) to split up large files during upload.</li> <li>Otherwise, the action uses the default value <code>33554432</code> (32MB).</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `false`  | `""`                  |
-| `save-always`             | <p>Run the post step to save the cache even if another step before fails.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `false`  | `false`               |
 | `token`                   | <ul> <li>The action uses it to communicate with GitHub API.</li> <li>If you use a personal access token, it must have the <code>repo</code> scope (<a href="https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key">link</a>).</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                            | `false`  | `${{ github.token }}` |
 
 <!-- action-docs-inputs action="action.yml" -->
@@ -51,11 +50,11 @@ steps:
   - name: Build artifacts
     run: /build.sh
 
-  - uses: actions/cache/save@v3
+  - uses: actions/cache/save@v4
     id: cache
     with:
-      path: path/to/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: path/to/dependencies
 ```
 
 ### Re-evaluate cache key while saving
@@ -67,43 +66,71 @@ Let's say we have a restore step that computes a key at runtime.
 #### Restore a cache
 
 ```yaml
-uses: actions/cache/restore@v3
+uses: actions/cache/restore@v4
 id: restore-cache
 with:
-  key: cache-${{ hashFiles('**/lockfiles') }}
+  primary-key: cache-${{ hashFiles('**/lockfiles') }}
 ```
 
 #### Case 1 - Where a user would want to reuse the key as it is
 
 ```yaml
-uses: actions/cache/save@v3
+uses: actions/cache/save@v4
 with:
-  key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+  primary-key: ${{ steps.restore-cache.outputs.primary-key }}
 ```
 
 #### Case 2 - Where the user would want to re-evaluate the key
 
 ```yaml
-uses: actions/cache/save@v3
+uses: actions/cache/save@v4
 with:
-  key: npm-cache-${{hashfiles(package-lock.json)}}
+  primary-key: npm-cache-${{hashfiles(package-lock.json)}}
 ```
 
 ### Always save cache
 
-There are instances where some flaky test cases would fail the entire workflow and users would get frustrated because the builds would run for hours and the cache couldn't be saved as the workflow failed in between. For such use-cases, users now have the ability to use the `actions/cache/save` action to save the cache by using an `if: always()` condition. This way the cache will always be saved if generated, or a warning will be generated that nothing is found on the cache path. Users can also use the `if` condition to only execute the `actions/cache/save` action depending on the output of previous steps. This way they get more control of when to save the cache.
+There are instances where some flaky test cases would fail the entire workflow and users would get frustrated because the builds would run for hours and the cache couldn't be saved as the workflow failed in between.
+For such use-cases, users now have the ability to use the `actions/cache/save` action to save the cache by using an [`always()`](https://docs.github.com/actions/writing-workflows/choosing-what-your-workflow-does/expressions#always) condition.
+This way the cache will always be saved if generated, or a warning will be generated that nothing is found on the cache path. Users can also use the `if` condition to only execute the `actions/cache/save` action depending on the output of previous steps. This way they get more control of when to save the cache.
+
+To avoid saving a cache that already exists, the `hit-primary-key` output from a restore step should be checked.
+
+The `primary-key` output from the restore step should also be used to ensure
+the cache key does not change during the build if it's calculated based on file contents.
+
+Here's an example where we imagine we're calculating a lot of prime numbers and want to cache them:
 
 ```yaml
-steps:
-  - uses: actions/checkout@v4
-  .
-  . // restore if need be
-  .
-  - name: Build
-    run: /build.sh
-  - uses: actions/cache/save@v3
-    if: always() // or any other condition to invoke the save action
-    with:
-      path: path/to/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+name: Always Caching Prime Numbers
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore cached Prime Numbers
+        id: cache-prime-numbers-restore
+        uses: nix-community/cache-nix-action/restore@v5
+        with:
+          primary-key: ${{ runner.os }}-prime-numbers
+          paths: |
+            path/to/dependencies
+            some/other/dependencies
+
+      # Intermediate workflow steps
+
+      - name: Always Save Prime Numbers
+        id: cache-prime-numbers-save
+        if: always() && steps.cache-prime-numbers-restore.outputs.hit-primary-key != 'true'
+        uses: nix-community/cache-nix-action/save@v5
+        with:
+          primary-key: ${{ steps.cache-prime-numbers-restore.outputs.primary-key }}
+          paths: |
+            path/to/dependencies
+            some/other/dependencies
 ```

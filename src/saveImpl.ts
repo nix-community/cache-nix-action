@@ -16,7 +16,7 @@ import { purgeCacheByKey, purgeCachesByTime } from "./utils/purge";
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
 // throw an uncaught exception.  Instead of failing this action, just warn.
-process.on("uncaughtException", e => utils.logError(e.message));
+process.on("uncaughtException", e => utils.logWarning(e.message));
 
 export async function saveImpl(
     stateProvider: IStateProvider
@@ -29,7 +29,7 @@ export async function saveImpl(
         }
 
         if (!utils.isValidEvent()) {
-            throw new Error(
+            utils.logWarning(
                 `Event Validation Error: The event type ${
                     process.env[Events.Key]
                 } is not supported because it's not tied to a branch or tag ref.`

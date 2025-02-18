@@ -139,11 +139,6 @@ inputs:
       - When a non-negative number, the action uses it as the chunk size (in bytes) to split up large files during upload.
       - Otherwise, the action uses the default value `33554432` (32MB).
     default: ""
-  
-  save-always:
-    description: 'Run the post step to save the cache even if another step before fails.'
-    default: 'false'
-    required: false
 
 
   token:
@@ -188,7 +183,7 @@ runs:
   using: "node20"
   main: "dist/restore/index.js"
   post: "dist/save/index.js"
-  post-if: "success() || github.event.inputs.save-always"
+  post-if: "success()"
 branding:
   icon: "archive"
   color: "gray-dark"
