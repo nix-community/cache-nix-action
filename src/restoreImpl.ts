@@ -106,7 +106,8 @@ export async function restoreImpl(
             );
 
             const lookedUpFirstMatch = await utils.restoreCache({
-                primaryKey: "dummy-primary-key-9238748923658961076458761340578645781643059823761298348927349233",
+                primaryKey:
+                    "dummy-primary-key-9238748923658961076458761340578645781643059823761298348927349233",
                 restoreKeys: inputs.restorePrefixesFirstMatch,
                 lookupOnly: true
             });
