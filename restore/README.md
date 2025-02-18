@@ -29,14 +29,14 @@ The restore action restores a cache. It works similarly to the `cache` action ex
 
 ## Outputs
 
-| name              | description                                                                                                                                                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `primary-key`     | <ul> <li>A string.</li> <li>The <code>primary-key</code>.</li> </ul>                                                                                                                                                |
-| `hit`             | <ul> <li>A boolean value.</li> <li><code>true</code> when <code>hit-primary-key</code> is <code>true</code> or <code>hit-first-match</code> is <code>true</code>.</li> <li><code>false</code> otherwise.</li> </ul> |
-| `hit-primary-key` | <ul> <li>A boolean value.</li> <li><code>true</code> when there was a hit on the <code>primary-key</code>.</li> <li><code>false</code> otherwise.</li> </ul>                                                        |
-| `hit-first-match` | <ul> <li>A boolean value.</li> <li><code>true</code> when there was a hit on a key matching <code>restore-prefixes-first-match</code>.</li> <li><code>false</code> otherwise.</li> </ul>                            |
-| `restored-key`    | <ul> <li>A string.</li> <li>The key of a cache restored via the <code>primary-key</code> or via the <code>restore-prefixes-first-match</code>.</li> <li>An empty string otherwise.</li> </ul>                       |
-| `restored-keys`   | <ul> <li>A possibly empty array of strings (JSON).</li> <li>Keys of restored caches.</li> <li>Example: <code>["key1", "key2"]</code>.</li> </ul>                                                                    |
+| name              | description                                                                                                                                                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `primary-key`     | <ul> <li>A string.</li> <li>The <code>primary-key</code>.</li> </ul>                                                                                                                                                     |
+| `hit`             | <ul> <li>A boolean string.</li> <li><code>'true'</code> when <code>hit-primary-key</code> is <code>true</code> or <code>hit-first-match</code> is <code>true</code>.</li> <li><code>'false'</code> otherwise.</li> </ul> |
+| `hit-primary-key` | <ul> <li>A boolean string.</li> <li><code>'true'</code> when there was a hit on the <code>primary-key</code>.</li> <li><code>'false'</code> otherwise.</li> </ul>                                                        |
+| `hit-first-match` | <ul> <li>A boolean string.</li> <li><code>'true'</code> when there was a hit on a key matching <code>restore-prefixes-first-match</code>.</li> <li><code>'false'</code> otherwise.</li> </ul>                            |
+| `restored-key`    | <ul> <li>A string.</li> <li>The key of a cache restored via the <code>primary-key</code> or via the <code>restore-prefixes-first-match</code>.</li> <li>An empty string otherwise.</li> </ul>                            |
+| `restored-keys`   | <ul> <li>A possibly empty array of strings (JSON).</li> <li>Keys of restored caches.</li> <li>Example: <code>["key1", "key2"]</code>.</li> </ul>                                                                         |
 
 <!-- action-docs-outputs action="action.yml" -->
 

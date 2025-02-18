@@ -154,19 +154,19 @@ outputs:
 
   hit:
     description: |
-      - A boolean value.
-      - `true` when `hit-primary-key` is `true` or `hit-first-match` is `true`.
-      - `false` otherwise.
+      - A boolean string.
+      - `'true'` when `hit-primary-key` is `true` or `hit-first-match` is `true`.
+      - `'false'` otherwise.
   hit-primary-key:
     description: |
-      - A boolean value.
-      - `true` when there was a hit on the `primary-key`.
-      - `false` otherwise.
+      - A boolean string.
+      - `'true'` when there was a hit on the `primary-key`.
+      - `'false'` otherwise.
   hit-first-match:
     description: |
-      - A boolean value.
-      - `true` when there was a hit on a key matching `restore-prefixes-first-match`.
-      - `false` otherwise.
+      - A boolean string.
+      - `'true'` when there was a hit on a key matching `restore-prefixes-first-match`.
+      - `'false'` otherwise.
 
   restored-key:
     description: |

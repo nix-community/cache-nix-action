@@ -233,19 +233,19 @@ in
 
           hit:
             description: |
-              - A boolean value.
-              - `true` when ${q hit-primary-key} is `true` or ${q hit-first-match} is `true`.
-              - `false` otherwise.
+              - A boolean string.
+              - `'true'` when ${q hit-primary-key} is `true` or ${q hit-first-match} is `true`.
+              - `'false'` otherwise.
           ${hit-primary-key}:
             description: |
-              - A boolean value.
-              - `true` when there was a hit on the ${q primary-key}.
-              - `false` otherwise.
+              - A boolean string.
+              - `'true'` when there was a hit on the ${q primary-key}.
+              - `'false'` otherwise.
           ${hit-first-match}:
             description: |
-              - A boolean value.
-              - `true` when there was a hit on a key matching ${q restore-prefixes-first-match}.
-              - `false` otherwise.
+              - A boolean string.
+              - `'true'` when there was a hit on a key matching ${q restore-prefixes-first-match}.
+              - `'false'` otherwise.
 
           restored-key:
             description: |
