@@ -139,15 +139,7 @@ inputs:
       - When a non-negative number, the action uses it as the chunk size (in bytes) to split up large files during upload.
       - Otherwise, the action uses the default value `33554432` (32MB).
     default: ""
-  
-  save-always:
-    description: 'Run the post step to save the cache even if another step before fails.'
-    default: 'false'
-    required: false
-    deprecationMessage: |
-      save-always does not work as intended and will be removed in a future release.
-      A separate `actions/cache/restore` step should be used instead.
-      See https://github.com/actions/cache/tree/main/save#always-save-cache for more details.
+
 
   token:
     description: |

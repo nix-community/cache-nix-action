@@ -212,11 +212,6 @@ in
                 - When a non-negative number, the action uses it as the chunk size (in bytes) to split up large files during upload.
                 - Otherwise, the action uses the default value `33554432` (32MB).
               default: ""
-            
-            save-always:
-              description: 'Run the post step to save the cache even if another step before fails.'
-              default: 'false'
-              required: false
         ''
       else
         ""

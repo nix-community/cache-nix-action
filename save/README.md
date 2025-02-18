@@ -26,7 +26,6 @@ The save action saves a cache. It works similarly to the `cache` action except t
 | `purge-last-accessed`     | <ul> <li>Can have an effect only when <code>purge: true</code>.</li> <li>When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the <code>Post Restore</code> phase.</li> <li>Otherwise, this input has no effect.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                        | `false`  | `""`                  |
 | `purge-created`           | <ul> <li>Can have an effect only when <code>purge: true</code>.</li> <li>When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the <code>Post Restore</code> phase.</li> <li>Otherwise, this input has no effect.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                              | `false`  | `""`                  |
 | `upload-chunk-size`       | <ul> <li>When a non-negative number, the action uses it as the chunk size (in bytes) to split up large files during upload.</li> <li>Otherwise, the action uses the default value <code>33554432</code> (32MB).</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `false`  | `""`                  |
-| `save-always`             | <p>Run the post step to save the cache even if another step before fails.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `false`  | `false`               |
 | `token`                   | <ul> <li>The action uses it to communicate with GitHub API.</li> <li>If you use a personal access token, it must have the <code>repo</code> scope (<a href="https://docs.github.com/en/rest/actions/cache?apiVersion=2022-11-28#delete-github-actions-caches-for-a-repository-using-a-cache-key">link</a>).</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                            | `false`  | `${{ github.token }}` |
 
 <!-- action-docs-inputs action="action.yml" -->
@@ -116,7 +115,7 @@ jobs:
 
     - name: Restore cached Prime Numbers
       id: cache-prime-numbers-restore
-      uses: actions/cache/restore@v4
+      uses: nix-community/cache-nix-action/restore@v5
       with:
         primary-key: ${{ runner.os }}-prime-numbers
         paths: |
@@ -128,7 +127,7 @@ jobs:
     - name: Always Save Prime Numbers
       id: cache-prime-numbers-save
       if: always() && steps.cache-prime-numbers-restore.outputs.hit-primary-key != 'true'
-      uses: actions/cache/save@v4
+      uses: nix-community/cache-nix-action/save@v5
       with:
         primary-key: ${{ steps.cache-prime-numbers-restore.outputs.primary-key }}
         paths: |

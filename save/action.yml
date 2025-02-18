@@ -103,11 +103,6 @@ inputs:
       - Otherwise, the action uses the default value `33554432` (32MB).
     default: ""
 
-  save-always:
-    description: "Run the post step to save the cache even if another step before fails."
-    default: "false"
-    required: false
-
   token:
     description: |
       - The action uses it to communicate with GitHub API.
