@@ -1,4 +1,4 @@
-import * as cache from "@cache-nix-action/cache";
+import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 
 import { Events, Inputs, RefKey } from "../src/constants";

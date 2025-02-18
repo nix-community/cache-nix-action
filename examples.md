@@ -47,9 +47,11 @@
 ```yaml
 - uses: actions/cache@v4
   with:
-    path: |
+    paths: |
       ~/.bun/install/cache
-    key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+    primary-key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+    restore-prefixes-first-match: |
+      ${{ runner.os }}-bun-
 ```
 
 ### Windows
@@ -57,9 +59,11 @@
 ```yaml
 - uses: actions/cache@v4
   with:
-    path: |
+    paths: |
       ~\.bun
-    key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+    primary-key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+    restore-prefixes-first-match: |
+      ${{ runner.os }}-bun-
 ```
 
 ## C# - NuGet
@@ -528,7 +532,7 @@ jobs:
     steps:
     - uses: actions/cache@v4
       with:
-        paths: ${{ matrix.path }}
+        paths: ${{ matrix.paths }}
         primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-prefixes-first-match: |
          ${{ runner.os }}-pip-
@@ -677,8 +681,8 @@ whenever possible:
 
 ```yaml
 env:
-  MINT_paths: .mint/lib
-  MINT_LINK_paths: .mint/bin
+  MINT_PATH: .mint/lib
+  MINT_LINK_PATH: .mint/bin
 steps:
   - uses: actions/cache@v4
     with:

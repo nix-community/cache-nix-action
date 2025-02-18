@@ -147,7 +147,7 @@ Usually you may want to use the same `key` with both `actions/cache/restore` and
 
 ### Using restore action outputs to make save action behave just like the cache action
 
-The outputs `cache-primary-key` and `cache-restored-key` can be used to check if the restored cache is same as the given primary key. Alternatively, the `cache-hit` output can also be used to check if the restored was a complete match or a partially restored cache.
+The outputs `primary-key` and `restored-key` can be used to check if the restored cache is same as the given primary key. Alternatively, the `hit-primary-key` output can also be used to check if the restored was a complete match or a partially restored cache.
 
 ### Ensuring proper restores and save happen across the actions
 
