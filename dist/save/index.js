@@ -72999,6 +72999,7 @@ const io = __importStar(__nccwpck_require__(4994));
 const fs_1 = __nccwpck_require__(9896);
 const path = __importStar(__nccwpck_require__(6928));
 const utils = __importStar(__nccwpck_require__(9225));
+const core = __importStar(__nccwpck_require__(7484));
 const constants_1 = __nccwpck_require__(6741);
 const IS_WINDOWS = process.platform === 'win32';
 // Returns tar path and type: BSD or GNU
@@ -73206,7 +73207,9 @@ function execCommands(commands, cwd) {
 function listTar(archivePath, compressionMethod) {
     return __awaiter(this, void 0, void 0, function* () {
         const commands = yield getCommands(compressionMethod, 'list', archivePath);
+        core.debug(`::group::Archive contents`);
         yield execCommands(commands);
+        core.debug(`::endgroup::`);
     });
 }
 // Extract a tar
