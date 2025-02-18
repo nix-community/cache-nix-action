@@ -21,7 +21,7 @@ process.on("uncaughtException", e => utils.logWarning(e.message));
 export async function saveImpl(
     stateProvider: IStateProvider
 ): Promise<number | void> {
-    const cacheId = -1;
+    let cacheId = -1;
     const time = Date.now();
     try {
         if (!utils.isCacheFeatureAvailable()) {
@@ -89,7 +89,7 @@ export async function saveImpl(
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
                 // can throw
-                await cache.saveCache(inputs.paths, primaryKey, {
+                cacheId = await cache.saveCache(inputs.paths, primaryKey, {
                     uploadChunkSize: inputs.uploadChunkSize
                 });
 
