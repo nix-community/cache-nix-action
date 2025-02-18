@@ -75510,7 +75510,7 @@ const purge_1 = __nccwpck_require__(8342);
 process.on("uncaughtException", e => utils.logWarning(e.message));
 function saveImpl(stateProvider) {
     return __awaiter(this, void 0, void 0, function* () {
-        const cacheId = -1;
+        let cacheId = -1;
         const time = Date.now();
         try {
             if (!utils.isCacheFeatureAvailable()) {
@@ -75559,7 +75559,7 @@ function saveImpl(stateProvider) {
                     yield (0, collectGarbage_1.removeGarbage)();
                     utils.info(`Saving a new cache with the key "${primaryKey}".`);
                     // can throw
-                    yield cacheBackend_1.cache.saveCache(inputs.paths, primaryKey, {
+                    cacheId = yield cacheBackend_1.cache.saveCache(inputs.paths, primaryKey, {
                         uploadChunkSize: inputs.uploadChunkSize
                     });
                     utils.info(`Saved a new cache.`);
