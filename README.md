@@ -455,21 +455,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Cache Primes
-      id: cache-primes
-      uses: nix-community/cache-nix-action@v5
-      with:
-        primary-key: ${{ runner.os }}-primes
-        paths: prime-numbers
+      - name: Cache Primes
+        id: cache-primes
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: ${{ runner.os }}-primes
+          paths: prime-numbers
 
-    - name: Generate Prime Numbers
-      if: steps.cache-primes.outputs.hit-primary-key != 'true'
-      run: /generate-primes.sh -d prime-numbers
+      - name: Generate Prime Numbers
+        if: steps.cache-primes.outputs.hit-primary-key != 'true'
+        run: /generate-primes.sh -d prime-numbers
 
-    - name: Use Prime Numbers
-      run: /primes.sh -d prime-numbers
+      - name: Use Prime Numbers
+        run: /primes.sh -d prime-numbers
 ```
 
 The `cache` action provides a `hit-primary-key` output which is set to `true` when the cache is restored using the primary `key` and `false` when the cache is restored using `restore-keys` or no cache is restored.
@@ -486,27 +486,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Restore cached Primes
-      id: cache-primes-restore
-      uses: nix-community/cache-nix-action/restore@v5
-      with:
-        primary-key: ${{ runner.os }}-primes
-        paths: |
-          path/to/dependencies
-          some/other/dependencies
+      - name: Restore cached Primes
+        id: cache-primes-restore
+        uses: nix-community/cache-nix-action/restore@v5
+        with:
+          primary-key: ${{ runner.os }}-primes
+          paths: |
+            path/to/dependencies
+            some/other/dependencies
 
-    # other steps
+      # other steps
 
-    - name: Save Primes
-      id: cache-primes-save
-      uses: nix-community/cache-nix-action/save@v5
-      with:
-        primary-key: ${{ steps.cache-primes-restore.outputs.cache-primary-key }}
-        paths: |
-          path/to/dependencies
-          some/other/dependencies
+      - name: Save Primes
+        id: cache-primes-save
+        uses: nix-community/cache-nix-action/save@v5
+        with:
+          primary-key: ${{ steps.cache-primes-restore.outputs.cache-primary-key }}
+          paths: |
+            path/to/dependencies
+            some/other/dependencies
 ```
 
 > **Note**

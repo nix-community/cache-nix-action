@@ -111,26 +111,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Restore cached Prime Numbers
-      id: cache-prime-numbers-restore
-      uses: nix-community/cache-nix-action/restore@v5
-      with:
-        primary-key: ${{ runner.os }}-prime-numbers
-        paths: |
-          path/to/dependencies
-          some/other/dependencies
+      - name: Restore cached Prime Numbers
+        id: cache-prime-numbers-restore
+        uses: nix-community/cache-nix-action/restore@v5
+        with:
+          primary-key: ${{ runner.os }}-prime-numbers
+          paths: |
+            path/to/dependencies
+            some/other/dependencies
 
-    # Intermediate workflow steps
+      # Intermediate workflow steps
 
-    - name: Always Save Prime Numbers
-      id: cache-prime-numbers-save
-      if: always() && steps.cache-prime-numbers-restore.outputs.hit-primary-key != 'true'
-      uses: nix-community/cache-nix-action/save@v5
-      with:
-        primary-key: ${{ steps.cache-prime-numbers-restore.outputs.primary-key }}
-        paths: |
-          path/to/dependencies
-          some/other/dependencies
+      - name: Always Save Prime Numbers
+        id: cache-prime-numbers-save
+        if: always() && steps.cache-prime-numbers-restore.outputs.hit-primary-key != 'true'
+        uses: nix-community/cache-nix-action/save@v5
+        with:
+          primary-key: ${{ steps.cache-prime-numbers-restore.outputs.primary-key }}
+          paths: |
+            path/to/dependencies
+            some/other/dependencies
 ```
