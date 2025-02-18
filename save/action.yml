@@ -7,6 +7,8 @@ inputs:
       - When a non-empty string, the action uses this key for saving a cache.
       - Otherwise, the action fails.
     required: true
+  
+  
 
   nix:
     description: |
@@ -38,13 +40,13 @@ inputs:
       - Overrides `paths`.
       - Can have an effect only when the action runs on a `Linux` runner.
     default: ""
-
+  
   backend:
     description: |
       Choose an implementation of the `cache` package.
       - When `actions`, use the [actions version](https://github.com/actions/toolkit/tree/main/packages/cache) from [here](https://github.com/nix-community/cache-nix-action/tree/actions-toolkit/packages/cache).
       - When `buildjet`, use the [BuildJet version](https://github.com/BuildJet/toolkit/tree/main/packages/cache-buildjet) from [here](https://github.com/nix-community/cache-nix-action/tree/buildjet-toolkit/packages/cache).
-    default: "actions"
+    default: 'actions'
     required: false
 
   gc-max-store-size:
@@ -103,6 +105,7 @@ inputs:
       - Otherwise, the action uses the default value `33554432` (32MB).
     default: ""
 
+
   token:
     description: |
       - The action uses it to communicate with GitHub API.
@@ -112,7 +115,7 @@ inputs:
 runs:
   using: "node20"
   main: "../dist/save-only/index.js"
-
+  
 branding:
   icon: "archive"
   color: "gray-dark"

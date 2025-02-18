@@ -9,7 +9,7 @@ let
         main = "dist/restore/index.js";
         post = ''
           post: "dist/save/index.js"
-            post-if: "success() || github.event.inputs.save-always"'';
+            post-if: "success()"'';
       };
       save = {
         name = "Save";
