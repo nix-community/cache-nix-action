@@ -4,7 +4,7 @@ A GitHub Action to restore and save Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
-## What it can
+## Features
 
 - Restore and save the Nix store on `Linux` and `macOS` runners.
 - Restore and save other directories on `Linux`, `macOS`, and `Windows` runners.
@@ -48,8 +48,10 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
   - [Purge old caches](#purge-old-caches)
   - [Merge caches](#merge-caches)
-- The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
-  - Workaround: the [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space) action frees `~30GB` of disk space in several minutes.
+- The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)). [Workarounds](https://github.com/marketplace?query=disk):
+  - Any platform: [hugoalh/disk-space-optimizer-ghaction](https://github.com/hugoalh/disk-space-optimizer-ghaction).
+  - Ubuntu: [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space), [endersonmenezes/free-disk-space](https://github.com/endersonmenezes/free-disk-space), [easimon/maximize-build-space](https://github.com/easimon/maximize-build-space), [AdityaGarg8/remove-unwanted-software](https://github.com/AdityaGarg8/remove-unwanted-software),[gmij/max-build-space](https://github.com/gmij/max-build-space), [firus-v/free-disk-space](https://github.com/firus-v/free-disk-space), [coder-xiaomo/free-disk-space](https://github.com/coder-xiaomo/free-disk-space), [data-intuitive/reclaim-the-bytes](https://github.com/data-intuitive/reclaim-the-bytes), [laverdet/remove-bloatware](https://github.com/laverdet/remove-bloatware), [xd009642/ci-hoover](https://github.com/xd009642/ci-hoover), [justinthelaw/maximize-github-runner-space](https://github.com/justinthelaw/maximize-github-runner-space).
+  - macOS: [comment](https://github.com/easimon/maximize-build-space/issues/7#issuecomment-1063681606)
 - Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
   - Workaround: provide caches for PRs on default or base branches.
 
@@ -101,13 +103,18 @@ See [Caching Approaches](#caching-approaches).
 
 See [ci.yaml](.github/workflows/ci.yaml) and its [runs](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml).
 
+## Troubleshooting
+
+- Use [action-tmate](https://github.com/mxschmitt/action-tmate) to connect to the runner via SSH.
+- Use [action-debug-vscode](https://github.com/fawazahmed0/action-debug-vscode) to run a browser VSCode on the runner.
+
 ## Configuration
 
 See [action.yml](action.yml).
 
 <!-- action-docs-inputs action="action.yml" -->
 
-## Inputs
+### Inputs
 
 | name                              | description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | required | default               |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------- |
@@ -137,7 +144,7 @@ See [action.yml](action.yml).
 
 <!-- action-docs-outputs action="action.yml" -->
 
-## Outputs
+### Outputs
 
 | name              | description                                                                                                                                                                                                              |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -150,11 +157,7 @@ See [action.yml](action.yml).
 
 <!-- action-docs-outputs action="action.yml" -->
 
-### Troubleshooting
-
-- Use [action-tmate](https://github.com/mxschmitt/action-tmate) to debug on a runner via SSH.
-
-### Garbage collection parameters
+## Garbage collection parameters
 
 On `Linux` runners, when `gc-max-store-size-linux` is set to a number, the `cache-nix-action` will run `nix store gc --max R` before saving a cache.
 Here, `R` is `max(0, S - gc-max-store-size-linux)`, where `S` is the current store size.
@@ -163,7 +166,7 @@ Respective conditions hold for `macOS` runners.
 
 There are alternative approaches to garbage collection (see [Garbage collection](#garbage-collection)).
 
-### Purge old caches
+## Purge old caches
 
 The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [Inputs](#inputs) and the `compare-run-times` job in the [Example workflow](#example-workflow)).
 
@@ -171,7 +174,7 @@ The [purge-cache](https://github.com/MyAlbum/purge-cache) action allows to remov
 
 Alternatively, you can use the [GitHub Actions Cache API](https://docs.github.com/en/rest/actions/cache).
 
-### Merge caches
+## Merge caches
 
 `GitHub` evicts least recently used caches when their total size exceeds `10GB` (see [Limitations](#limitations)).
 
@@ -329,11 +332,11 @@ Disadvantages:
 
 ## Contribute
 
-Clone the repository.
+- Clone the repository.
 
-```console
-git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
-```
+  ```console
+  git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
+  ```
 
 - Improve README.
 - Report errors, suggest improvements in issues.
