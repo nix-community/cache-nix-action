@@ -89,7 +89,7 @@ jobs:
       matrix:
         os:
           - macos-13
-          - macos-14
+          - macos-15
           - ubuntu-22.04
           - ubuntu-24.04
         id:
@@ -157,7 +157,7 @@ jobs:
       matrix:
         os:
           - macos-13
-          - macos-14
+          - macos-15
           - ubuntu-22.04
           - ubuntu-24.04
     runs-on: ${{ matrix.os }}
@@ -231,7 +231,7 @@ jobs:
       matrix:
         os:
           - macos-13
-          - macos-14
+          - macos-15
           - ubuntu-22.04
           - ubuntu-24.04
     runs-on: ${{ matrix.os }}
@@ -296,7 +296,7 @@ jobs:
           - false
         os:
           - macos-13
-          - macos-14
+          - macos-15
           - ubuntu-22.04
           - ubuntu-24.04
     runs-on: ${{ matrix.os }}
