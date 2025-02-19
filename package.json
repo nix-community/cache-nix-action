@@ -12,7 +12,7 @@
     "format": "prettier --write **/*.ts **/*.md **/action.yml",
     "format-ci": "prettier --write .github/workflows/*.yaml",
     "format-check": "prettier --check **/*.ts",
-    "readme": "npx action-docs -u; (cd save; npx action-docs -u); (cd restore; npx action-docs -u); prettier --write restore/README.md save/README.md README.md"
+    "readme": "npx action-docs -t 3 -u; (cd save; npx action-docs -t 3 -u); (cd restore; npx action-docs -t 3 -u); prettier --write restore/README.md save/README.md README.md"
   },
   "repository": {
     "type": "git",
