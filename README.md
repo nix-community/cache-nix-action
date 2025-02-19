@@ -12,6 +12,13 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - Merge caches produced by several jobs.
 - Purge caches created or last accessed at least the given time ago.
 
+## Additional actions
+
+- [Restore action](./restore/README.md)
+- [Save action](./save/README.md)
+
+These actions are used to [Merge caches](#merge-caches) and in other [Caching Strategies](#caching-strategies), e.g., [Always save cache](./caching-strategies.md#saving-cache-even-if-the-build-fails).
+
 ## A typical job
 
 1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) installs Nix in single-user mode.
@@ -58,11 +65,6 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 ## Comparison with alternative approaches
 
 See [Caching Approaches](#caching-approaches).
-
-## Additional actions
-
-- [Restore action](./restore/README.md)
-- [Save action](./save/README.md)
 
 ## Example steps
 
@@ -176,7 +178,7 @@ Alternatively, you can use the [GitHub Actions Cache API](https://docs.github.co
 
 ## Merge caches
 
-`GitHub` evicts least recently used caches when their total size exceeds `10GB` (see [Limitations](#limitations)).
+`GitHub` evicts the least recently used caches when their total size exceeds `10GB` (see [Limitations](#limitations)).
 
 If you have multiple similar caches produced on runners with **the same OS** (`Linux` or `macOS`), you can merge them into a single cache and store just it to save space.
 
@@ -324,11 +326,11 @@ Disadvantages:
 - Keep inputs (see this [issue](https://github.com/NixOS/nix/issues/4250) and this [issue](https://github.com/NixOS/nix/issues/6895)).
 - Start [direnv](https://github.com/nix-community/nix-direnv) in background.
 
-### Garbage collection approaches
+### Garbage collection tools
 
-- Use [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc) for cache eviction via `atime`.
-- gc via gc roots [nix-cache-cut](https://github.com/astro/nix-cache-cut).
-- gc based on time [cache-gc](https://github.com/lheckemann/cache-gc).
+- GC by `atime` [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc).
+- GC via gc roots [nix-cache-cut](https://github.com/astro/nix-cache-cut).
+- GC based on time [cache-gc](https://github.com/lheckemann/cache-gc).
 
 ## Contribute
 
@@ -359,7 +361,7 @@ Disadvantages:
   - Update the `buildjet-toolkit` branch that contains a patched version of [BuildJet/toolkit](https://github.com/BuildJet/toolkit) synchronized with [actions/toolkit](https://github.com/actions/toolkit).
   - Update submodules for the mentioned branches on the `main` branch.
 
-# Cache action (mostly legacy description)
+# Cache action (legacy description updated for the cache-nix-action)
 
 This action allows caching dependencies and build outputs to improve workflow execution time.
 
