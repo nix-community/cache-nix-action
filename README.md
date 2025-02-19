@@ -1,4 +1,4 @@
-# Cache Nix action
+# Cache Nix Store
 
 A GitHub Action to restore and save Nix store paths using GitHub Actions cache.
 

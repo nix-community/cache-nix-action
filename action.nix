@@ -57,7 +57,7 @@ let
   hit-first-match = "hit-first-match";
 in
 ''
-  name: "${specific.name} Nix store"
+  name: "${specific.name} Nix Store"
   description: "${specific.description} Nix store using GitHub Actions cache to speed up workflows."
   author: "GitHub"
   inputs:
