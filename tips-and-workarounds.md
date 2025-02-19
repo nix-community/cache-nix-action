@@ -8,16 +8,16 @@ Default value of this timeout is 10 minutes and can be customized by specifying 
 
 ## Update a cache
 
-A cache today is immutable and cannot be updated. But some use cases require the cache to be saved even though there was a "hit" during restore. To do so, use a `key` which is unique for every run and use `restore-keys` to restore the nearest cache. For example:
+A cache today is immutable and cannot be updated. But some use cases require the cache to be saved even though there was a "hit" during restore. To do so, use a `primary-key` which is unique for every run and use `restore-prefixes-first-match` to restore the nearest cache. For example:
 
   ```yaml
       - name: update cache on every commit
-        uses: actions/cache@v4
+        uses: nix-community/cache-nix-action@v6
         with:
-          path: prime-numbers
-          key: primes-${{ runner.os }}-${{ github.run_id }} # Can use time based key as well
-          restore-keys: |
+          primary-key: primes-${{ runner.os }}-${{ github.run_id }} # Can use time based key as well
+          restore-prefixes-first-match: |
             primes-${{ runner.os }}
+          paths: prime-numbers
   ```
 
   Please note that this will create a new cache on every run and hence will consume the cache [quota](./README.md#cache-limits).

@@ -431,24 +431,11 @@ If you are using this inside a container, a POSIX-compliant `tar` needs to be in
 
 If you are using a `self-hosted` Windows runner, `GNU tar` and `zstd` are required for [Cross-OS caching](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cross-os-cache) to work. They are also recommended to be installed in general so the performance is on par with `hosted` Windows runners.
 
-### Inputs
-
-- `primary-key` - An explicit key for a cache entry. See [creating a cache key](#creating-a-cache-key).
-- `paths` - A list of files, directories, and wildcard patterns to cache and restore. See [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns.
-- `restore-keys` - An ordered multiline string listing the prefix-matched keys, that are used for restoring stale cache if no cache hit occurred for `primary-key`.
-- `enableCrossOsArchive` - An optional boolean when enabled, allows Windows runners to save or restore caches that can be restored or saved respectively on other platforms. Default: `false`
-- `fail-on-cache-miss` - Fail the workflow if cache entry is not found. Default: `false`
-- `lookup-only` - If true, only checks if cache entry exists and skips download. Does not change save cache behavior. Default: `false`
-
 #### Environment Variables
 
 - `SEGMENT_DOWNLOAD_TIMEOUT_MINS` - Segment download timeout (in minutes, default `10`) to abort download of the segment if not completed in the defined number of minutes. [Read more](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cache-segment-restore-timeout)
 
 ### Outputs
-
-- `hit-primary-key` - A string value to indicate an exact match was found for the key.
-  - If there's a cache hit, this will be 'true' or 'false' to indicate if there's an exact match for `primary-key`.
-  - If there's a cache miss, this will be an empty string.
 
 See [Skipping steps based on hit-primary-key](#skipping-steps-based-on-hit-primary-key) for info on using this output
 
@@ -489,7 +476,7 @@ jobs:
         run: /primes.sh -d prime-numbers
 ```
 
-The `cache` action provides a `hit-primary-key` output which is set to `true` when the cache is restored using the primary `key` and `false` when the cache is restored using `restore-keys` or no cache is restored.
+The `cache-nix-action` provides the `hit-primary-key` output which is set to `'true'` when the cache is restored using the `primary-key` and `'false'` otherwise.
 
 #### Using a combination of restore and save actions
 
@@ -527,7 +514,7 @@ jobs:
 ```
 
 > **Note**
-> You must use the `cache` or `restore` action in your workflow before you need to use the files that might be restored from the cache. If the provided `key` matches an existing cache, a new cache is not created and if the provided `key` doesn't match an existing cache, a new cache is automatically created provided the job completes successfully.
+> You must use the `cache` or `restore` action in your workflow before you need to use the files that might be restored from the cache. If the provided `primary-key` matches an existing cache, a new cache is not created and if the provided `primary-key` doesn't match an existing cache, a new cache is automatically created provided the job completes successfully.
 
 ## Caching Strategies
 
@@ -537,7 +524,7 @@ With the introduction of the `restore` and `save` actions, a lot of caching use 
 
 Every programming language and framework has its own way of caching.
 
-See [Examples](examples.md) for a list of `actions/cache` implementations for use with:
+See [Examples](examples.md) for a list of `nix-community/cache-nix-action` implementations for use with:
 
 - [Bun](./examples.md#bun)
 - [C# - NuGet](./examples.md#c---nuget)
@@ -619,8 +606,8 @@ steps:
   - uses: nix-community/cache-nix-action@v6
     id: cache
     with:
-      path: path/to/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: path/to/dependencies
 
   - name: Install Dependencies
     if: steps.cache.outputs.hit-primary-key != 'true'
@@ -631,7 +618,7 @@ steps:
 
 ## Cache Version
 
-Cache version is a hash [generated](https://github.com/actions/toolkit/blob/500d0b42fee2552ae9eeb5933091fe2fbf14e72d/packages/cache/src/internal/cacheHttpClient.ts#L73-L90) for a combination of compression tool used (Gzip, Zstd, etc. based on the runner OS) and the `path` of directories being cached. If two caches have different versions, they are identified as unique caches while matching. This, for example, means that a cache created on a `windows-latest` runner can't be restored on `ubuntu-latest` as cache `Version`s are different.
+Cache version is a hash [generated](https://github.com/actions/toolkit/blob/500d0b42fee2552ae9eeb5933091fe2fbf14e72d/packages/cache/src/internal/cacheHttpClient.ts#L73-L90) for a combination of compression tool used (Gzip, Zstd, etc. based on the runner OS) and the `paths` of directories being cached. If two caches have different versions, they are identified as unique caches while matching. This, for example, means that a cache created on a `windows-latest` runner can't be restored on `ubuntu-latest` as cache `Version`s are different.
 
 > Pro tip: The [list caches](https://docs.github.com/en/rest/actions/cache#list-github-actions-caches-for-a-repository) API can be used to get the version of a cache. This can be helpful to troubleshoot cache miss due to version.
 
@@ -704,7 +691,7 @@ Please note that Windows environment variables (like `%LocalAppData%`) will NOT 
 
 ## Contributing
 
-We would love for you to contribute to `actions/cache`. Pull requests are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
+We would love for you to contribute to `nix-community/cache-nix-action`. Pull requests are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
 ## License
 

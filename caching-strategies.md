@@ -12,9 +12,9 @@ This document lists some of the strategies (and example workflows if possible) w
 jobs:
   build:
     runs-on: ubuntu-latest
-    - uses: actions/cache@v4
+    - uses: nix-community/cache-nix-action@v6
       with:
-        key: ${{ some-metadata }}-cache
+        primary-key: ${{ some-metadata }}-cache
 ```
 
 In your workflows, you can use different strategies to name your key depending on your use case so that the cache is scoped appropriately for your need. For example, you can have cache specific to OS, or based on the lockfile or commit SHA or even workflow run.
@@ -24,12 +24,12 @@ In your workflows, you can use different strategies to name your key depending o
 One of the most common use case is to use hash for lockfile as key. This way, same cache will be restored for a lockfile until there's a change in dependencies listed in lockfile.
 
 ```yaml
-  - uses: actions/cache@v4
+  - uses: nix-community/cache-nix-action@v6
     with:
-      path: |
+      primary-key: cache-${{ hashFiles('**/lockfiles') }}
+      paths: |
         path/to/dependencies
         some/other/dependencies
-      key: cache-${{ hashFiles('**/lockfiles') }}
 ```
 
 ### Using restore keys to download the closest matching cache
@@ -37,13 +37,13 @@ One of the most common use case is to use hash for lockfile as key. This way, sa
 If cache is not found matching the primary key, restore keys can be used to download the closest matching cache that was recently created. This ensures that the build/install step will need to additionally fetch just a handful of newer dependencies, and hence saving build time.
 
 ```yaml
-  - uses: actions/cache@v4
+  - uses: nix-community/cache-nix-action@v6
     with:
-      path: |
+      primary-key: cache-npm-${{ hashFiles('**/lockfiles') }}
+      paths: |
         path/to/dependencies
         some/other/dependencies
-      key: cache-npm-${{ hashFiles('**/lockfiles') }}
-      restore-keys: |
+      restore-prefixes-first-match: |
         cache-npm-
 ```
 
@@ -54,12 +54,12 @@ The restore keys can be provided as a complete name, or a prefix, read more [her
 In case of workflows with matrix running for multiple Operating Systems, the caches can be stored separately for each of them. This can be used in combination with hashfiles in case multiple caches are being generated per OS.
 
 ```yaml
-  - uses: actions/cache@v4
+  - uses: nix-community/cache-nix-action@v6
     with:
-      path: |
+      primary-key: ${{ runner.os }}-cache
+      paths: |
         path/to/dependencies
         some/other/dependencies
-      key: ${{ runner.os }}-cache
 ```
 
 ### Creating a short lived cache
@@ -67,18 +67,18 @@ In case of workflows with matrix running for multiple Operating Systems, the cac
 Caches scoped to the particular workflow run id or run attempt can be stored and referred by using the run id/attempt. This is an effective way to have a short lived cache.
 
 ```yaml
-    key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+    primary-key: cache-${{ github.run_id }}-${{ github.run_attempt }}
 ```
 
 On similar lines, commit sha can be used to create a very specialized and short lived cache.
 
 ```yaml
-  - uses: actions/cache@v4
+  - uses: nix-community/cache-nix-action@v6
     with:
-      path: |
+      primary-key: cache-${{ github.sha }}
+      paths: |
         path/to/dependencies
         some/other/dependencies
-      key: cache-${{ github.sha }}
 ```
 
 ### Using multiple factors while forming a key depending on the need
@@ -86,12 +86,12 @@ On similar lines, commit sha can be used to create a very specialized and short 
 Cache key can be formed by combination of more than one metadata, evaluated info.
 
 ```yaml
-  - uses: actions/cache@v4
+  - uses: nix-community/cache-nix-action@v6
     with:
-      path: |
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: |
         path/to/dependencies
         some/other/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 ```
 
 The [GitHub Context](https://docs.github.com/en/actions/learn-github-actions/contexts#github-context) can be used to create keys using the workflows metadata.
@@ -100,7 +100,7 @@ The [GitHub Context](https://docs.github.com/en/actions/learn-github-actions/con
 
 ### Understanding how to choose path
 
-While setting paths for caching dependencies it is important to give correct path depending on the hosted runner you are using or whether the action is running in a container job. Assigning different `path` for save and restore will result in cache miss.
+While setting paths for caching dependencies it is important to give correct path depending on the hosted runner you are using or whether the action is running in a container job. Assigning different `paths` for save and restore will result in cache miss.
 
 Below are GitHub hosted runner specific paths one should take care of when writing a workflow which saves/restores caches across OS.
 
@@ -148,14 +148,14 @@ In case you are using a centralized job to create and save your cache that can b
 steps:
   - uses: actions/checkout@v4
 
-  - uses: actions/cache/restore@v4
+  - uses: nix-community/cache-nix-action@v6
     id: cache
     with:
-      path: path/to/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: path/to/dependencies
 
   - name: Install Dependencies
-    if: steps.cache.outputs.cache-hit != 'true'
+    if: steps.cache.outputs.hit-primary-key != 'true'
     run: /install.sh
 
   - name: Build
@@ -167,20 +167,20 @@ steps:
 
 ### Failing/Exiting the workflow if cache with exact key is not found
 
-You can use the output of this action to exit the workflow on cache miss. This way you can restrict your workflow to only initiate the build when `cache-hit` occurs, in other words, cache with exact key is found.
+You can use the output of this action to exit the workflow on cache miss. This way you can restrict your workflow to only initiate the build when `hit-primary-key` occurs, in other words, cache with exact key is found.
 
 ```yaml
 steps:
   - uses: actions/checkout@v4
 
-  - uses: actions/cache/restore@v4
+  - uses: nix-community/cache-nix-action@v6
     id: cache
     with:
-      path: path/to/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: path/to/dependencies
 
   - name: Check cache hit
-    if: steps.cache.outputs.cache-hit != 'true'
+    if: steps.cache.outputs.hit-primary-key != 'true'
     run: exit 1
 
   - name: Build
@@ -194,22 +194,22 @@ steps:
 If you want to avoid re-computing the cache key again in `save` action, the outputs from `restore` action can be used as input to the `save` action.
 
 ```yaml
-  - uses: actions/cache/restore@v4
+  - uses: nix-community/cache-nix-action@v6
     id: restore-cache
     with:
-      path: |
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: |
         path/to/dependencies
         some/other/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
   .
   .
   .
-  - uses: actions/cache/save@v4
+  - uses: nix-community/cache-nix-action@v6
     with:
-      path: |
+      primary-key: ${{ steps.restore-cache.outputs.primary-key }}
+      paths: |
         path/to/dependencies
         some/other/dependencies
-      key: ${{ steps.restore-cache.outputs.cache-primary-key }}
 ```
 
 ### Re-evaluate cache key while saving cache
@@ -219,26 +219,26 @@ On the other hand, the key can also be explicitly re-computed while executing th
 Let's say we have a restore step that computes key at runtime
 
 ```yaml
-uses: actions/cache/restore@v4
+uses: nix-community/cache-nix-action@v6
 id: restore-cache
 with:
-    key: cache-${{ hashFiles('**/lockfiles') }}
+    primary-key: cache-${{ hashFiles('**/lockfiles') }}
 ```
 
 Case 1: Where an user would want to reuse the key as it is
 
 ```yaml
-uses: actions/cache/save@v4
+uses: nix-community/cache-nix-action@v6
 with:
-    key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+    primary-key: ${{ steps.restore-cache.outputs.primary-key }}
 ```
 
 Case 2: Where the user would want to re-evaluate the key
 
 ```yaml
-uses: actions/cache/save@v4
+uses: nix-community/cache-nix-action@v6
 with:
-    key: npm-cache-${{hashfiles(package-lock.json)}}
+    primary-key: npm-cache-${{hashfiles(package-lock.json)}}
 ```
 
 ### Saving cache even if the build fails
@@ -247,7 +247,7 @@ See [Always save cache](./save/README.md#always-save-cache).
 
 ### Saving cache once and reusing in multiple workflows
 
-In case of multi-module projects, where the built artifact of one project needs to be reused in subsequent child modules, the need of rebuilding the parent module again and again with every build can be eliminated. The `actions/cache` or `actions/cache/save` action can be used to build and save the parent module artifact once, and restored multiple times while building the child modules.
+In case of multi-module projects, where the built artifact of one project needs to be reused in subsequent child modules, the need of rebuilding the parent module again and again with every build can be eliminated. The `nix-community/cache-nix-action` or `nix-community/cache-nix-action/save` action can be used to build and save the parent module artifact once, and restored multiple times while building the child modules.
 
 #### Step 1 - Build the parent module and save it
 
@@ -258,11 +258,11 @@ steps:
   - name: Build
     run: ./build-parent-module.sh
 
-  - uses: actions/cache/save@v4
+  - uses: nix-community/cache-nix-action@v6
     id: cache
     with:
-      path: path/to/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: path/to/dependencies
 ```
 
 #### Step 2 - Restore the built artifact from cache using the same key and path
@@ -271,14 +271,14 @@ steps:
 steps:
   - uses: actions/checkout@v4
 
-  - uses: actions/cache/restore@v4
+  - uses: nix-community/cache-nix-action@v6
     id: cache
     with:
-      path: path/to/dependencies
-      key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      paths: path/to/dependencies
 
   - name: Install Dependencies
-    if: steps.cache.outputs.cache-hit != 'true'
+    if: steps.cache.outputs.hit-primary-key != 'true'
     run: ./install.sh
       
   - name: Build

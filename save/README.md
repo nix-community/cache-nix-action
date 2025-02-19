@@ -50,7 +50,7 @@ steps:
   - name: Build artifacts
     run: /build.sh
 
-  - uses: actions/cache/save@v4
+  - uses: nix-community/cache-nix-action@v6
     id: cache
     with:
       primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
@@ -66,7 +66,7 @@ Let's say we have a restore step that computes a key at runtime.
 #### Restore a cache
 
 ```yaml
-uses: actions/cache/restore@v4
+uses: nix-community/cache-nix-action@v6
 id: restore-cache
 with:
   primary-key: cache-${{ hashFiles('**/lockfiles') }}
@@ -75,7 +75,7 @@ with:
 #### Case 1 - Where a user would want to reuse the key as it is
 
 ```yaml
-uses: actions/cache/save@v4
+uses: nix-community/cache-nix-action@v6
 with:
   primary-key: ${{ steps.restore-cache.outputs.primary-key }}
 ```
@@ -83,7 +83,7 @@ with:
 #### Case 2 - Where the user would want to re-evaluate the key
 
 ```yaml
-uses: actions/cache/save@v4
+uses: nix-community/cache-nix-action@v6
 with:
   primary-key: npm-cache-${{hashfiles(package-lock.json)}}
 ```
@@ -91,8 +91,8 @@ with:
 ### Always save cache
 
 There are instances where some flaky test cases would fail the entire workflow and users would get frustrated because the builds would run for hours and the cache couldn't be saved as the workflow failed in between.
-For such use-cases, users now have the ability to use the `actions/cache/save` action to save the cache by using an [`always()`](https://docs.github.com/actions/writing-workflows/choosing-what-your-workflow-does/expressions#always) condition.
-This way the cache will always be saved if generated, or a warning will be generated that nothing is found on the cache path. Users can also use the `if` condition to only execute the `actions/cache/save` action depending on the output of previous steps. This way they get more control of when to save the cache.
+For such use-cases, users now have the ability to use the `nix-community/cache-nix-action/save` action to save the cache by using an [`always()`](https://docs.github.com/actions/writing-workflows/choosing-what-your-workflow-does/expressions#always) condition.
+This way the cache will always be saved if generated, or a warning will be generated that nothing is found on the cache path. Users can also use the `if` condition to only execute the `nix-community/cache-nix-action/save` action depending on the output of previous steps. This way they get more control of when to save the cache.
 
 To avoid saving a cache that already exists, the `hit-primary-key` output from a restore step should be checked.
 
