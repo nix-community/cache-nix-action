@@ -114,6 +114,9 @@
               text = "npm run build";
               meta.description = "build project";
             };
+          }
+          // {
+            flakeClosure = import ./mkFlakeClosure.nix { inherit lib pkgs inputs; };
           };
 
           devshells.default = {
