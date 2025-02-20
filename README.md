@@ -334,22 +334,16 @@ Disadvantages:
 - [issue](https://github.com/NixOS/nix/issues/4250)
 - [issue](https://github.com/NixOS/nix/issues/6895)
 
-### Profiles
-
-Each [profile](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-profile#filesystem-layout) is a [garbage collection root](https://nix.dev/manual/nix/2.25/package-management/garbage-collector-roots.html#garbage-collector-roots).
-
-To save particular Nix store paths, create an [installable](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix#installables) and add it to a profile via [`nix profile install`](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-profile-install.html).
-
 ### Sample flake
 
-See [exampleSaveFromGC/flake.nix](./exampleSaveFromGC/flake.nix).
+See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFromGC.nix](./saveFromGC.nix).
 
 <!-- `$ cat flake.nix` as nix -->
 
 ```nix
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     cache-nix-action = {
       url = "github:nix-community/cache-nix-action";
@@ -367,9 +361,13 @@ See [exampleSaveFromGC/flake.nix](./exampleSaveFromGC/flake.nix).
           hello = pkgs.hello;
 
           saveFromGC = import "${inputs.cache-nix-action}/saveFromGC.nix" {
-            inherit pkgs;
-            inherit (inputs) self;
-            installables = [ packages.hello ];
+            inherit pkgs inputs;
+
+            derivations = [
+              packages.hello
+              devShells.default
+            ];
+            paths = [ "${packages.hello}/bin/hello" ];
           };
         };
 
@@ -382,9 +380,18 @@ See [exampleSaveFromGC/flake.nix](./exampleSaveFromGC/flake.nix).
 }
 ```
 
-### `nix profile install`
+### `nix profile install` or `nix build`
 
-The `saveFromGC` attribute is a script (an installable) that contains paths of elements of the flake closure (flake inputs, inputs of these inputs, etc.). See [saveFromGC.nix](./mkFlakeClosure.nix).
+Each profile [is](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-profile#filesystem-layout) a [garbage collection root](https://nix.dev/manual/nix/2.25/package-management/garbage-collector-roots.html#garbage-collector-roots).
+
+Each [`nix build`](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-build) result symlink [is](https://nixos.org/guides/nix-pills/11-garbage-collector.html#indirect-roots) a garbage collection root.
+
+To save particular Nix store paths, create an [installable](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix#installables) that contains these paths and
+
+- add it to a profile via [`nix profile install`](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-profile-install.html) or
+- `nix build` it
+
+The `saveFromGC` attribute of the flake above is a script (an installable) that contains paths of elements of the flake closure (the flake itself, flake inputs, inputs of these inputs, etc.).
 
 Print the contents of `saveFromGC`.
 
@@ -393,24 +400,50 @@ cat $(nix build .#saveFromGC --no-link --print-out-paths)/bin/save-from-gc
 ```
 
 ```console
-/nix/store/rzm6qhx858h3v6ccqp3hbd3rwa46c2n8-source/exampleSaveFromGC
-/nix/store/wc77fi0913g04xj5z0w4abbqdl0mswsk-source
+closure
+/nix/store/xy5ig5b4h9mrv0ma9nz29s4hyv3xwps5-source
 /nix/store/01x5k4nlxcpyd85nnr0b9gm89rm8ff4x-source
-/nix/store/9wyscmgp3j5xdb3r8h353mfmgcj9yyam-source
+/nix/store/97hxap05brgklr57xh7qaab6s833rfg0-source
 /nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
+
+derivations
 /nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1
+/nix/store/54zp3xb1qgzy14pd7hi9spjxss437jwr-nix-shell
+
+paths
+/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1/bin/hello
 ```
 
-Add the installables to the default profile.
+Add the installable to the default profile.
 
 ```$ as console
+nix profile remove examples/saveFromGC
 nix profile install .#saveFromGC
+nix profile list | grep save-from-gc
 ```
 
-Build the package and find the alive GC roots that won't let the build output of `saveFromGC` be garbage collected.
+```console
+Store paths:        /nix/store/qqzjz3p4x6j2ny668vccaahqn4jc15sp-save-from-gc
+```
 
-```$ as console
-nix-store --query --roots $(nix build .#saveFromGC --no-link --print-out-paths)
+Or, build the installable and see the garbage collection roots that won't let it be garbage collected.
+
+```console
+nix-store --query --roots $(nix build .#saveFromGC --print-out-paths)
+```
+
+```console
+nix-store --query --roots result
+```
+
+Output (edited):
+
+<!-- `$ function fix_output { printf "$1" | sed -e 's|^.*\(/nix/.*$\)|<...> -> \1|g'; }; printf "...\n"; fix_output "$(nix-store --query --roots result)" | tail -2` as console -->
+
+```console
+...
+<...> -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
+<...> -> /nix/store/qqzjz3p4x6j2ny668vccaahqn4jc15sp-save-from-gc
 ```
 
 ### Other approaches
