@@ -114,6 +114,13 @@
               text = "npm run build";
               meta.description = "build project";
             };
+          }
+          // {
+            saveFromGC = import ./saveFromGC.nix {
+              inherit pkgs;
+              inherit (inputs) self;
+              installables = [ config.packages.build ];
+            };
           };
 
           devshells.default = {
