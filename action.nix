@@ -45,7 +45,7 @@ let
 
   noEffectOtherwise = ''Otherwise, this input has no effect.'';
 
-  gcWhen = ''When a number, the action collects garbage until Nix store size (in bytes) is at most this number just before the action tries to save a new cache.'';
+  gcWhen = ''When a number, the action collects garbage (via `nix store gc --max ...`) until the Nix store size (in bytes) is at most this number just before the action tries to save a new cache.'';
 
   overrides = input: "Overrides ${q input}.";
 
