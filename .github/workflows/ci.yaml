@@ -73,7 +73,7 @@ jobs:
         run: |
           git add dist
           git commit -m "chore: build the action" || echo "Nothing to commit"
-          git add .
+          git add *.yml *.md
           git commit -m "chore: update docs" || echo "Nothing to commit"
           git push
 
