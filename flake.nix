@@ -118,9 +118,8 @@
           }
           // {
             saveFromGC = import ./saveFromGC.nix {
-              inherit pkgs;
-              inherit (inputs) self;
-              installables = [ config.packages.build ];
+              inherit pkgs inputs;
+              derivations = [ config.packages.build ];
             };
           };
 

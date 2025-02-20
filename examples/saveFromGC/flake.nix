@@ -18,9 +18,13 @@
           hello = pkgs.hello;
 
           saveFromGC = import "${inputs.cache-nix-action}/saveFromGC.nix" {
-            inherit pkgs;
-            inherit (inputs) self;
-            installables = [ packages.hello ];
+            inherit pkgs inputs;
+            
+            derivations = [
+              packages.hello
+              devShells.default
+            ];
+            paths = [ "${packages.hello}/bin/hello" ];
           };
         };
 
