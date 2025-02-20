@@ -43,7 +43,7 @@ These actions are used to [Merge caches](#merge-caches) and in other [Caching St
 
 ## Limitations
 
-- The action caches and restores `/nix`.
+- By default, the action caches and restores only `/nix`.
   - The action doesn't manage stores specified via the `--store` flag ([link](https://nixos.org/manual/nix/unstable/store/types/local-store.html#local-store)).
   - The action ignores existing `/nix/store` paths when restoring a cache.
   - The action ignores cached `/nix/var` except `/nix/var/nix/db/db.sqlite`.
