@@ -281,7 +281,6 @@ jobs:
       - name: Run node
         run: node --version
 
-  #
   compare-run-times:
     name: Job with caching
     needs:
