@@ -1,14 +1,9 @@
 # https://github.com/NixOS/nix/issues/6895#issuecomment-2475461113
-{
-  lib,
-  pkgs,
-  inputs,
-  ...
-}:
+{ pkgs, inputs }:
 
 let
   inherit (builtins) concatMap attrValues concatStringsSep;
-  inherit (lib) unique;
+  inherit (pkgs.lib) unique;
   mkFlakesClosure =
     flakes:
     if flakes == [ ] then
