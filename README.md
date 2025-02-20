@@ -442,8 +442,6 @@ Output (edited):
 
 ```console
 ...
-<...> -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
-<...> -> /nix/store/qqzjz3p4x6j2ny668vccaahqn4jc15sp-save-from-gc
 ```
 
 ### Other approaches
