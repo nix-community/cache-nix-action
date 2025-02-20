@@ -162,16 +162,6 @@ See [action.yml](action.yml).
 
 <!-- action-docs-outputs action="action.yml" -->
 
-## Garbage collection parameters
-
-On `Linux` runners, when `gc-max-store-size-linux` is set to a number, the `cache-nix-action` will run `nix store gc --max R` before saving a cache.
-
-Here, `R` is `max(0, S - gc-max-store-size-linux)`, where `S` is the current store size.
-
-Respective conditions hold for `macOS` runners.
-
-There are alternative approaches to garbage collection (see [Garbage collection](#garbage-collection)).
-
 ## Purge old caches
 
 The `cache-nix-action` allows to delete old caches after saving a new cache (see `purge-*` inputs in [Inputs](#inputs) and the `compare-run-times` job in the [Example workflow](#example-workflow)).
@@ -195,100 +185,7 @@ In short:
 See the `make-similar-caches` and `merge-similar-caches` jobs in the [example workflow](#example-workflow).
 
 **Pros**: if `N` individual caches are very similar, a common cache will take approximately `N` times less space.
-**Cons**: if caches aren't very similar, run time may increase due to a bigger common cache.
-
-## Caching approaches
-
-Discussed in more details [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
-
-Caching approaches work at different "distances" from `/nix/store` of GitHub Actions runner.
-These distances affect the restore and save speed.
-
-### GitHub Actions
-
-- [DeterminateSystems/magic-nix-cache-action](https://github.com/DeterminateSystems/magic-nix-cache-action)
-- [nix-community/cache-nix-action](https://github.com/nix-community/cache-nix-action)
-
-#### cache-nix-action
-
-**Pros**:
-
-- Free.
-- Easy to set up.
-- Uses `GitHub Actions Cache` and works fast.
-- Doesn't require repository secrets.
-- Allows to save a store of at most a given size (see [Garbage collection parameters](#garbage-collection-parameters)).
-- Allows to save outputs from garbage collection (see [Garbage collection](#garbage-collection)).
-- When there's a cache hit, restoring from a GitHub Actions cache can be faster than downloading multiple paths from binary caches.
-  - You can compare run times of jobs with and without store caching in [Actions](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml).
-    - Open a run and click on the time under `Total duration`.
-
-**Cons**: see [Limitations](#limitations)
-
-#### magic-nix-cache-action
-
-**Pros** ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
-
-- Free.
-- Easy to set up.
-- Uses `GitHub Actions Cache` and works fast.
-- Restores and saves paths selectively.
-
-**Cons**:
-
-- Works only on GitHub Enterprise Server as of Feb 19, 2025 ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
-- Collects telemetry ([link](https://github.com/DeterminateSystems/magic-nix-cache#telemetry))
-- May trigger rate limit errors ([link](https://github.com/DeterminateSystems/magic-nix-cache#usage-notes)).
-- Follows the GitHub Actions Cache semantics ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
-  - Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
-- Saves a cache for each path in a store and quickly litters `Caches`.
-
-#### FlakeHub Cache
-
-**Pros** ([link](https://flakehub.com/cache)):
-
-- Free for one month with a coupon code ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
-- Easy to set up.
-
-**Cons**:
-
-- Not free ([link](https://flakehub.com/cache))
-
-#### actions/cache
-
-If used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action), it's similar to the [cache-nix-action](#cache-nix-action).
-
-If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#local-store):
-
-**Pros**:
-
-- Quick restore and save `/tmp/nix`.
-
-**Cons**:
-
-- Slow [nix copy](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
-
-If used with [install-nix-action](https://github.com/cachix/install-nix-action) and this [trick](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1030697681), it's similar to the [cache-nix-action](#cache-nix-action), but slower ([link](https://github.com/ryantm/nix-installer-action-benchmark)).
-
-### Hosted binary caches
-
-See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-binary-cache), [HTTP Binary Cache Store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#http-binary-cache-store).
-
-- [cachix](https://www.cachix.org/)
-- [attic](https://github.com/zhaofengli/attic)
-
-**Pros**:
-
-- Restore and save paths selectively.
-- Provide least recently used garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
-- Don't cache paths available from the NixOS cache ([cachix](https://docs.cachix.org/garbage-collection?highlight=upstream)).
-- Allow to share paths between projects ([cachix](https://docs.cachix.org/getting-started#using-binaries-with-nix)).
-
-**Cons**:
-
-- Have limited free storage ([cachix](https://www.cachix.org/pricing) gives 5GB for open-source projects).
-- Need good bandwidth for receiving and pushing paths over the Internet.
-- Can be down.
+**Cons**: if caches aren't very similar, the run time may increase due to a bigger common cache.
 
 ## Garbage collection
 
@@ -452,6 +349,99 @@ Output (edited):
 
 - Run [direnv](https://github.com/nix-community/nix-direnv) in background.
 
+## Caching approaches
+
+Discussed in more details [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
+
+Caching approaches work at different "distances" from `/nix/store` of GitHub Actions runner.
+These distances affect the restore and save speed.
+
+### GitHub Actions
+
+- [DeterminateSystems/magic-nix-cache-action](https://github.com/DeterminateSystems/magic-nix-cache-action)
+- [nix-community/cache-nix-action](https://github.com/nix-community/cache-nix-action)
+
+#### cache-nix-action
+
+**Pros**:
+
+- Free.
+- Easy to set up.
+- Uses `GitHub Actions Cache` and works fast.
+- Doesn't require repository secrets.
+- Allows to save a store of at most a given size (see [Inputs](#inputs)).
+- Allows to save outputs from garbage collection (see [Garbage collection](#garbage-collection)).
+- When there's a cache hit, restoring from a GitHub Actions cache can be faster than downloading multiple paths from binary caches.
+  - You can compare run times of jobs with and without store caching in [Actions](https://github.com/nix-community/cache-nix-action/actions/workflows/ci.yaml).
+    - Open a run and click on the time under `Total duration`.
+
+**Cons**: see [Limitations](#limitations)
+
+#### magic-nix-cache-action
+
+**Pros** ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
+
+- Free.
+- Easy to set up.
+- Uses `GitHub Actions Cache` and works fast.
+- Restores and saves paths selectively.
+
+**Cons**:
+
+- Works only on GitHub Enterprise Server as of Feb 19, 2025 ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
+- Collects telemetry ([link](https://github.com/DeterminateSystems/magic-nix-cache#telemetry))
+- May trigger rate limit errors ([link](https://github.com/DeterminateSystems/magic-nix-cache#usage-notes)).
+- Follows the GitHub Actions Cache semantics ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
+  - Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
+- Saves a cache for each path in a store and quickly litters `Caches`.
+
+#### FlakeHub Cache
+
+**Pros** ([link](https://flakehub.com/cache)):
+
+- Free for one month with a coupon code ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
+- Easy to set up.
+
+**Cons**:
+
+- Not free ([link](https://flakehub.com/cache))
+
+#### actions/cache
+
+If used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action), it's similar to the [cache-nix-action](#cache-nix-action).
+
+If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#local-store):
+
+**Pros**:
+
+- Quick restore and save `/tmp/nix`.
+
+**Cons**:
+
+- Slow [nix copy](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
+
+If used with [install-nix-action](https://github.com/cachix/install-nix-action) and this [trick](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1030697681), it's similar to the [cache-nix-action](#cache-nix-action), but slower ([link](https://github.com/ryantm/nix-installer-action-benchmark)).
+
+### Hosted binary caches
+
+See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-binary-cache), [HTTP Binary Cache Store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#http-binary-cache-store).
+
+- [cachix](https://www.cachix.org/)
+- [attic](https://github.com/zhaofengli/attic)
+
+**Pros**:
+
+- Restore and save paths selectively.
+- Provide least recently used garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
+- Don't cache paths available from the NixOS cache ([cachix](https://docs.cachix.org/garbage-collection?highlight=upstream)).
+- Allow to share paths between projects ([cachix](https://docs.cachix.org/getting-started#using-binaries-with-nix)).
+
+**Cons**:
+
+- Have limited free storage ([cachix](https://www.cachix.org/pricing) gives 5GB for open-source projects).
+- Need good bandwidth for receiving and pushing paths over the Internet.
+- Can be down.
+
 ## Contribute
 
 - Clone the repository.
@@ -554,10 +544,6 @@ If you are using a `self-hosted` Windows runner, `GNU tar` and `zstd` are requir
 #### Environment Variables
 
 - `SEGMENT_DOWNLOAD_TIMEOUT_MINS` - Segment download timeout (in minutes, default `10`) to abort download of the segment if not completed in the defined number of minutes. [Read more](https://github.com/actions/cache/blob/main/tips-and-workarounds.md#cache-segment-restore-timeout)
-
-### Outputs
-
-See [Skipping steps based on hit-primary-key](#skipping-steps-based-on-hit-primary-key) for info on using this output
 
 ### Cache scopes
 
