@@ -440,10 +440,12 @@ nix-store --query --roots result
 
 Output (edited):
 
-<!-- `$ function fix_output { printf "$1" | sed -e 's|^.*\(/nix/.*$\)|<...> -> \1|g'; }; printf "...\n"; fix_output "$(nix-store --query --roots result)" | tail -2` as console -->
+<!-- `$ function fix_output { printf "$1" | sed -e 's|^.*\(/cache-nix-action/.*$\)|<...>\1|g' | sed -e 's|^.*\(/.local/.*$\)|<...>\1|g' | sed -e 's|\(profile-[0-9]\+-link\)|profile-1-link|'; }; printf "...\n"; fix_output "$(nix-store --query --roots $(nix build .#saveFromGC --print-out-paths) | tail -n 2)"` as console -->
 
 ```console
 ...
+<...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
+<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/qqzjz3p4x6j2ny668vccaahqn4jc15sp-save-from-gc
 ```
 
 ### Other approaches
