@@ -341,7 +341,7 @@ Output (edited):
 
 ```console
 ...
-<...>/.local/state/nix/profiles/profile-1-link -> /nix/store/7wkbl0kx72dl8i1kvx34jk8yanvf7nlw-profile
+<...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
 <...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/qqzjz3p4x6j2ny668vccaahqn4jc15sp-save-from-gc
 ```
 
