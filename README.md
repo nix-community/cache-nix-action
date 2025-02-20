@@ -43,12 +43,12 @@ These actions are used to [Merge caches](#merge-caches) and in other [Caching St
 
 ## Limitations
 
+- Uses nix3 commands like [nix store gc](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-store-gc) and [nix path-info](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-path-info).
 - By default, the action caches and restores only `/nix`.
   - The action doesn't manage stores specified via the `--store` flag ([link](https://nixos.org/manual/nix/unstable/store/types/local-store.html#local-store)).
-  - The action ignores existing `/nix/store` paths when restoring a cache.
-  - The action ignores cached `/nix/var` except `/nix/var/nix/db/db.sqlite`.
+  - When restoring a cache, the action ignores existing `/nix/store` paths and cached `/nix/var` except `/nix/var/nix/db/db.sqlite`.
   - The action merges existing and new databases when restoring a cache.
-- The action requires `nix-quick-install-action`.
+- The action requires [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
 - The action supports only `Linux` and `macOS` runners for Nix store caching.
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
