@@ -125,7 +125,7 @@
           };
 
           devshells.default = {
-            packages = [ nodejs ];
+            packages = [ nodejs pkgs.mdsh ];
             commands.scripts = [
               {
                 prefix = "nix run .#";
