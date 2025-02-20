@@ -17,7 +17,7 @@
         packages = {
           hello = pkgs.hello;
 
-          saveFromGC = "${inputs.cache-nix-action}/saveFromGC.nix" {
+          saveFromGC = import "${inputs.cache-nix-action}/saveFromGC.nix" {
             inherit pkgs;
             inherit (inputs) self;
             installables = [ packages.hello ];
