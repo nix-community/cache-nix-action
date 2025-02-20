@@ -70,7 +70,8 @@ See [Caching Approaches](#caching-approaches).
 
 ## Example steps
 
-- For purging, the workflow or the job must have the [permission](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#permissions) `actions: write`.
+> [!NOTE]
+> For purging, the workflow or the job must have the [permission](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#permissions) `actions: write`.
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v27
@@ -164,6 +165,7 @@ See [action.yml](action.yml).
 ## Garbage collection parameters
 
 On `Linux` runners, when `gc-max-store-size-linux` is set to a number, the `cache-nix-action` will run `nix store gc --max R` before saving a cache.
+
 Here, `R` is `max(0, S - gc-max-store-size-linux)`, where `S` is the current store size.
 
 Respective conditions hold for `macOS` runners.
