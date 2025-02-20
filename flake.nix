@@ -77,13 +77,14 @@
             };
 
             write = {
-              runtimeInputs = [ nodejs ];
+              runtimeInputs = [ nodejs pkgs.mdsh ];
               text = ''
                 ${lib.getExe config.packages.writeActions}
+                mdsh -i README.md --work_dir examples/saveFromGC
                 npm run readme
                 npm run format
               '';
-              meta.description = "write action.yml-s and tables for README-s";
+              meta.description = "write action.yml-s and README-s";
             };
 
             writeBuildjetCI = writeYAML ".github/workflows/buildjet-ci.yaml" (
@@ -116,11 +117,15 @@
             };
           }
           // {
-            flakeClosure = import ./mkFlakeClosure.nix { inherit lib pkgs inputs; };
+            saveFromGC = import ./saveFromGC.nix {
+              inherit pkgs;
+              inherit (inputs) self;
+              installables = [ config.packages.build ];
+            };
           };
 
           devshells.default = {
-            packages = [ nodejs ];
+            packages = [ nodejs pkgs.mdsh ];
             commands.scripts = [
               {
                 prefix = "nix run .#";

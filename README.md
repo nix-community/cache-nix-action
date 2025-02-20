@@ -43,7 +43,7 @@ These actions are used to [Merge caches](#merge-caches) and in other [Caching St
 
 ## Limitations
 
-- The action caches and restores `/nix`.
+- By default, the action caches and restores only `/nix`.
   - The action doesn't manage stores specified via the `--store` flag ([link](https://nixos.org/manual/nix/unstable/store/types/local-store.html#local-store)).
   - The action ignores existing `/nix/store` paths when restoring a cache.
   - The action ignores cached `/nix/var` except `/nix/var/nix/db/db.sqlite`.
@@ -61,6 +61,8 @@ These actions are used to [Merge caches](#merge-caches) and in other [Caching St
   - macOS: [comment](https://github.com/easimon/maximize-build-space/issues/7#issuecomment-1063681606)
 - Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
   - Workaround: provide caches for PRs on default or base branches.
+- Garbage collection by default evicts flake inputs ([issue](https://github.com/NixOS/nix/issues/6895)).
+  - Workaround: save the flake closure as an installable ([link](#save-nix-store-paths-from-garbage-collection)).
 
 ## Comparison with alternative approaches
 
@@ -318,19 +320,102 @@ Disadvantages:
 
 - No standard way to gc only old paths.
 
-### Save a path from garbage collection
-
-- Use `nix profile install` to save installables from garbage collection.
-  - Get store paths of `inputs` via `nix flake archive` (see [comment](https://github.com/NixOS/nix/issues/4250#issuecomment-1146878407)).
-  - Get outputs via `nix flake show --json | jq  '.packages."x86_64-linux"|keys[]'| xargs -I {}` on `x86_64-linux` (see this [issue](https://github.com/NixOS/nix/issues/7165)).
-- Keep inputs (see this [issue](https://github.com/NixOS/nix/issues/4250) and this [issue](https://github.com/NixOS/nix/issues/6895)).
-- Start [direnv](https://github.com/nix-community/nix-direnv) in background.
-
 ### Garbage collection tools
 
-- GC by `atime` [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc).
-- GC via gc roots [nix-cache-cut](https://github.com/astro/nix-cache-cut).
-- GC based on time [cache-gc](https://github.com/lheckemann/cache-gc).
+- GC by `atime`: [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc).
+- GC via gc roots: [nix-cache-cut](https://github.com/astro/nix-cache-cut).
+- GC based on time: [cache-gc](https://github.com/lheckemann/cache-gc).
+- Visualize GC roots: [nix-du](https://github.com/symphorien/nix-du).
+
+## Save Nix store paths from garbage collection
+
+### Issues
+
+- [issue](https://github.com/NixOS/nix/issues/4250)
+- [issue](https://github.com/NixOS/nix/issues/6895)
+
+### Profiles
+
+Each [profile](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-profile#filesystem-layout) is a [garbage collection root](https://nix.dev/manual/nix/2.25/package-management/garbage-collector-roots.html#garbage-collector-roots).
+
+To save particular Nix store paths, create an [installable](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix#installables) and add it to a profile via [`nix profile install`](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-profile-install.html).
+
+### Sample flake
+
+See [exampleSaveFromGC/flake.nix](./exampleSaveFromGC/flake.nix).
+
+<!-- `$ cat flake.nix` as nix -->
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs";
+    flake-utils.url = "github:numtide/flake-utils";
+    cache-nix-action = {
+      url = "github:nix-community/cache-nix-action";
+      flake = false;
+    };
+  };
+  outputs =
+    inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = inputs.nixpkgs.legacyPackages.${system};
+
+        packages = {
+          hello = pkgs.hello;
+
+          saveFromGC = import "${inputs.cache-nix-action}/saveFromGC.nix" {
+            inherit pkgs;
+            inherit (inputs) self;
+            installables = [ packages.hello ];
+          };
+        };
+
+        devShells.default = pkgs.mkShell { buildInputs = [ pkgs.gcc ]; };
+      in
+      {
+        inherit packages devShells;
+      }
+    );
+}
+```
+
+### `nix profile install`
+
+The `saveFromGC` attribute is a script (an installable) that contains paths of elements of the flake closure (flake inputs, inputs of these inputs, etc.). See [saveFromGC.nix](./mkFlakeClosure.nix).
+
+Print the contents of `saveFromGC`.
+
+```$ as console
+cat $(nix build .#saveFromGC --no-link --print-out-paths)/bin/save-from-gc
+```
+
+```console
+/nix/store/rzm6qhx858h3v6ccqp3hbd3rwa46c2n8-source/exampleSaveFromGC
+/nix/store/wc77fi0913g04xj5z0w4abbqdl0mswsk-source
+/nix/store/01x5k4nlxcpyd85nnr0b9gm89rm8ff4x-source
+/nix/store/9wyscmgp3j5xdb3r8h353mfmgcj9yyam-source
+/nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
+/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1
+```
+
+Add the installables to the default profile.
+
+```$ as console
+nix profile install .#saveFromGC
+```
+
+Build the package and find the alive GC roots that won't let the build output of `saveFromGC` be garbage collected.
+
+```$ as console
+nix-store --query --roots $(nix build .#saveFromGC --no-link --print-out-paths)
+```
+
+### Other approaches
+
+- Run [direnv](https://github.com/nix-community/nix-direnv) in background.
 
 ## Contribute
 
