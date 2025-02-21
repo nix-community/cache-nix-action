@@ -80,7 +80,9 @@ jobs:
           git push
           
       - name: Save flake attributes from garbage collection
-        run: nix profile install .#saveFromGC
+        run: |
+          nix profile remove examples/saveFromGC
+          nix profile install .#saveFromGC
 
   # Make `individual` caches
   # Restore `individual` or `common` caches
