@@ -2,7 +2,12 @@
 {
   pkgs,
   # flake inputs
+  # their transitive inputs will be included
   inputs,
+  # flake inputs to exclude
+  # their transitive inputs will be excluded
+  # unless they're transitive inputs of any included inputs
+  inputsExclude ? [ ],
   # derivations like pkgs.hello
   derivations ? [ ],
   # paths like /nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1
@@ -25,6 +30,7 @@ let
 
   closure = lib.trivial.pipe inputs [
     attrValues
+    (filter (x: !(builtins.elem x inputsExclude)))
     mkFlakesClosure
     lib.unique
     # the current flake will probably change next time
@@ -41,4 +47,11 @@ let
     )
   );
 in
-saveFromGC
+{
+  inherit
+    getInputs
+    mkFlakesClosure
+    closure
+    saveFromGC
+    ;
+}
