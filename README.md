@@ -353,7 +353,7 @@ Output (edited):
 ```console
 ...
 <...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
-/home/runner/.local/state/nix/profiles/profile-2-link -> /nix/store/pzhp9l4n1v6jdlqr677y3b6rr33ckr6v-profile
+<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/bgd1sgyc8wy1i3msh0p2g1yl0iywp7ys-save-from-gc
 ```
 
 ### Other approaches
