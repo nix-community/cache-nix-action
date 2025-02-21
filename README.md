@@ -303,6 +303,12 @@ To save particular Nix store paths, create an [installable](https://nix.dev/manu
 
 The `saveFromGC` attribute of the flake above is a script (an installable) that contains paths of elements of the flake closure (the flake itself, flake inputs, inputs of these inputs, etc.).
 
+Enter the [examples/saveFromGC](./examples/saveFromGC) directory.
+
+```console
+cd examples/saveFromGC
+```
+
 Print the contents of `saveFromGC`.
 
 ```$ as console
@@ -355,6 +361,8 @@ Output (edited):
 <...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
 <...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/bgd1sgyc8wy1i3msh0p2g1yl0iywp7ys-save-from-gc
 ```
+
+<!-- `$ nix profile remove examples/saveFromGC; rm result` -->
 
 ### Other approaches
 
