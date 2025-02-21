@@ -42,6 +42,8 @@ let
     (filter (x: x != inputs.self))
   ];
 
+  # we don't have much more info
+  # so, we're just printing the paths
   saveFromGC = pkgs.writeScriptBin "save-from-gc" (
     concatStringsSep "\n\n" (
       lib.attrsets.mapAttrsToList (name: value: "${name}\n${concatStringsSep "\n" value}") {
