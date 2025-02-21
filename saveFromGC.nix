@@ -30,12 +30,15 @@ let
 
   closure = lib.trivial.pipe inputs [
     attrValues
-    (filter (x: !(builtins.elem x inputsExclude)))
-    mkFlakesClosure
-    lib.unique
     # the current flake will probably change next time
     # hence, we only save its inputs
     # if you want to save the flake, put "self" into "derivations"
+    (filter (x: x != inputs.self))
+    # we need to exclude particular inputs
+    # before we collect their transitive inputs
+    (filter (x: !(builtins.elem x inputsExclude)))
+    mkFlakesClosure
+    lib.unique
     (filter (x: x != inputs.self))
   ];
 
