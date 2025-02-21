@@ -243,11 +243,15 @@ See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFr
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
+    };
     cache-nix-action = {
       url = "github:nix-community/cache-nix-action";
       flake = false;
     };
+    systems.url = "github:nix-systems/default";
   };
   outputs =
     inputs:
@@ -259,15 +263,22 @@ See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFr
         packages = {
           hello = pkgs.hello;
 
-          saveFromGC = import "${inputs.cache-nix-action}/saveFromGC.nix" {
-            inherit pkgs inputs;
-
-            derivations = [
-              packages.hello
-              devShells.default
-            ];
-            paths = [ "${packages.hello}/bin/hello" ];
-          };
+          inherit
+            (import "${inputs.cache-nix-action}/saveFromGC.nix" {
+              inherit pkgs inputs;
+              inputsExclude = [
+                # the systems input will still be saved
+                # because flake-utils needs it
+                inputs.systems
+              ];
+              derivations = [
+                packages.hello
+                devShells.default
+              ];
+              paths = [ "${packages.hello}/bin/hello" ];
+            })
+            saveFromGC
+            ;
         };
 
         devShells.default = pkgs.mkShell { buildInputs = [ pkgs.gcc ]; };
@@ -300,7 +311,7 @@ cat $(nix build .#saveFromGC --no-link --print-out-paths)/bin/save-from-gc
 
 ```console
 closure
-/nix/store/xy5ig5b4h9mrv0ma9nz29s4hyv3xwps5-source
+/nix/store/pj0rhk7zkfx82xsighf72v8x4rqldzgi-source
 /nix/store/01x5k4nlxcpyd85nnr0b9gm89rm8ff4x-source
 /nix/store/97hxap05brgklr57xh7qaab6s833rfg0-source
 /nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
@@ -322,7 +333,7 @@ nix profile list | grep save-from-gc
 ```
 
 ```console
-Store paths:        /nix/store/qqzjz3p4x6j2ny668vccaahqn4jc15sp-save-from-gc
+Store paths:        /nix/store/bgd1sgyc8wy1i3msh0p2g1yl0iywp7ys-save-from-gc
 ```
 
 Or, build the installable and see the garbage collection roots that won't let it be garbage collected.
@@ -342,7 +353,7 @@ Output (edited):
 ```console
 ...
 <...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
-<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/qqzjz3p4x6j2ny668vccaahqn4jc15sp-save-from-gc
+/home/runner/.local/state/nix/profiles/profile-2-link -> /nix/store/pzhp9l4n1v6jdlqr677y3b6rr33ckr6v-profile
 ```
 
 ### Other approaches
