@@ -1,11 +1,15 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
+    };
     cache-nix-action = {
       url = "github:nix-community/cache-nix-action";
       flake = false;
     };
+    systems.url = "github:nix-systems/default";
   };
   outputs =
     inputs:
@@ -17,15 +21,22 @@
         packages = {
           hello = pkgs.hello;
 
-          saveFromGC = import "${inputs.cache-nix-action}/saveFromGC.nix" {
-            inherit pkgs inputs;
-            
-            derivations = [
-              packages.hello
-              devShells.default
-            ];
-            paths = [ "${packages.hello}/bin/hello" ];
-          };
+          inherit
+            (import "${inputs.cache-nix-action}/saveFromGC.nix" {
+              inherit pkgs inputs;
+              inputsExclude = [
+                # the systems input will still be saved
+                # because flake-utils needs it
+                inputs.systems
+              ];
+              derivations = [
+                packages.hello
+                devShells.default
+              ];
+              paths = [ "${packages.hello}/bin/hello" ];
+            })
+            saveFromGC
+            ;
         };
 
         devShells.default = pkgs.mkShell { buildInputs = [ pkgs.gcc ]; };

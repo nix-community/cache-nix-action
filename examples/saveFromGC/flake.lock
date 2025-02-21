@@ -3,11 +3,11 @@
     "cache-nix-action": {
       "flake": false,
       "locked": {
-        "lastModified": 1740087209,
-        "narHash": "sha256-OhbuVyG45SiFBydq88cIdenZDCBlRDOsKyKsX8e/vrc=",
+        "lastModified": 1740148787,
+        "narHash": "sha256-j9lJN7yJhiwuq5/tRAHWq4x0M9P673xGrNANL6wXj9s=",
         "owner": "nix-community",
         "repo": "cache-nix-action",
-        "rev": "9f7c6f48939c67bd893e256445e4e918d0d6fff7",
+        "rev": "d7498284c2fbfe990cdae3793f7dfa09758365de",
         "type": "github"
       },
       "original": {
@@ -18,7 +18,9 @@
     },
     "flake-utils": {
       "inputs": {
-        "systems": "systems"
+        "systems": [
+          "systems"
+        ]
       },
       "locked": {
         "lastModified": 1731533236,
@@ -54,7 +56,8 @@
       "inputs": {
         "cache-nix-action": "cache-nix-action",
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "systems": "systems"
       }
     },
     "systems": {

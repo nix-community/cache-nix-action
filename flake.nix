@@ -117,10 +117,11 @@
             };
           }
           // {
-            saveFromGC = import ./saveFromGC.nix {
+            inherit (import ./saveFromGC.nix {
               inherit pkgs inputs;
+              inputsExclude = [ inputs.devshell inputs.treefmt-nix ];
               derivations = [ config.packages.install config.packages.write ];
-            };
+            }) saveFromGC;
           };
 
           devshells.default = {
