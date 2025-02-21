@@ -47,6 +47,8 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+          # and collect garbage in the Nix store until it reaches this size in bytes
+          gc-max-store-size: 0
 
       # # Uncomment to debug this job
       # - name: Setup tmate session
@@ -76,6 +78,9 @@ jobs:
           git add *.yml *.md
           git commit -m "chore: update docs" || echo "Nothing to commit"
           git push
+          
+      - name: Save flake attributes from garbage collection
+        run: nix profile install .#saveFromGC
 
   # Make `individual` caches
   # Restore `individual` or `common` caches
