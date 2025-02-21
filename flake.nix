@@ -119,7 +119,7 @@
           // {
             saveFromGC = import ./saveFromGC.nix {
               inherit pkgs inputs;
-              derivations = [ config.packages.build ];
+              derivations = [ config.packages.install config.packages.write ];
             };
           };
 
