@@ -101,6 +101,9 @@ the cache key does not change during the build if it's calculated based on file 
 
 Here's an example where we imagine we're calculating a lot of prime numbers and want to cache them:
 
+> [!NOTE]
+> The `paths` input in the `cache-nix-action/restore` and `cache-nix-action/save` must be the same.
+
 ```yaml
 name: Always Caching Prime Numbers
 
