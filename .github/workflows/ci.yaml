@@ -33,7 +33,7 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v29
 
-      - name: Restore and save Nix store
+      - name: Restore and save Nix store and npm cache
         uses: ./.
         with:
           primary-key: build-${{ runner.os }}-${{ hashFiles('**/package-lock.json', 'package.json', 'flake.nix', 'flake.lock') }}
@@ -49,7 +49,7 @@ jobs:
           purge-primary-key: never
           # and collect garbage in the Nix store until it reaches this size in bytes
           gc-max-store-size: 0
-          
+
       # # Uncomment to debug this job
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
@@ -78,7 +78,7 @@ jobs:
           git add {.,save,restore}/{*.yml,*.md}
           git commit -m "chore: update docs" || echo "Nothing to commit"
           git push
-          
+
       - name: Save flake attributes from garbage collection
         run: |
           nix profile install .#saveFromGC
@@ -181,8 +181,7 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v29
 
-      - name: Restore and save Nix store
-        uses: ./.
+      - uses: ./.
         with:
           primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
           # if no hit on the primary key, restore individual caches that match `ci.yaml`
@@ -319,8 +318,7 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v29
 
-      - name: Restore and save Nix store
-        if: matrix.do-cache
+      - if: matrix.do-cache
         uses: ./.
         with:
           # save a new cache every time ci file changes
