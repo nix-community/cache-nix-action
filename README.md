@@ -76,7 +76,7 @@ See [Caching Approaches](#caching-approaches).
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v29
 
-- name: Restore and cache Nix store
+- name: Restore and save Nix store
   uses: nix-community/cache-nix-action@v6
   with:
     # restore and save a cache using this key
