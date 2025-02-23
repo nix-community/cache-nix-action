@@ -79081,7 +79081,7 @@ function restoreCacheV2(paths_1, primaryKey_1, restoreKeys_1, options_1) {
                 core.debug(`Cache not found for keys: ${keys.join(', ')}`);
                 return undefined;
             }
-            core.info(`Cache hit for: ${request.key}`);
+            core.info(`Cache hit for: ${response.matchedKey}`);
             if (options === null || options === void 0 ? void 0 : options.lookupOnly) {
                 core.info('Lookup only - skipping download');
                 return response.matchedKey;
