@@ -90,7 +90,7 @@ See [Caching Approaches](#caching-approaches).
     # do purge caches
     purge: true
     # purge all versions of the cache
-    purge-prefixes: cache-${{ runner.os }}-
+    purge-prefixes: nix-${{ runner.os }}-
     # created more than this number of seconds ago relative to the start of the `Post Restore` phase
     purge-created: 0
     # except the version with the `primary-key`, if it exists
