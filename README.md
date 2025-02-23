@@ -74,7 +74,7 @@ See [Caching Approaches](#caching-approaches).
 > For purging, the workflow or the job must have the [permission](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#permissions) `actions: write`.
 
 ```yaml
-- uses: nixbuild/nix-quick-install-action@v27
+- uses: nixbuild/nix-quick-install-action@v29
 
 - name: Restore and cache Nix store
   uses: nix-community/cache-nix-action@v6
