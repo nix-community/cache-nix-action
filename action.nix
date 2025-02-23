@@ -3,7 +3,7 @@ let
   specific =
     {
       cache = {
-        name = "Cache";
+        name = "Restore and save";
         description = "Restore and save";
         actions = "restoring and saving";
         main = "dist/restore/index.js";
