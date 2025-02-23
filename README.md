@@ -80,11 +80,12 @@ See [Caching Approaches](#caching-approaches).
   uses: nix-community/cache-nix-action@v6
   with:
     # restore and save a cache using this key
-    primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+    primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
     # if there's no cache hit, restore a cache by this prefix
     restore-prefixes-first-match: nix-${{ runner.os }}-
     # collect garbage until Nix store size (in bytes) is at most this number
     # before trying to save a new cache
+    # 1 GB = 1073741824 B
     gc-max-store-size-linux: 1073741824
     # do purge caches
     purge: true
