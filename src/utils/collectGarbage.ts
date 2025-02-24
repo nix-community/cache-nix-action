@@ -1,7 +1,7 @@
 import * as inputs from "../inputs";
 import * as utils from "./action";
 
-export async function removeGarbage() {
+export async function collectGarbage() {
     utils.info("Removing useless files.");
 
     await utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);

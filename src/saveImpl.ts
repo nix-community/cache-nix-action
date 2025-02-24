@@ -10,7 +10,7 @@ import {
 } from "./stateProvider";
 import * as utils from "./utils/action";
 import { cache } from "./utils/cacheBackend";
-import { removeGarbage } from "./utils/collectGarbage";
+import { collectGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCachesByTime } from "./utils/purge";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
@@ -84,7 +84,7 @@ export async function saveImpl(
             } else {
                 utils.info(`Found no cache with this key.`);
 
-                await removeGarbage();
+                await collectGarbage();
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
