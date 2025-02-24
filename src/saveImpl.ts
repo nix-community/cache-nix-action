@@ -95,11 +95,13 @@ export async function saveImpl(
 
                 utils.info(`Saved a new cache.`);
 
-                core.debug("\n\nNix store paths:\n\n");
+                if (core.isDebug()) {
+                    core.debug("\n\nNix store paths:\n\n");
 
-                fs.readdirSync("/nix/store").forEach(file => {
-                    core.debug(file);
-                });
+                    fs.readdirSync("/nix/store").forEach(file => {
+                        core.debug(file);
+                    });
+                }
             }
         }
 
