@@ -93,7 +93,11 @@ export async function saveImpl(
                     uploadChunkSize: inputs.uploadChunkSize
                 });
 
-                utils.info(`Saved a new cache.`);
+                utils.info(
+                    cacheId !== -1
+                        ? `Saved the new cache.`
+                        : `Could not save the new cache.`
+                );
 
                 if (core.isDebug()) {
                     core.debug("\n\nNix store paths:\n\n");
