@@ -1,5 +1,5 @@
 import * as core from "@actions/core";
-import { exec } from "@actions/exec";
+import * as exec from "@actions/exec";
 import * as github from "@actions/github";
 import dedent from "dedent";
 import { readdirSync, writeFileSync } from "fs";
@@ -193,5 +193,21 @@ export function getMaxDate({
 export const stringify = (value: any) => JSON.stringify(value, null, 2);
 
 export async function run(command: string) {
-    await exec("bash", ["-c", command]);
+    let stdout = "";
+    let stderr = "";
+
+    const options: exec.ExecOptions = {};
+
+    options.listeners = {
+        stdout: (data: Buffer) => {
+            stdout += data.toString();
+        },
+        stderr: (data: Buffer) => {
+            stderr += data.toString();
+        }
+    };
+
+    const result = await exec.exec("bash", ["-c", command], options);
+
+    return { stdout, stderr, result };
 }

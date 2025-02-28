@@ -6,31 +6,42 @@ export async function collectGarbage() {
 
     await utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
 
-    const printStoreSize = `
-    STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
-    printf "Current store size in bytes: $STORE_SIZE\\n"
-    `;
+    utils.info("Calculating store size.");
 
-    await utils.run(printStoreSize);
+    async function getStoreSize() {
+        const { stdout } = await utils.run(
+            `nix path-info --json --all | jq 'map(.narSize) | add'`
+        );
+
+        const storeSize = parseInt(stdout);
+
+        utils.info(`Current store size in bytes: ${storeSize}.`);
+
+        return storeSize;
+    }
+
+    const storeSize = await getStoreSize();
 
     if (inputs.gcMaxStoreSize) {
-        utils.info("Collecting garbage.");
-
-        await utils.run(
-            `
-            MAX_STORE_SIZE=${inputs.gcMaxStoreSize}
-            
-            if (( STORE_SIZE > MAX_STORE_SIZE )); then
-                (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
-                (( R2 = R1 > 0 ? R1 : 0 ))
-                printf "Max bytes to free: $R2\\n"
-                nix store gc --max "$R2"
-            fi
-            `
+        utils.info(
+            `Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize}.`
         );
+
+        if (storeSize <= inputs.gcMaxStoreSize) {
+            utils.info("No garbage to collect.");
+            return;
+        } else {
+            utils.info("Collecting garbage.");
+        }
+
+        const maxBytesToFree = storeSize - inputs.gcMaxStoreSize;
+
+        utils.info(`Max bytes to free: ${maxBytesToFree}.`);
+
+        await utils.run(`nix store gc --max ${maxBytesToFree}`);
 
         utils.info(`Finished collecting garbage.`);
 
-        await utils.run(printStoreSize);
+        await getStoreSize();
     }
 }
