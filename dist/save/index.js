@@ -76046,7 +76046,10 @@ function collectGarbage() {
             });
         }
         const storeSize = yield getStoreSize();
-        if (inputs.gcMaxStoreSize) {
+        if (inputs.gcMaxStoreSize === undefined) {
+            utils.info(`Not collecting garbage.`);
+        }
+        else {
             utils.info(`Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize}.`);
             if (storeSize <= inputs.gcMaxStoreSize) {
                 utils.info("No garbage to collect.");
