@@ -22,7 +22,9 @@ export async function collectGarbage() {
 
     const storeSize = await getStoreSize();
 
-    if (inputs.gcMaxStoreSize) {
+    if (inputs.gcMaxStoreSize === undefined) {
+        utils.info(`Not collecting garbage.`);
+    } else {
         utils.info(
             `Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize}.`
         );
