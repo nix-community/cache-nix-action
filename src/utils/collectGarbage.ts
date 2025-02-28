@@ -40,7 +40,11 @@ export async function collectGarbage() {
 
         utils.info(`Max bytes to free: ${maxBytesToFree}.`);
 
-        await utils.run(`nix store gc --max ${maxBytesToFree}`);
+        utils.info(`::group::Logs produced while collecting garbage.`);
+
+        await utils.run(`nix store gc --max ${maxBytesToFree}`, true);
+
+        utils.info(`::endgroup::`);
 
         utils.info(`Finished collecting garbage.`);
 
