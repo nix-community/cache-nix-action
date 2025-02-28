@@ -75556,17 +75556,21 @@ function saveImpl(stateProvider) {
                 }
                 else {
                     utils.info(`Found no cache with this key.`);
-                    yield (0, collectGarbage_1.removeGarbage)();
+                    yield (0, collectGarbage_1.collectGarbage)();
                     utils.info(`Saving a new cache with the key "${primaryKey}".`);
                     // can throw
                     cacheId = yield cacheBackend_1.cache.saveCache(inputs.paths, primaryKey, {
                         uploadChunkSize: inputs.uploadChunkSize
                     });
-                    utils.info(`Saved a new cache.`);
-                    core.debug("\n\nNix store paths:\n\n");
-                    fs.readdirSync("/nix/store").forEach(file => {
-                        core.debug(file);
-                    });
+                    utils.info(cacheId !== -1
+                        ? `Saved the new cache.`
+                        : `Could not save the new cache.`);
+                    if (core.isDebug()) {
+                        core.debug("\n\nNix store paths:\n\n");
+                        fs.readdirSync("/nix/store").forEach(file => {
+                            core.debug(file);
+                        });
+                    }
                 }
             }
             // Purge other caches
@@ -76004,10 +76008,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.removeGarbage = removeGarbage;
+exports.collectGarbage = collectGarbage;
 const inputs = __importStar(__nccwpck_require__(8422));
 const utils = __importStar(__nccwpck_require__(9603));
-function removeGarbage() {
+function collectGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
         utils.info("Removing useless files.");
         yield utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
