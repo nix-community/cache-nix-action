@@ -75556,17 +75556,21 @@ function saveImpl(stateProvider) {
                 }
                 else {
                     utils.info(`Found no cache with this key.`);
-                    yield (0, collectGarbage_1.removeGarbage)();
+                    yield (0, collectGarbage_1.collectGarbage)();
                     utils.info(`Saving a new cache with the key "${primaryKey}".`);
                     // can throw
                     cacheId = yield cacheBackend_1.cache.saveCache(inputs.paths, primaryKey, {
                         uploadChunkSize: inputs.uploadChunkSize
                     });
-                    utils.info(`Saved a new cache.`);
-                    core.debug("\n\nNix store paths:\n\n");
-                    fs.readdirSync("/nix/store").forEach(file => {
-                        core.debug(file);
-                    });
+                    utils.info(cacheId !== -1
+                        ? `Saved the new cache.`
+                        : `Could not save the new cache.`);
+                    if (core.isDebug()) {
+                        core.debug("\n\nNix store paths:\n\n");
+                        fs.readdirSync("/nix/store").forEach(file => {
+                            core.debug(file);
+                        });
+                    }
                 }
             }
             // Purge other caches
@@ -75781,7 +75785,7 @@ exports.getCachesByPrefixes = getCachesByPrefixes;
 exports.getMaxDate = getMaxDate;
 exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
-const exec_1 = __nccwpck_require__(5236);
+const exec = __importStar(__nccwpck_require__(5236));
 const github = __importStar(__nccwpck_require__(3228));
 const dedent_1 = __importDefault(__nccwpck_require__(3924));
 const fs_1 = __nccwpck_require__(9896);
@@ -75898,7 +75902,19 @@ const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
 function run(command) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield (0, exec_1.exec)("bash", ["-c", command]);
+        let stdout = "";
+        let stderr = "";
+        const options = {};
+        options.listeners = {
+            stdout: (data) => {
+                stdout += data.toString();
+            },
+            stderr: (data) => {
+                stderr += data.toString();
+            }
+        };
+        const result = yield exec.exec("bash", ["-c", command], options);
+        return { stdout, stderr, result };
     });
 }
 
@@ -76004,32 +76020,37 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.removeGarbage = removeGarbage;
+exports.collectGarbage = collectGarbage;
 const inputs = __importStar(__nccwpck_require__(8422));
 const utils = __importStar(__nccwpck_require__(9603));
-function removeGarbage() {
+function collectGarbage() {
     return __awaiter(this, void 0, void 0, function* () {
         utils.info("Removing useless files.");
         yield utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
-        const printStoreSize = `
-    STORE_SIZE="$(nix path-info --json --all | jq 'map(.narSize) | add')"    
-    printf "Current store size in bytes: $STORE_SIZE\\n"
-    `;
-        yield utils.run(printStoreSize);
+        utils.info("Calculating store size.");
+        function getStoreSize() {
+            return __awaiter(this, void 0, void 0, function* () {
+                const { stdout } = yield utils.run(`nix path-info --json --all | jq 'map(.narSize) | add'`);
+                const storeSize = parseInt(stdout);
+                utils.info(`Current store size in bytes: ${storeSize}.`);
+                return storeSize;
+            });
+        }
+        const storeSize = yield getStoreSize();
         if (inputs.gcMaxStoreSize) {
-            utils.info("Collecting garbage.");
-            yield utils.run(`
-            MAX_STORE_SIZE=${inputs.gcMaxStoreSize}
-            
-            if (( STORE_SIZE > MAX_STORE_SIZE )); then
-                (( R1 = STORE_SIZE - MAX_STORE_SIZE ))
-                (( R2 = R1 > 0 ? R1 : 0 ))
-                printf "Max bytes to free: $R2\\n"
-                nix store gc --max "$R2"
-            fi
-            `);
+            utils.info(`Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize}.`);
+            if (storeSize <= inputs.gcMaxStoreSize) {
+                utils.info("No garbage to collect.");
+                return;
+            }
+            else {
+                utils.info("Collecting garbage.");
+            }
+            const maxBytesToFree = storeSize - inputs.gcMaxStoreSize;
+            utils.info(`Max bytes to free: ${maxBytesToFree}.`);
+            yield utils.run(`nix store gc --max ${maxBytesToFree}`);
             utils.info(`Finished collecting garbage.`);
-            yield utils.run(printStoreSize);
+            yield getStoreSize();
         }
     });
 }

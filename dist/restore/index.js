@@ -84455,7 +84455,7 @@ exports.getCachesByPrefixes = getCachesByPrefixes;
 exports.getMaxDate = getMaxDate;
 exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
-const exec_1 = __nccwpck_require__(5236);
+const exec = __importStar(__nccwpck_require__(5236));
 const github = __importStar(__nccwpck_require__(3228));
 const dedent_1 = __importDefault(__nccwpck_require__(3924));
 const fs_1 = __nccwpck_require__(9896);
@@ -84572,7 +84572,19 @@ const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
 function run(command) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield (0, exec_1.exec)("bash", ["-c", command]);
+        let stdout = "";
+        let stderr = "";
+        const options = {};
+        options.listeners = {
+            stdout: (data) => {
+                stdout += data.toString();
+            },
+            stderr: (data) => {
+                stderr += data.toString();
+            }
+        };
+        const result = yield exec.exec("bash", ["-c", command], options);
+        return { stdout, stderr, result };
     });
 }
 
