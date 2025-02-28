@@ -1,8 +1,9 @@
 import * as core from "@actions/core";
-import { exec } from "@actions/exec";
+import * as exec from "@actions/exec";
 import * as github from "@actions/github";
 import dedent from "dedent";
-import { readdirSync, writeFileSync } from "fs";
+import * as fs from "fs";
+import { devNull } from "os";
 
 import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
@@ -83,22 +84,25 @@ export async function restoreCache({
     let extraTarArgs: string[] = [];
 
     if (inputs.nix && !lookupOnly) {
-        const excludePaths = readdirSync("/nix/store")
+        const excludePaths = fs
+            .readdirSync("/nix/store")
             .map(x => `../../../../../nix/store/${x}`)
             .concat(
-                readdirSync("/nix/var/nix")
+                fs
+                    .readdirSync("/nix/var/nix")
                     .filter(x => x != "db")
                     .map(x => `../../../../../nix/var/nix/${x}`)
             )
             .concat(
-                readdirSync("/nix/var/nix/db")
+                fs
+                    .readdirSync("/nix/var/nix/db")
                     .filter(x => x != "db.sqlite")
                     .map(x => `../../../../../nix/var/nix/db/${x}`)
             );
 
         const tmp = await cacheUtils.createTempDirectory();
         const excludeFromFile = `${tmp}/nix-store-paths`;
-        writeFileSync(excludeFromFile, excludePaths.join("\n"));
+        fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
         extraTarArgs = ["--exclude-from", excludeFromFile];
 
         info(`::group::Logs produced while restoring a cache.`);
@@ -192,6 +196,28 @@ export function getMaxDate({
 
 export const stringify = (value: any) => JSON.stringify(value, null, 2);
 
-export async function run(command: string) {
-    await exec("bash", ["-c", command]);
+export async function run(
+    command: string,
+    enableCommandOutput: boolean = false
+) {
+    let stdout = "";
+    let stderr = "";
+
+    const options: exec.ExecOptions = {
+        listeners: {
+            stdout: (data: Buffer) => {
+                stdout += data.toString();
+            },
+            stderr: (data: Buffer) => {
+                stderr += data.toString();
+            }
+        },
+        outStream: enableCommandOutput
+            ? undefined
+            : fs.createWriteStream(devNull)
+    };
+
+    const result = await exec.exec("bash", ["-c", command], options);
+
+    return { stdout, stderr, result };
 }
