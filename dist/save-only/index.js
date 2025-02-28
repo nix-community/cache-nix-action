@@ -75797,7 +75797,8 @@ const core = __importStar(__nccwpck_require__(7484));
 const exec = __importStar(__nccwpck_require__(5236));
 const github = __importStar(__nccwpck_require__(3228));
 const dedent_1 = __importDefault(__nccwpck_require__(3924));
-const fs_1 = __nccwpck_require__(9896);
+const fs = __importStar(__nccwpck_require__(9896));
+const os_1 = __nccwpck_require__(857);
 const constants_1 = __nccwpck_require__(7242);
 const inputs = __importStar(__nccwpck_require__(8422));
 const cacheBackend_1 = __nccwpck_require__(2455);
@@ -75849,17 +75850,20 @@ function restoreCache(_a) {
     return __awaiter(this, arguments, void 0, function* ({ primaryKey, restoreKeys, lookupOnly }) {
         let extraTarArgs = [];
         if (inputs.nix && !lookupOnly) {
-            const excludePaths = (0, fs_1.readdirSync)("/nix/store")
+            const excludePaths = fs
+                .readdirSync("/nix/store")
                 .map(x => `../../../../../nix/store/${x}`)
-                .concat((0, fs_1.readdirSync)("/nix/var/nix")
+                .concat(fs
+                .readdirSync("/nix/var/nix")
                 .filter(x => x != "db")
                 .map(x => `../../../../../nix/var/nix/${x}`))
-                .concat((0, fs_1.readdirSync)("/nix/var/nix/db")
+                .concat(fs
+                .readdirSync("/nix/var/nix/db")
                 .filter(x => x != "db.sqlite")
                 .map(x => `../../../../../nix/var/nix/db/${x}`));
             const tmp = yield cacheBackend_1.cacheUtils.createTempDirectory();
             const excludeFromFile = `${tmp}/nix-store-paths`;
-            (0, fs_1.writeFileSync)(excludeFromFile, excludePaths.join("\n"));
+            fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
             extraTarArgs = ["--exclude-from", excludeFromFile];
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
@@ -75909,18 +75913,22 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 }
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
-function run(command) {
-    return __awaiter(this, void 0, void 0, function* () {
+function run(command_1) {
+    return __awaiter(this, arguments, void 0, function* (command, enableCommandOutput = false) {
         let stdout = "";
         let stderr = "";
-        const options = {};
-        options.listeners = {
-            stdout: (data) => {
-                stdout += data.toString();
+        const options = {
+            listeners: {
+                stdout: (data) => {
+                    stdout += data.toString();
+                },
+                stderr: (data) => {
+                    stderr += data.toString();
+                }
             },
-            stderr: (data) => {
-                stderr += data.toString();
-            }
+            outStream: enableCommandOutput
+                ? undefined
+                : fs.createWriteStream(os_1.devNull)
         };
         const result = yield exec.exec("bash", ["-c", command], options);
         return { stdout, stderr, result };
@@ -76060,7 +76068,9 @@ function collectGarbage() {
             }
             const maxBytesToFree = storeSize - inputs.gcMaxStoreSize;
             utils.info(`Max bytes to free: ${maxBytesToFree}.`);
-            yield utils.run(`nix store gc --max ${maxBytesToFree}`);
+            utils.info(`::group::Logs produced while collecting garbage.`);
+            yield utils.run(`nix store gc --max ${maxBytesToFree}`, true);
+            utils.info(`::endgroup::`);
             utils.info(`Finished collecting garbage.`);
             yield getStoreSize();
         }
