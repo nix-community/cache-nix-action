@@ -75519,6 +75519,15 @@ function saveImpl(stateProvider) {
             if (!utils.isValidEvent()) {
                 utils.logWarning(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
             }
+            if (inputs.purge &&
+                inputs.purgeCreated === undefined &&
+                inputs.purgeLastAccessed === undefined) {
+                utils.logWarning(`
+                The input "${constants_1.Inputs.Purge}" is set to true, 
+                but the inputs "${constants_1.Inputs.PurgeCreated}" 
+                and "${constants_1.Inputs.PurgeLastAccessed}" are not set.
+                `);
+            }
             // If restore has stored a primary key in state, reuse that
             // Else re-evaluate from inputs
             const primaryKey = stateProvider.getState(constants_1.State.CachePrimaryKey) || inputs.primaryKey;
