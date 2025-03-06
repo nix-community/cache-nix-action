@@ -75394,7 +75394,17 @@ function choose(linuxOption, macosOption, defaultOption) {
 exports.isLinux = process.env.RUNNER_OS === "Linux";
 exports.isMacos = process.env.RUNNER_OS === "macOS";
 exports.nix = utils.getInputAsBool(constants_1.Inputs.Nix) && (exports.isLinux || exports.isMacos);
-exports.paths = (exports.nix ? ["/nix", "~/.cache/nix", "~root/.cache/nix"] : []).concat((function () {
+exports.paths = (exports.nix
+    ? [
+        "/nix"
+        // I'm not sure why these paths should be cached
+        // I only saw them here https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7
+        // The old caches may be invalid
+        // after copying the db
+        // when restoring a cache
+        // , "~/.cache/nix", "~root/.cache/nix"
+    ]
+    : []).concat((function () {
     const paths = utils.getInputAsArray(constants_1.Inputs.Paths);
     const pathsPlatform = utils.getInputAsArray(choose(constants_1.Inputs.PathsLinux, constants_1.Inputs.PathsMacos, constants_1.Inputs.Paths));
     if (pathsPlatform.length > 0) {
