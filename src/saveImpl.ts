@@ -36,20 +36,6 @@ export async function saveImpl(
             );
         }
 
-        if (
-            inputs.purge &&
-            inputs.purgeCreated === undefined &&
-            inputs.purgeLastAccessed === undefined
-        ) {
-            utils.logWarning(
-                `
-                The input "${Inputs.Purge}" is set to true, 
-                but the inputs "${Inputs.PurgeCreated}" 
-                and "${Inputs.PurgeLastAccessed}" are not set.
-                `
-            );
-        }
-
         // If restore has stored a primary key in state, reuse that
         // Else re-evaluate from inputs
         const primaryKey =
