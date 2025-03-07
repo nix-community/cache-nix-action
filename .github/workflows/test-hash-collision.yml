@@ -11,7 +11,8 @@ jobs:
     env:
       hash-nix1: 632f04521e847173c54fa72973ec6c39a371211c
       hash-nix2: 3a05eebede89661660945da1f151959900903b6a
-      nix_package: nixVersions.nix_2_26
+      installable-nix1: nixpkgs-nix1#nixVersions.nix_2_26
+      installable-nix2: nixpkgs-nix2#nixVersions.nix_2_26
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v4
@@ -48,12 +49,17 @@ jobs:
           nix registry pin nixpkgs-nix2 github:nixos/nixpkgs/${{ env.hash-nix2 }}
           nix profile install "$(nix flake archive nixpkgs-nix2 --json | jq -r '.path')" --priority 10
       - name: Install nix1
-        run: nix profile install nixpkgs-nix1#${{ env.nix_package }} --priority 20
+        run: nix profile install ${{ env.installable-nix1 }} --priority 20
       - name: Install nix2
-        run: nix profile install nixpkgs-nix2#${{ env.nix_package }} --priority 30
+        run: nix profile install ${{ env.installable-nix2 }} --priority 30
       - name: See libgcc paths in the nix1 closure
         run: |
-          NIX_LIBGCC_PATHS="$(nix path-info --recursive nixpkgs-nix1#${{ env.nix_package }} | grep libgcc || printf "error!")"
+          NIX_LIBGCC_PATHS="$(
+            nix derivation show ${{ env.installable-nix1 }} \
+            | jq -r '.[] .outputs.out.path' \
+            | xargs -I {} nix-store -qR --include-outputs {}\
+            | grep libgcc \
+            || printf "error!")"
           printf "%s\n" "$NIX_LIBGCC_PATHS"
           {
             echo 'NIX1_LIBGCC_PATHS<<EOF'
@@ -62,7 +68,12 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: See libgcc paths in the nix2 closure
         run: |
-          NIX_LIBGCC_PATHS="$(nix path-info --recursive nixpkgs-nix2#${{ env.nix_package }} | grep libgcc || printf "error!")"
+          NIX_LIBGCC_PATHS="$(
+            nix derivation show ${{ env.installable-nix2 }} \
+            | jq -r '.[] .outputs.out.path' \
+            | xargs -I {} nix-store -qR --include-outputs {}\
+            | grep libgcc \
+            || printf "error!")"
           printf "%s\n" "$NIX_LIBGCC_PATHS"
           {
             echo 'NIX2_LIBGCC_PATHS<<EOF'
