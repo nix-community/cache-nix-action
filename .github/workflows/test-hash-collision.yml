@@ -34,7 +34,7 @@ jobs:
               && format('gh pr checkout {0}', github.event.pull_request.number) 
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
-      - uses: ./.
+      - uses: ./restore
         with:
           primary-key: test-collision-${{ env.hash-nix1 }}-${{ env.hash-nix2 }}
 
@@ -94,9 +94,9 @@ jobs:
             exit 1
           fi
 
-      - name: Setup tmate session
-        if: failure() && steps.hashCollision.outcome == 'failure'
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   if: failure() && steps.hashCollision.outcome == 'failure'
+      #   uses: mxschmitt/action-tmate@v3
 
       - run: |
           STORE_LIBGCC_PATHS="$(ls /nix/store | grep libgcc)"
@@ -120,7 +120,7 @@ jobs:
             echo "Some necessary paths were garbage collected. See these paths in previous steps."
             exit 1
           fi
-      - uses: nix-community/cache-nix-action/save@49b5f39844a494c821792a6d7995c9c1083aff21
+      - uses: ./save
         if: always()
         with:
           primary-key: test-collision-${{ env.hash-nix1 }}-${{ env.hash-nix2 }}
