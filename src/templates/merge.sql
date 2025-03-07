@@ -114,7 +114,7 @@ select path,
        sigs,
        ca
 from ValidPaths2
-where hash not in (select hash from ValidPaths);
+where path not in (select path from ValidPaths);
 
 -- =====
 -- Insert refs from the first store
