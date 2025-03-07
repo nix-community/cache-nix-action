@@ -84,7 +84,7 @@ jobs:
           fi
 
       - name: Setup tmate session
-        if: steps.hashCollision.outcome == 'failure'
+        if: failure() && steps.hashCollision.outcome == 'failure'
         uses: mxschmitt/action-tmate@v3
 
       - run: |
@@ -103,7 +103,7 @@ jobs:
             echo 'STORE_LIBGCC_PATHS_AFTER_GC<<EOF'
             printf "%s\n" "$STORE_LIBGCC_PATHS"
             echo 'EOF'
-          } >> "$GITHUB_ENV"          
+          } >> "$GITHUB_ENV"
       - run: |
           if [[ "$STORE_LIBGCC_PATHS_BEFORE_GC" != "$STORE_LIBGCC_PATHS_AFTER_GC" ]]; then
             echo "Some necessary paths were garbage collected. See these paths in previous steps."
