@@ -403,10 +403,7 @@ jobs:
 
   test-collision-produce:
     uses: ./.github/workflows/test-hash-collision.yml
-    secrets:
-      SECRET_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test-collision-consume:
     uses: ./.github/workflows/test-hash-collision.yml
-    secrets:
-      SECRET_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    needs: test-collision-produce
