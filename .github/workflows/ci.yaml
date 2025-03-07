@@ -24,389 +24,382 @@ env:
     keep-env-derivations = true
     keep-outputs = true
 
-  rebase: |
-    ${{
-      github.head_ref
-        && format('gh pr checkout {0}', github.event.pull_request.number) 
-        || format('git pull --rebase origin {0}', github.ref_name) 
-    }}
-
 jobs:
-  # # Build the action
-  # # Commit and push the built code
-  # build:
-  #   name: Build the action
-  #   runs-on: ubuntu-24.04
-  #   permissions:
-  #     contents: write
-  #     actions: write
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: true
+  # Build the action
+  # Commit and push the built code
+  build:
+    name: Build the action
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
 
-  #     - uses: nixbuild/nix-quick-install-action@v30
-  #       with:
-  #         nix_conf: ${{ env.nix_conf }}
+      - uses: nixbuild/nix-quick-install-action@v30
 
-  #     - name: Restore and save Nix store and npm cache
-  #       uses: ./.
-  #       with:
-  #         primary-key: build-${{ runner.os }}-${{ hashFiles('**/package-lock.json', 'package.json', 'flake.nix', 'flake.lock') }}
-  #         paths: |
-  #           ~/.npm
-  #         # do purge caches
-  #         purge: true
-  #         # purge all versions of the cache
-  #         purge-prefixes: build-${{ runner.os }}-
-  #         # created more than 0 seconds ago relative to the start of the `Post Restore` phase
-  #         purge-created: 0
-  #         # except the version with the `primary-key`, if it exists
-  #         purge-primary-key: never
-  #         # and collect garbage in the Nix store until it reaches this size in bytes
-  #         gc-max-store-size: 0
+      - name: Restore and save Nix store and npm cache
+        uses: ./.
+        with:
+          primary-key: build-${{ runner.os }}-${{ hashFiles('**/package-lock.json', 'package.json', 'flake.nix', 'flake.lock') }}
+          paths: |
+            ~/.npm
+          # do purge caches
+          purge: true
+          # purge all versions of the cache
+          purge-prefixes: build-${{ runner.os }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
+          # and collect garbage in the Nix store until it reaches this size in bytes
+          gc-max-store-size: 0
 
-  #     # # Uncomment to debug this job
-  #     # - name: Setup tmate session
-  #     #   uses: mxschmitt/action-tmate@v3
+      # # Uncomment to debug this job
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
-  #     - name: Configure git
-  #       run: |
-  #         ${{
-  #           github.head_ref
-  #             && format('gh pr checkout {0}', github.event.pull_request.number) 
-  #             || format('git pull --rebase origin {0}', github.ref_name) 
-  #         }}
+      - name: Configure git
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
 
-  #         git config --global user.name "github-actions[bot]"
-  #         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-  #     - name: Install packages & Build the action
-  #       run: nix run .#install
+      - name: Install packages & Build the action
+        run: nix run .#install
 
-  #     - name: Update docs
-  #       run: nix run .#write
+      - name: Update docs
+        run: nix run .#write
 
-  #     - name: Commit & push changes
-  #       run: |
-  #         git add dist
-  #         git commit -m "chore: build the action" || echo "Nothing to commit"
-  #         git add {.,save,restore}/{*.yml,*.md}
-  #         git commit -m "chore: update docs" || echo "Nothing to commit"
-  #         git push
+      - name: Commit & push changes
+        run: |
+          git add dist
+          git commit -m "chore: build the action" || echo "Nothing to commit"
+          git add {.,save,restore}/{*.yml,*.md}
+          git commit -m "chore: update docs" || echo "Nothing to commit"
+          git push
 
-  #     - name: Save flake attributes from garbage collection
-  #       run: nix profile install .#saveFromGC
+      - name: Save flake attributes from garbage collection
+        run: |
+          nix profile install .#saveFromGC
 
-  # # Make `individual` caches
-  # # Restore `individual` or `common` caches
-  # # Usually, there should be no `individual` caches to restore as they're purged by `merge-similar-caches`
-  # make-similar-caches:
-  #   name: Make similar caches
-  #   needs: build
-  #   permissions:
-  #     actions: write
-  #   strategy:
-  #     matrix:
-  #       os:
-  #         - macos-14
-  #         - macos-15
-  #         - ubuntu-22.04
-  #         - ubuntu-24.04
-  #       id:
-  #         - 1
-  #         - 2
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout this repo
-  #       uses: actions/checkout@v4
+  # Make `individual` caches
+  # Restore `individual` or `common` caches
+  # Usually, there should be no `individual` caches to restore as they're purged by `merge-similar-caches`
+  make-similar-caches:
+    name: Make similar caches
+    needs: build
+    permissions:
+      actions: write
+    strategy:
+      matrix:
+        os:
+          - macos-13
+          - macos-15
+          - ubuntu-22.04
+          - ubuntu-24.04
+        id:
+          - 1
+          - 2
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
 
-  #     - name: Rebase
-  #       run: |
-  #         ${{
-  #           github.head_ref
-  #             && format('gh pr checkout {0}', github.event.pull_request.number) 
-  #             || format('git pull --rebase origin {0}', github.ref_name) 
-  #         }}
+      - name: Rebase
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
 
-  #     - uses: nixbuild/nix-quick-install-action@v30
-  #       with:
-  #         nix_conf: ${{ env.nix_conf }}
+      - uses: nixbuild/nix-quick-install-action@v30
 
-  #     - name: Restore Nix store - ${{ matrix.id }}
-  #       id: restore
-  #       uses: ./restore
-  #       with:
-  #         # save a new cache every time `ci.yaml` changes
-  #         primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
-  #         # otherwise, restore a common cache if and only if it matches the current `ci.yaml`
-  #         restore-prefixes-first-match: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
+      - name: Restore Nix store - ${{ matrix.id }}
+        id: restore
+        uses: ./restore
+        with:
+          # save a new cache every time `ci.yaml` changes
+          primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # otherwise, restore a common cache if and only if it matches the current `ci.yaml`
+          restore-prefixes-first-match: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
 
-  #     - name: Pin nixpkgs
-  #       run: ${{ env.pin_nixpkgs }}
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
 
-  #     - name: Install nixpkgs#poetry
-  #       if: matrix.id == 1
-  #       run: nix profile install nixpkgs#poetry
+      - name: Install nixpkgs#poetry
+        if: matrix.id == 1
+        run: nix profile install nixpkgs#poetry
 
-  #     - name: Install nixpkgs#nodejs
-  #       if: matrix.id == 2
-  #       run: nix profile install nixpkgs#nodejs
+      - name: Install nixpkgs#nodejs
+        if: matrix.id == 2
+        run: nix profile install nixpkgs#nodejs
 
-  #     - name: Save Nix store - ${{ matrix.id }}
-  #       if: steps.restore.outputs.hit == 'false'
-  #       uses: ./save
-  #       with:
-  #         # save a new cache every time `ci.yaml` changes
-  #         primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
-  #         # do purge caches
-  #         purge: true
-  #         # purge all versions of the individual cache
-  #         purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
-  #         # created more than 0 seconds ago relative to the start of the `Post Restore` phase
-  #         purge-created: 0
-  #         # except the version with the `primary-key`, if it exists
-  #         purge-primary-key: never
+      - name: Save Nix store - ${{ matrix.id }}
+        if: steps.restore.outputs.hit == 'false'
+        uses: ./save
+        with:
+          # save a new cache every time `ci.yaml` changes
+          primary-key: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # do purge caches
+          purge: true
+          # purge all versions of the individual cache
+          purge-prefixes: similar-cache-${{ matrix.os }}-individual-${{ matrix.id }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
 
-  # # Merge similar `individual` caches
-  # # Purge `individual` caches and old `common` caches
-  # # Save new `common` caches
-  # merge-similar-caches:
-  #   name: Merge similar caches
-  #   needs: make-similar-caches
-  #   permissions:
-  #     actions: write
-  #   strategy:
-  #     matrix:
-  #       os:
-  #         - macos-13
-  #         - macos-15
-  #         - ubuntu-22.04
-  #         - ubuntu-24.04
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout this repo
-  #       uses: actions/checkout@v4
+  # Merge similar `individual` caches
+  # Purge `individual` caches and old `common` caches
+  # Save new `common` caches
+  merge-similar-caches:
+    name: Merge similar caches
+    needs: make-similar-caches
+    permissions:
+      actions: write
+    strategy:
+      matrix:
+        os:
+          - macos-13
+          - macos-15
+          - ubuntu-22.04
+          - ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
 
-  #     - name: Rebase
-  #       run: |
-  #         ${{
-  #             github.head_ref
-  #               && format('gh pr checkout {0}', github.event.pull_request.number) 
-  #               || format('git pull --rebase origin {0}', github.ref_name) 
-  #           }}
+      - name: Rebase
+        run: |
+          ${{
+              github.head_ref
+                && format('gh pr checkout {0}', github.event.pull_request.number) 
+                || format('git pull --rebase origin {0}', github.ref_name) 
+            }}
 
-  #     - uses: nixbuild/nix-quick-install-action@v30
-  #       with:
-  #         nix_conf: ${{ env.nix_conf }}
+      - uses: nixbuild/nix-quick-install-action@v30
 
-  #     - uses: ./.
-  #       with:
-  #         primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
-  #         # if no hit on the primary key, restore individual caches that match `ci.yaml`
-  #         restore-prefixes-all-matches: |
-  #           similar-cache-${{ matrix.os }}-individual-1-${{ hashFiles('.github/workflows/ci.yaml') }}
-  #           similar-cache-${{ matrix.os }}-individual-2-${{ hashFiles('.github/workflows/ci.yaml') }}
-  #         # do purge caches
-  #         purge: true
-  #         # purge old versions of the `common` cache and any versions of individual caches
-  #         purge-prefixes: |
-  #           similar-cache-${{ matrix.os }}-common-
-  #           similar-cache-${{ matrix.os }}-individual-
-  #         # created more than 0 seconds ago relative to the start of the `Post Restore` phase
-  #         purge-created: 0
-  #         # except the version with the `primary-key`, if it exists
-  #         purge-primary-key: never
+      - uses: ./.
+        with:
+          primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # if no hit on the primary key, restore individual caches that match `ci.yaml`
+          restore-prefixes-all-matches: |
+            similar-cache-${{ matrix.os }}-individual-1-${{ hashFiles('.github/workflows/ci.yaml') }}
+            similar-cache-${{ matrix.os }}-individual-2-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # do purge caches
+          purge: true
+          # purge old versions of the `common` cache and any versions of individual caches
+          purge-prefixes: |
+            similar-cache-${{ matrix.os }}-common-
+            similar-cache-${{ matrix.os }}-individual-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
 
-  #     - name: Pin nixpkgs
-  #       run: ${{ env.pin_nixpkgs }}
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
 
-  #     # Stuff in a profile can survive garbage collection.
-  #     # Therefore, profiles are ignored when restoring a cache.
-  #     # So, the current profile should be the default profile created by nix-quick-install-action.
-  #     # The default profile should contain only nix.
-  #     - name: List profile
-  #       run: nix profile list
+      # Stuff in a profile can survive garbage collection.
+      # Therefore, profiles are ignored when restoring a cache.
+      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # The default profile should contain only nix.
+      - name: List profile
+        run: nix profile list
 
-  #     - name: Check that the profile doesn't have anything apart from `nix`
-  #       shell: bash
-  #       run: |
-  #         [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
+      - name: Check that the profile doesn't have anything apart from `nix`
+        shell: bash
+        run: |
+          [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
 
-  #     - name: Install nixpkgs#poetry
-  #       run: nix profile install nixpkgs#poetry
+      - name: Install nixpkgs#poetry
+        run: nix profile install nixpkgs#poetry
 
-  #     - name: Install nixpkgs#nodejs
-  #       run: nix profile install nixpkgs#nodejs
+      - name: Install nixpkgs#nodejs
+        run: nix profile install nixpkgs#nodejs
 
-  #     - name: Run poetry
-  #       run: poetry --version
+      - name: Run poetry
+        run: poetry --version
 
-  #     - name: Run node
-  #       run: node --version
+      - name: Run node
+        run: node --version
 
-  # # Check that the `common` cache is restored correctly
-  # merge-similar-caches-check:
-  #   name: Check a `common` cache is restored correctly
-  #   needs: merge-similar-caches
-  #   permissions:
-  #     actions: write
-  #   strategy:
-  #     matrix:
-  #       os:
-  #         - macos-13
-  #         - macos-15
-  #         - ubuntu-22.04
-  #         - ubuntu-24.04
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout this repo
-  #       uses: actions/checkout@v4
+  # Check that the `common` cache is restored correctly
+  merge-similar-caches-check:
+    name: Check a `common` cache is restored correctly
+    needs: merge-similar-caches
+    permissions:
+      actions: write
+    strategy:
+      matrix:
+        os:
+          - macos-13
+          - macos-15
+          - ubuntu-22.04
+          - ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
 
-  #     - name: Rebase
-  #       run: |
-  #         ${{
-  #             github.head_ref
-  #               && format('gh pr checkout {0}', github.event.pull_request.number) 
-  #               || format('git pull --rebase origin {0}', github.ref_name) 
-  #           }}
+      - name: Rebase
+        run: |
+          ${{
+              github.head_ref
+                && format('gh pr checkout {0}', github.event.pull_request.number) 
+                || format('git pull --rebase origin {0}', github.ref_name) 
+            }}
 
-  #     - uses: nixbuild/nix-quick-install-action@v30
-  #       with:
-  #         nix_conf: ${{ env.nix_conf }}
+      - uses: nixbuild/nix-quick-install-action@v30
 
-  #     - name: Restore Nix store
-  #       uses: ./restore
-  #       with:
-  #         primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
+      - name: Restore Nix store
+        uses: ./restore
+        with:
+          primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
 
-  #     - name: Pin nixpkgs
-  #       run: ${{ env.pin_nixpkgs }}
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
 
-  #     # Stuff in a profile can survive garbage collection.
-  #     # Therefore, profiles are ignored when restoring a cache.
-  #     # So, the current profile should be the default profile created by nix-quick-install-action.
-  #     # The default profile should contain only nix.
-  #     - name: List profile
-  #       run: nix profile list
+      # Stuff in a profile can survive garbage collection.
+      # Therefore, profiles are ignored when restoring a cache.
+      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # The default profile should contain only nix.
+      - name: List profile
+        run: nix profile list
 
-  #     - name: Check that the profile doesn't have anything apart from `nix`
-  #       shell: bash
-  #       run: |
-  #         [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
+      - name: Check that the profile doesn't have anything apart from `nix`
+        shell: bash
+        run: |
+          [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
 
-  #     - name: Install nixpkgs#poetry
-  #       run: nix profile install nixpkgs#poetry
+      - name: Install nixpkgs#poetry
+        run: nix profile install nixpkgs#poetry
 
-  #     - name: Install nixpkgs#nodejs
-  #       run: nix profile install nixpkgs#nodejs
+      - name: Install nixpkgs#nodejs
+        run: nix profile install nixpkgs#nodejs
 
-  #     - name: Run poetry
-  #       run: poetry --version
+      - name: Run poetry
+        run: poetry --version
 
-  #     - name: Run node
-  #       run: node --version
+      - name: Run node
+        run: node --version
 
-  # compare-run-times:
-  #   name: Job with caching
-  #   needs:
-  #     - merge-similar-caches
-  #     - merge-similar-caches-check
-  #   permissions:
-  #     actions: write
-  #   strategy:
-  #     matrix:
-  #       do-cache:
-  #         - true
-  #         - false
-  #       os:
-  #         - macos-13
-  #         - macos-15
-  #         - ubuntu-22.04
-  #         - ubuntu-24.04
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout this repo
-  #       uses: actions/checkout@v4
+  compare-run-times:
+    name: Job with caching
+    needs:
+      - merge-similar-caches
+      - merge-similar-caches-check
+    permissions:
+      actions: write
+    strategy:
+      matrix:
+        do-cache:
+          - true
+          - false
+        os:
+          - macos-13
+          - macos-15
+          - ubuntu-22.04
+          - ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
 
-  #     - name: Rebase
-  #       run: |
-  #         ${{
-  #           github.head_ref
-  #             && format('gh pr checkout {0}', github.event.pull_request.number) 
-  #             || format('git pull --rebase origin {0}', github.ref_name) 
-  #         }}
+      - name: Rebase
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
 
-  #     - uses: nixbuild/nix-quick-install-action@v30
-  #       with:
-  #         nix_conf: ${{ env.nix_conf }}
+      - uses: nixbuild/nix-quick-install-action@v30
 
-  #     - if: matrix.do-cache
-  #       uses: ./.
-  #       with:
-  #         # save a new cache every time ci file changes
-  #         primary-key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
-  #         # if no hit, restore current versions of individual caches
-  #         restore-prefixes-first-match: cache-${{ matrix.os }}-
-  #         # do purge caches
-  #         purge: true
-  #         # purge all versions of the cache
-  #         purge-prefixes: cache-${{ matrix.os }}-
-  #         # created more than 0 seconds ago relative to the start of the `Post Restore` phase
-  #         purge-created: 0
-  #         # except the version with the `primary-key`, if it exists
-  #         purge-primary-key: never
-  #         # and collect garbage in the Nix store until it reaches this size in bytes
-  #         gc-max-store-size: 8000000000
+      - if: matrix.do-cache
+        uses: ./.
+        with:
+          # save a new cache every time ci file changes
+          primary-key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # if no hit, restore current versions of individual caches
+          restore-prefixes-first-match: cache-${{ matrix.os }}-
+          # do purge caches
+          purge: true
+          # purge all versions of the cache
+          purge-prefixes: cache-${{ matrix.os }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
+          # and collect garbage in the Nix store until it reaches this size in bytes
+          gc-max-store-size: 8000000000
 
-  #     # Uncomment to debug this job
-  #     # - name: Setup tmate session
-  #     #   uses: mxschmitt/action-tmate@v3
+      # Uncomment to debug this job
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
-  #     - name: Show profile
-  #       run: nix profile list
+      - name: Show profile
+        run: nix profile list
 
-  #     - name: Pin nixpkgs
-  #       run: ${{ env.pin_nixpkgs }}
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
 
-  #     - name: List registry
-  #       run: nix registry list
+      - name: List registry
+        run: nix registry list
 
-  #     - name: Install nixpkgs
-  #       run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
+      - name: Install nixpkgs
+        run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
 
-  #     - name: Show profile
-  #       run: nix profile list
+      - name: Show profile
+        run: nix profile list
 
-  #     - name: Install nixpkgs#hello
-  #       run: nix profile install nixpkgs#hello
+      - name: Install nixpkgs#hello
+        run: |
+          nix profile install nixpkgs#hello
 
-  #     - name: Install nixpkgs#cachix
-  #       run: nix profile install nixpkgs#cachix
+      - name: Install nixpkgs#cachix
+        run: |
+          nix profile install nixpkgs#cachix
 
-  #     - name: Install nixpkgs#nixpkgs-fmt
-  #       run: nix profile install nixpkgs#nixpkgs-fmt
+      - name: Install nixpkgs#nixpkgs-fmt
+        run: |
+          nix profile install nixpkgs#nixpkgs-fmt
 
-  #     - name: Install nixpkgs#alejandra
-  #       run: nix profile install nixpkgs#alejandra
+      - name: Install nixpkgs#alejandra
+        run: |
+          nix profile install nixpkgs#alejandra
 
-  #     - name: Install nixpkgs#nixd
-  #       run: nix profile install nixpkgs#nixd
+      - name: Install nixpkgs#nixd
+        run: |
+          nix profile install nixpkgs#nixd
 
-  #     - name: Install nixpkgs#ghc
-  #       run: nix profile install nixpkgs#ghc
+      - name: Install nixpkgs#ghc
+        run: |
+          nix profile install nixpkgs#ghc
 
-  #     - name: Install nixpkgs#haskell-language-server
-  #       run: nix profile install nixpkgs#haskell-language-server
+      - name: Install nixpkgs#haskell-language-server
+        run: |
+          nix profile install nixpkgs#haskell-language-server
 
-  #     - name: Install nixpkgs#purescript
-  #       run: nix profile install nixpkgs#purescript
+      - name: Install nixpkgs#purescript
+        run: |
+          nix profile install nixpkgs#purescript
 
-  #     - name: Install nixpkgs#nodejs
-  #       run: nix profile install nixpkgs#nodejs
+      - name: Install nixpkgs#nodejs
+        run: |
+          nix profile install nixpkgs#nodejs
 
-  #     - name: Show profile
-  #       run: nix profile list
+      - name: Show profile
+        run: nix profile list
 
   test-collision-produce:
     uses: ./.github/workflows/test-hash-collision.yml
