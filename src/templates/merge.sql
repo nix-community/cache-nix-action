@@ -114,7 +114,7 @@ select path,
        sigs,
        ca
 from ValidPaths2
-where hash not in (select hash from ValidPaths);
+where path not in (select path from ValidPaths);
 
 -- =====
 -- Insert refs from the first store
@@ -128,37 +128,37 @@ from Refs1;
 -- Calculate updated refs for the second store
 -- =====
 
--- referrer | hash
-drop view if exists ReferrerHash;
+-- referrer | path
+drop view if exists ReferrerPath;
 
-create view ReferrerHash as
-select distinct referrer, hash
+create view ReferrerPath as
+select distinct referrer, path
 from Refs2
-         join (select hash, id from ValidPaths2) as ValidPaths2_ on Refs2.referrer = ValidPaths2_.id;
+         join (select path, id from ValidPaths2) as ValidPaths2_ on Refs2.referrer = ValidPaths2_.id;
 
 -- referrer | new referrer
 drop view if exists ReferrerId;
 
 create view ReferrerId as
 select referrer, referrerNew
-from ReferrerHash
-         join (select hash, id as referrerNew from ValidPaths) as ValidPaths_ on ReferrerHash.hash = ValidPaths_.hash;
+from ReferrerPath
+         join (select path, id as referrerNew from ValidPaths) as ValidPaths_ on ReferrerPath.path = ValidPaths_.path;
 
--- reference | hash
-drop view if exists ReferenceHash;
+-- reference | path
+drop view if exists ReferencePath;
 
-create view ReferenceHash as
-select distinct reference, hash
+create view ReferencePath as
+select distinct reference, path
 from Refs2
-         join (select hash, id from ValidPaths2) as ValidPaths2_ on Refs2.reference = ValidPaths2_.id;
+         join (select path, id from ValidPaths2) as ValidPaths2_ on Refs2.reference = ValidPaths2_.id;
 
 -- reference | new reference
 drop view if exists ReferenceId;
 
 create view ReferenceId as
 select reference, referenceNew
-from ReferenceHash
-         join (select hash, id as referenceNew from ValidPaths) as ValidPaths_ on ReferenceHash.hash = ValidPaths_.hash;
+from ReferencePath
+         join (select path, id as referenceNew from ValidPaths) as ValidPaths_ on ReferencePath.path = ValidPaths_.path;
 
 -- referrer | new referrer | reference
 drop view if exists ReferrerReferrerIdReference;
@@ -203,25 +203,25 @@ from DerivationOutputs1;
 -- Calculate updated derivation outputs for the second store
 -- =====
 
--- drv | id | path | hash
-drop view if exists DerivationOutputsHash;
+-- drv | id | path
+drop view if exists DerivationIdPaths;
 
 
 -- TODO what is drv?
 
-create view DerivationOutputsHash as
-select drv, DerivationOutputs2.id, path, hash
+create view DerivationIdPaths as
+select drv, DerivationOutputs2.id, ValidPaths2_.path
 from DerivationOutputs2
-         join (select id, hash from ValidPaths2) as ValidPaths2_ on ValidPaths2_.id = drv;
+         join (select id, path from ValidPaths2) as ValidPaths2_  on ValidPaths2_.id = drv;
 
 -- new drv | id | path
 drop view if exists DerivationOutputs2Updated;
 
 create view DerivationOutputs2Updated as
-select ValidPaths_.drvNew as drv, id, path
-from (select id, path, hash from DerivationOutputsHash) as DerivationOutputsHash_
-         join (select id as drvNew, hash from ValidPaths) as ValidPaths_
-              on DerivationOutputsHash_.hash = ValidPaths_.hash;
+select ValidPaths_.drvNew as drv, id, DerivationIdPaths_.path
+from (select id, path from DerivationIdPaths) as DerivationIdPaths_
+         join (select id as drvNew, path from ValidPaths) as ValidPaths_
+              on DerivationIdPaths_.path = ValidPaths_.path;
 
 -- =====
 -- Insert updated derivation outputs from the second store
@@ -261,10 +261,10 @@ drop table Refs2;
 -- =====
 
 drop view DerivationOutputs2Updated;
-drop view DerivationOutputsHash;
-drop view ReferenceHash;
+drop view DerivationIdPaths;
+drop view ReferencePath;
 drop view ReferenceId;
-drop view ReferrerHash;
+drop view ReferrerPath;
 drop view ReferrerId;
 drop view ReferrerReferrerIdReference;
 drop view ReferrerReferrerIdReferenceReferenceId;

@@ -13,9 +13,15 @@ on:
   workflow_dispatch:
 
 env:
-  pin_nixpkgs: nix registry pin nixpkgs github:NixOS/nixpkgs/807c549feabce7eddbf259dbdcec9e0600a0660d
+  pin_nixpkgs: nix registry pin nixpkgs github:NixOS/nixpkgs/02032da4af073d0f6110540c8677f16d4be0117f
   # required for gh
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  nix_conf: |
+    substituters = https://cache.nixos.org/ https://nix-community.cachix.org https://cache.iog.io
+    trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
+    keep-env-derivations = true
+    keep-outputs = true
 
 jobs:
   # Build the action
@@ -393,3 +399,11 @@ jobs:
 
       - name: Show profile
         run: nix profile list
+
+  test-collision-produce:
+    needs: build
+    uses: ./.github/workflows/test-hash-collision.yml
+
+  test-collision-consume:
+    needs: test-collision-produce
+    uses: ./.github/workflows/test-hash-collision.yml
