@@ -70,7 +70,6 @@ jobs:
             echo 'EOF'
           } >> "$GITHUB_ENV"
       - name: Observe hash collision
-        continue-on-error: true
         id: hashCollision
         run: |
           NIX1_HASHES="$(nix hash path $NIX1_LIBGCC_PATHS)"
@@ -85,7 +84,7 @@ jobs:
           fi
 
       - name: Setup tmate session
-        if: failure() && steps.hashCollision.outcome == 'failure'
+        if: steps.hashCollision.outcome == 'failure'
         uses: mxschmitt/action-tmate@v3
 
       - run: |
