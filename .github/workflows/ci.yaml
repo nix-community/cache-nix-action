@@ -438,7 +438,7 @@ jobs:
           nix profile install "$(nix flake archive nixpkgs-nix1 --json | jq -r '.path')"
       - name: Save nixpkgs for nix2
         run: |
-          nix registry pin nixpkgs-nix2 github:nixos/nixpkgs/${{ env.hash-nix2 }}
+          nix registry pin nixpkgs-nix2 github:nixos/nixpkgs/${{ env.hash-nix2 }} --priority 10
           nix profile install "$(nix flake archive nixpkgs-nix2 --json | jq -r '.path')"
       - name: Install nix1
         run: nix profile install nixpkgs-nix1#${{ env.nix_package }} --priority 10
