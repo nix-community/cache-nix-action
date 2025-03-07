@@ -401,8 +401,9 @@ jobs:
         run: nix profile list
 
   test-collision-produce:
+    needs: build
     uses: ./.github/workflows/test-hash-collision.yml
 
   test-collision-consume:
-    uses: ./.github/workflows/test-hash-collision.yml
     needs: test-collision-produce
+    uses: ./.github/workflows/test-hash-collision.yml
