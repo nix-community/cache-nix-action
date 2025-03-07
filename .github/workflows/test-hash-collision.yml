@@ -70,6 +70,8 @@ jobs:
             echo 'EOF'
           } >> "$GITHUB_ENV"
       - name: Observe hash collision
+        continue-on-error: true
+        id: hashCollision
         run: |
           NIX1_HASHES="$(nix hash path $NIX1_LIBGCC_PATHS)"
           NIX2_HASHES="$(nix hash path $NIX2_LIBGCC_PATHS)"
@@ -82,9 +84,9 @@ jobs:
             exit 1
           fi
 
-      # - name: Setup tmate session
-      #   if: always()
-      #   uses: mxschmitt/action-tmate@v3
+      - name: Setup tmate session
+        if: failure() && steps.hashCollision.outcome == 'failure'
+        uses: mxschmitt/action-tmate@v3
 
       - run: |
           STORE_LIBGCC_PATHS="$(ls /nix/store | grep libgcc)"
