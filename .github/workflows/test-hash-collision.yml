@@ -55,12 +55,20 @@ jobs:
         run: |
           NIX_LIBGCC_PATHS="$(nix path-info --recursive nixpkgs-nix1#${{ env.nix_package }} | grep libgcc || printf "error!")"
           printf "%s\n" "$NIX_LIBGCC_PATHS"
-          echo "NIX1_LIBGCC_PATHS=$NIX_LIBGCC_PATHS" >> "$GITHUB_ENV"
+          {
+            echo 'NIX1_LIBGCC_PATHS<<EOF'
+            printf "%s\n" "$NIX_LIBGCC_PATHS"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
       - name: See libgcc paths in the nix2 closure
         run: |
           NIX_LIBGCC_PATHS="$(nix path-info --recursive nixpkgs-nix2#${{ env.nix_package }} | grep libgcc || printf "error!")"
           printf "%s\n" "$NIX_LIBGCC_PATHS"
-          echo "NIX2_LIBGCC_PATHS=$NIX_LIBGCC_PATHS" >> "$GITHUB_ENV"
+          {
+            echo 'NIX2_LIBGCC_PATHS<<EOF'
+            printf "%s\n" "$NIX_LIBGCC_PATHS"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
       - name: Observe hash collision
         run: |
           NIX1_HASHES="$(nix hash path $NIX1_LIBGCC_PATHS)"
@@ -81,12 +89,20 @@ jobs:
       - run: |
           STORE_LIBGCC_PATHS="$(ls /nix/store | grep libgcc)"
           echo "$STORE_LIBGCC_PATHS"
-          echo "STORE_LIBGCC_PATHS_BEFORE_GC=$STORE_LIBGCC_PATHS" >> "$GITHUB_ENV"
+          {
+            echo 'STORE_LIBGCC_PATHS_BEFORE_GC<<EOF'
+            printf "%s\n" "$STORE_LIBGCC_PATHS"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
       - run: nix store gc -vv
       - run: |
           STORE_LIBGCC_PATHS="$(ls /nix/store | grep libgcc)"
           echo "$STORE_LIBGCC_PATHS"
-          echo "STORE_LIBGCC_PATHS_AFTER_GC=$STORE_LIBGCC_PATHS" >> "$GITHUB_ENV"
+          {
+            echo 'STORE_LIBGCC_PATHS_AFTER_GC<<EOF'
+            printf "%s\n" "$STORE_LIBGCC_PATHS"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"          
       - run: |
           if [[ "$STORE_LIBGCC_PATHS_BEFORE_GC" != "$STORE_LIBGCC_PATHS_AFTER_GC" ]]; then
             echo "Some necessary paths were garbage collected. See these paths in previous steps."
