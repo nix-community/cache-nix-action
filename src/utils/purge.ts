@@ -140,7 +140,7 @@ async function purgeCachesByTime({
     utils.info(`Finished purging cache(s).`);
 }
 
-export async function purgeCachesByTime({
+export async function purgeCaches({
     primaryKey,
     time,
     prefixes
