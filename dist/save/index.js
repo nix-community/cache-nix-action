@@ -75531,15 +75531,6 @@ function saveImpl(stateProvider) {
             if (!utils.isValidEvent()) {
                 utils.logWarning(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
             }
-            if (inputs.purge &&
-                inputs.purgeCreated === undefined &&
-                inputs.purgeLastAccessed === undefined) {
-                utils.logWarning(`
-                The input "${constants_1.Inputs.Purge}" is set to true, 
-                but the inputs "${constants_1.Inputs.PurgeCreated}" 
-                and "${constants_1.Inputs.PurgeLastAccessed}" are not set.
-                `);
-            }
             // If restore has stored a primary key in state, reuse that
             // Else re-evaluate from inputs
             const primaryKey = stateProvider.getState(constants_1.State.CachePrimaryKey) || inputs.primaryKey;
@@ -75551,10 +75542,10 @@ function saveImpl(stateProvider) {
                     yield (0, purge_1.purgeCacheByKey)(primaryKey, `Purging the cache with the key "${primaryKey}" because of "${constants_1.Inputs.PurgePrimaryKey}: always".`);
                 }
                 else {
-                    yield (0, purge_1.purgeCachesByTime)({
+                    yield (0, purge_1.purgeCaches)({
                         primaryKey,
-                        time,
-                        prefixes: []
+                        prefixes: [],
+                        time
                     });
                 }
             }
@@ -75572,6 +75563,7 @@ function saveImpl(stateProvider) {
                 if (utils.isExactKeyMatch(primaryKey, lookedUpPrimaryKey)) {
                     utils.info(`
                     Cache hit occurred on the "${constants_1.Inputs.PrimaryKey}".
+                    Not collecting garbage.
                     Not saving a new cache.
                     `);
                 }
@@ -75596,10 +75588,10 @@ function saveImpl(stateProvider) {
             }
             // Purge other caches
             if (inputs.purge) {
-                yield (0, purge_1.purgeCachesByTime)({
+                yield (0, purge_1.purgeCaches)({
                     primaryKey,
-                    time,
-                    prefixes: inputs.purgePrefixes
+                    prefixes: inputs.purgePrefixes,
+                    time
                 });
             }
         }
@@ -75887,7 +75879,7 @@ function restoreCache(_a) {
     });
 }
 function getCachesByPrefixes(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ prefixes, useRef }) {
+    return __awaiter(this, arguments, void 0, function* ({ prefixes, anyRef }) {
         const caches = [];
         const octokit = github.getOctokit(inputs.token);
         for (let i = 0; i < prefixes.length; i += 1) {
@@ -75899,7 +75891,7 @@ function getCachesByPrefixes(_a) {
                     key,
                     per_page: 100,
                     page,
-                    ref: useRef ? undefined : github.context.ref
+                    ref: anyRef ? undefined : github.context.ref
                 });
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
@@ -76207,7 +76199,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.filterCachesByTime = void 0;
 exports.purgeCacheByKey = purgeCacheByKey;
-exports.purgeCachesByTime = purgeCachesByTime;
+exports.purgeCaches = purgeCaches;
 const github = __importStar(__nccwpck_require__(3228));
 const constants_1 = __nccwpck_require__(7242);
 const inputs = __importStar(__nccwpck_require__(8422));
@@ -76246,37 +76238,34 @@ const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => cache
         return false;
 });
 exports.filterCachesByTime = filterCachesByTime;
-function purgeByTime(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ primaryKey, doUseLastAccessedTime, prefixes, time }) {
+function purgeCachesByPrefixes(_a) {
+    return __awaiter(this, arguments, void 0, function* ({ primaryKey, prefixes, doUseTime, doUseLastAccessedTime, time }) {
         const verb = doUseLastAccessedTime ? "last accessed" : "created";
-        const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
         let caches = [];
         if (prefixes.length > 0) {
+            const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
             utils.info(`
-            Purging cache(s) ${verb} before ${maxDate.toISOString()}, scoped to "${github.context.ref}", and with one of the key prefixes:
+            Purging cache(s) ${doUseTime ? `${verb} before ${maxDate.toISOString()}, ` : ""}scoped to "${github.context.ref}"${doUseTime ? "," : ""} and with one of the key prefixes:
             ${utils.stringify(prefixes)}
             `);
             const cachesFound = yield utils.getCachesByPrefixes({
                 prefixes,
-                useRef: false
+                anyRef: false
             });
-            caches = (0, exports.filterCachesByTime)({
-                caches: cachesFound,
-                doUseLastAccessedTime,
-                maxDate
-            });
+            if (doUseTime) {
+                caches = (0, exports.filterCachesByTime)({
+                    caches: cachesFound,
+                    doUseLastAccessedTime,
+                    maxDate
+                });
+            }
         }
         else {
-            utils.info(`Purging cache(s) ${verb} before ${maxDate.toISOString()}, scoped to "${github.context.ref}", and with the key "${primaryKey}".`);
-            const cachesFound = yield utils.getCachesByPrefixes({
-                prefixes: [primaryKey],
-                useRef: false
-            });
-            caches = (0, exports.filterCachesByTime)({
-                caches: cachesFound,
-                doUseLastAccessedTime,
-                maxDate
-            }).filter(x => utils.isExactKeyMatch(primaryKey, x.key));
+            utils.info(`
+            No "${constants_1.Inputs.PurgePrefixes}" specified.
+            Not purging caches.
+            `);
+            return;
         }
         utils.info(caches.length > 0
             ? `
@@ -76284,36 +76273,56 @@ function purgeByTime(_a) {
             ${utils.stringify(caches)}
             `
             : `Found no cache(s).`);
-        if (inputs.purgePrimaryKey == "never" &&
+        if (inputs.purgePrimaryKey === "never" &&
             caches.filter(x => utils.isExactKeyMatch(primaryKey, x.key)).length > 0) {
             utils.info(`Skipping cache(s) with the key "${primaryKey}" because of "${constants_1.Inputs.PurgePrimaryKey}: never".`);
             caches = caches.filter(x => !utils.isExactKeyMatch(primaryKey, x.key));
         }
         for (const cache of caches) {
-            const at = doUseLastAccessedTime
-                ? cache.last_accessed_at
-                : cache.created_at;
-            if (at && cache.key) {
-                const atDate = new Date(at);
-                const atDatePretty = atDate.toISOString();
-                yield purgeCacheByKey(cache.key, `Purging the cache ${verb} at ${atDatePretty} with the key "${cache.key}".`);
+            if (cache.key) {
+                if (doUseTime) {
+                    const at = doUseLastAccessedTime
+                        ? cache.last_accessed_at
+                        : cache.created_at;
+                    if (at) {
+                        const atDate = new Date(at);
+                        const atDatePretty = atDate.toISOString();
+                        yield purgeCacheByKey(cache.key, `Purging the cache that was ${verb} at ${atDatePretty} and that has the key "${cache.key}".`);
+                    }
+                }
+                else {
+                    yield purgeCacheByKey(cache.key, `Purging the cache with the key "${cache.key}".`);
+                }
             }
         }
         utils.info(`Finished purging cache(s).`);
     });
 }
-function purgeCachesByTime(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ primaryKey, time, prefixes }) {
-        for (const doUseLastAccessedTime of [true, false]) {
-            if ((doUseLastAccessedTime
-                ? inputs.purgeLastAccessed
-                : inputs.purgeCreated) !== undefined) {
-                yield purgeByTime({
-                    primaryKey,
-                    doUseLastAccessedTime,
-                    prefixes,
-                    time
-                });
+function purgeCaches(_a) {
+    return __awaiter(this, arguments, void 0, function* ({ primaryKey, prefixes, time }) {
+        if (inputs.purgeLastAccessed === undefined &&
+            inputs.purgeCreated === undefined) {
+            purgeCachesByPrefixes({
+                primaryKey,
+                prefixes,
+                doUseTime: false,
+                doUseLastAccessedTime: false,
+                time
+            });
+        }
+        else {
+            for (const doUseLastAccessedTime of [true, false]) {
+                if ((doUseLastAccessedTime
+                    ? inputs.purgeLastAccessed
+                    : inputs.purgeCreated) !== undefined) {
+                    yield purgeCachesByPrefixes({
+                        primaryKey,
+                        prefixes,
+                        doUseTime: true,
+                        doUseLastAccessedTime,
+                        time
+                    });
+                }
             }
         }
     });

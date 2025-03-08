@@ -84548,7 +84548,7 @@ function restoreCache(_a) {
     });
 }
 function getCachesByPrefixes(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ prefixes, useRef }) {
+    return __awaiter(this, arguments, void 0, function* ({ prefixes, anyRef }) {
         const caches = [];
         const octokit = github.getOctokit(inputs.token);
         for (let i = 0; i < prefixes.length; i += 1) {
@@ -84560,7 +84560,7 @@ function getCachesByPrefixes(_a) {
                     key,
                     per_page: 100,
                     page,
-                    ref: useRef ? undefined : github.context.ref
+                    ref: anyRef ? undefined : github.context.ref
                 });
                 if (cachesRequest.actions_caches.length == 0) {
                     break;
@@ -84971,7 +84971,7 @@ function restoreAllMatches() {
         `);
         const caches = yield utils.getCachesByPrefixes({
             prefixes: inputs.restorePrefixesAllMatches,
-            useRef: true
+            anyRef: true
         });
         utils.info(caches.length > 0
             ? `
