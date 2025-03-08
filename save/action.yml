@@ -68,31 +68,32 @@ inputs:
   purge:
     description: |
       - When `true`, the action purges (possibly zero) caches.
+      - The action purges only caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
       - Otherwise, this input has no effect.
     default: "false"
   purge-primary-key:
     description: |
       - Can have an effect only when `purge: true`.
-      - When `always`, the action always purges cache with the `primary-key`.
-      - When `never`, the action never purges cache with the `primary-key`.
+      - When `always`, the action always purges the cache with the `primary-key`.
+      - When `never`, the action never purges the cache with the `primary-key`.
       - Otherwise, this input has no effect.
     default: ""
   purge-prefixes:
     description: |
       - Can have an effect only when `purge: true`.
-      - When a newline-separated non-empty list of non-empty cache key prefixes, the action selects for purging all caches whose keys match some of these prefixes and that are scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
+      - When a newline-separated non-empty list of non-empty cache key prefixes, the action selects for purging all caches whose keys match some of these prefixes.
       - Otherwise, this input has no effect.
     default: ""
   purge-last-accessed:
     description: |
       - Can have an effect only when `purge: true`.
-      - When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the `Post Restore` phase.
+      - When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the Save step.
       - Otherwise, this input has no effect.
     default: ""
   purge-created:
     description: |
       - Can have an effect only when `purge: true`.
-      - When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the `Post Restore` phase.
+      - When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the Save step.
       - Otherwise, this input has no effect.
     default: ""
 
