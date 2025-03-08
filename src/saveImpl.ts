@@ -11,7 +11,7 @@ import {
 import * as utils from "./utils/action";
 import { cache } from "./utils/cacheBackend";
 import { collectGarbage } from "./utils/collectGarbage";
-import { purgeCacheByKey, purgeCachesByTime } from "./utils/purge";
+import { purgeCacheByKey, purgeCaches } from "./utils/purge";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
@@ -36,20 +36,6 @@ export async function saveImpl(
             );
         }
 
-        if (
-            inputs.purge &&
-            inputs.purgeCreated === undefined &&
-            inputs.purgeLastAccessed === undefined
-        ) {
-            utils.logWarning(
-                `
-                The input "${Inputs.Purge}" is set to true, 
-                but the inputs "${Inputs.PurgeCreated}" 
-                and "${Inputs.PurgeLastAccessed}" are not set.
-                `
-            );
-        }
-
         // If restore has stored a primary key in state, reuse that
         // Else re-evaluate from inputs
         const primaryKey =
@@ -68,10 +54,10 @@ export async function saveImpl(
                     `Purging the cache with the key "${primaryKey}" because of "${Inputs.PurgePrimaryKey}: always".`
                 );
             } else {
-                await purgeCachesByTime({
+                await purgeCaches({
                     primaryKey,
-                    time,
-                    prefixes: []
+                    prefixes: [],
+                    time
                 });
             }
         }
@@ -92,6 +78,7 @@ export async function saveImpl(
                 utils.info(
                     `
                     Cache hit occurred on the "${Inputs.PrimaryKey}".
+                    Not collecting garbage.
                     Not saving a new cache.
                     `
                 );
@@ -125,10 +112,10 @@ export async function saveImpl(
 
         // Purge other caches
         if (inputs.purge) {
-            await purgeCachesByTime({
+            await purgeCaches({
                 primaryKey,
-                time,
-                prefixes: inputs.purgePrefixes
+                prefixes: inputs.purgePrefixes,
+                time
             });
         }
     } catch (error: unknown) {

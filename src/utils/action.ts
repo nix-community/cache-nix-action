@@ -136,10 +136,10 @@ export interface Cache {
 
 export async function getCachesByPrefixes({
     prefixes,
-    useRef
+    anyRef
 }: {
     prefixes: string[];
-    useRef: boolean;
+    anyRef: boolean;
 }) {
     const caches: Cache[] = [];
 
@@ -155,7 +155,7 @@ export async function getCachesByPrefixes({
                     key,
                     per_page: 100,
                     page,
-                    ref: useRef ? undefined : github.context.ref
+                    ref: anyRef ? undefined : github.context.ref
                 });
 
             if (cachesRequest.actions_caches.length == 0) {

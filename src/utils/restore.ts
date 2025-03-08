@@ -73,7 +73,7 @@ export async function restoreAllMatches() {
 
     const caches = await utils.getCachesByPrefixes({
         prefixes: inputs.restorePrefixesAllMatches,
-        useRef: true
+        anyRef: true
     });
 
     utils.info(
