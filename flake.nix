@@ -42,7 +42,7 @@
                 EOF
               '';
             };
-            
+
           nodejs = pkgs.nodejs_23;
         in
         {
@@ -77,7 +77,10 @@
             };
 
             write = {
-              runtimeInputs = [ nodejs pkgs.mdsh ];
+              runtimeInputs = [
+                nodejs
+                pkgs.mdsh
+              ];
               text = ''
                 ${lib.getExe config.packages.writeActions}
                 mdsh -i README.md --work_dir examples/saveFromGC
@@ -88,11 +91,17 @@
             };
 
             writeBuildjetCI = writeYAML ".github/workflows/buildjet-ci.yaml" (
-              import ./nix/ci.nix { backend = "buildjet"; inherit lib; }
+              import ./nix/ci.nix {
+                backend = "buildjet";
+                inherit lib;
+              }
             );
 
             writeActionsCI = writeYAML ".github/workflows/ci.yaml" (
-              import ./nix/ci.nix { backend = "actions"; inherit lib; }
+              import ./nix/ci.nix {
+                backend = "actions";
+                inherit lib;
+              }
             );
 
             writeCI = {
@@ -115,22 +124,38 @@
               text = "npm run build";
               meta.description = "build project";
             };
-          }
-          // {
-            inherit (import ./saveFromGC.nix {
-              inherit pkgs inputs;
-              inputsExclude = [ inputs.devshell inputs.treefmt-nix ];
-              derivations = [ config.packages.install config.packages.write ];
-            }) saveFromGC;
+
+            inherit
+              (import ./saveFromGC.nix {
+                inherit pkgs inputs;
+                inputsExclude = [
+                  inputs.devshell
+                  inputs.treefmt-nix
+                ];
+                derivations = [
+                  config.packages.install
+                  config.packages.write
+                ];
+              })
+              saveFromGC
+              ;
           };
 
           devshells.default = {
-            packages = [ nodejs pkgs.mdsh ];
+            packages = [
+              nodejs
+              pkgs.mdsh
+            ];
             commands.scripts = [
               {
                 prefix = "nix run .#";
                 packages = {
-                  inherit (config.packages) write install build writeCI;
+                  inherit (config.packages)
+                    write
+                    install
+                    build
+                    writeCI
+                    ;
                 };
               }
             ];
