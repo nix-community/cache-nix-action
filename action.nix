@@ -176,31 +176,32 @@ in
             purge:
               description: |
                 - When `true`, the action purges (possibly zero) caches.
+                - The action purges only caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
                 - ${noEffectOtherwise}
               default: "false"
             purge-${primary-key}:
               description: |
                 - ${effectOnlyWhen [ "purge: true" ]}
-                - When `always`, the action always purges cache with the ${q primary-key}.
-                - When `never`, the action never purges cache with the ${q primary-key}.
+                - When `always`, the action always purges the cache with the ${q primary-key}.
+                - When `never`, the action never purges the cache with the ${q primary-key}.
                 - ${noEffectOtherwise}
               default: ""
             purge-prefixes:
               description: |
                 - ${effectOnlyWhen [ "purge: true" ]}
-                - ${whenListOf} cache key prefixes, the action selects for purging all caches whose keys match some of these prefixes and that are scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
+                - ${whenListOf} cache key prefixes, the action selects for purging all caches whose keys match some of these prefixes.
                 - ${noEffectOtherwise}
               default: ""
             purge-last-accessed:
               description: |
                 - ${effectOnlyWhen [ "purge: true" ]}
-                - When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the `Post Restore` phase.
+                - When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the ${if target == "cache" then "`Post Restore` phase" else "Save step"}.
                 - ${noEffectOtherwise}
               default: ""
             purge-created:
               description: |
                 - ${effectOnlyWhen [ "purge: true" ]}
-                - When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the `Post Restore` phase.
+                - When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the ${if target == "cache" then "`Post Restore` phase" else "Save step"}.
                 - ${noEffectOtherwise}
               default: ""
 
