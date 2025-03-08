@@ -47,7 +47,7 @@ export const filterCachesByTime = ({
         } else return false;
     });
 
-async function purgeByTime({
+async function purgeCachesByTime({
     primaryKey,
     doUseLastAccessedTime,
     prefixes,
@@ -155,7 +155,7 @@ export async function purgeCachesByTime({
                 ? inputs.purgeLastAccessed
                 : inputs.purgeCreated) !== undefined
         ) {
-            await purgeByTime({
+            await purgeCachesByTime({
                 primaryKey,
                 doUseLastAccessedTime,
                 prefixes,
