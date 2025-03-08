@@ -78,6 +78,7 @@ export async function saveImpl(
                 utils.info(
                     `
                     Cache hit occurred on the "${Inputs.PrimaryKey}".
+                    Not collecting garbage.
                     Not saving a new cache.
                     `
                 );
