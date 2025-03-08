@@ -147,12 +147,12 @@ async function purgeCachesByPrefixes({
 
 export async function purgeCaches({
     primaryKey,
-    time,
-    prefixes
+    prefixes,
+    time
 }: {
     primaryKey: string;
-    time: number;
     prefixes: string[];
+    time: number;
 }): Promise<void> {
     if (
         inputs.purgeLastAccessed === undefined &&

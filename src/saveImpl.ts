@@ -56,8 +56,8 @@ export async function saveImpl(
             } else {
                 await purgeCaches({
                     primaryKey,
-                    time,
-                    prefixes: []
+                    prefixes: [],
+                    time
                 });
             }
         }
@@ -114,8 +114,8 @@ export async function saveImpl(
         if (inputs.purge) {
             await purgeCaches({
                 primaryKey,
-                time,
-                prefixes: inputs.purgePrefixes
+                prefixes: inputs.purgePrefixes,
+                time
             });
         }
     } catch (error: unknown) {
