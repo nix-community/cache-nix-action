@@ -356,7 +356,9 @@ jobs:
         run: nix registry list
 
       - name: Install nixpkgs
-        run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
+        # About nixpkgs#path
+        # https://github.com/NixOS/nixpkgs/issues/270292
+        run: nix profile install $(nix eval nixpkgs#path)
 
       - name: Show profile
         run: nix profile list
