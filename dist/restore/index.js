@@ -81435,7 +81435,7 @@ function getTarPath() {
 }
 // Return arguments for tar as per tarPath, compressionMethod, method type and os
 function getTarArgs(tarPath_1, compressionMethod_1, type_1) {
-    return __awaiter(this, arguments, void 0, function* (tarPath, compressionMethod, type, archivePath = '') {
+    return __awaiter(this, arguments, void 0, function* (tarPath, compressionMethod, type, archivePath = '', extraTarArgs) {
         const args = [`"${tarPath.path}"`];
         const cacheFileName = utils.getCacheFileName(compressionMethod);
         const tarFile = 'cache.tar';
@@ -81445,23 +81445,25 @@ function getTarArgs(tarPath_1, compressionMethod_1, type_1) {
             compressionMethod !== constants_1.CompressionMethod.Gzip &&
             IS_WINDOWS;
         // Method specific args
+        // --exclude-from is a positional argument
+        // It affects and therefore should go before --files-from
         switch (type) {
             case 'create':
                 args.push('--posix', '-cf', BSD_TAR_ZSTD
                     ? tarFile
                     : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--exclude', BSD_TAR_ZSTD
                     ? tarFile
-                    : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--files-from', constants_1.ManifestFilename);
+                    : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), ...extraTarArgs, '--files-from', constants_1.ManifestFilename);
                 break;
             case 'extract':
                 args.push('-xf', BSD_TAR_ZSTD
                     ? tarFile
-                    : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'));
+                    : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), ...extraTarArgs);
                 break;
             case 'list':
                 args.push('-tf', BSD_TAR_ZSTD
                     ? tarFile
-                    : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P');
+                    : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', ...extraTarArgs);
                 break;
         }
         // Platform specific args
@@ -81483,8 +81485,7 @@ function getCommands(compressionMethod_1, type_1) {
     return __awaiter(this, arguments, void 0, function* (compressionMethod, type, archivePath = '', extraTarArgs = []) {
         let args;
         const tarPath = yield getTarPath();
-        const tarArgs = yield getTarArgs(tarPath, compressionMethod, type, archivePath);
-        tarArgs.push(...extraTarArgs);
+        const tarArgs = yield getTarArgs(tarPath, compressionMethod, type, archivePath, extraTarArgs);
         const compressionArgs = type !== 'create'
             ? yield getDecompressionProgram(tarPath, compressionMethod, archivePath)
             : yield getCompressionProgram(tarPath, compressionMethod);
@@ -84528,14 +84529,16 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
     logWarning("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
     return false;
 }
-function prepareExcludeFromFile() {
+function prepareExcludeFromFile(forRestore) {
     return __awaiter(this, void 0, void 0, function* () {
         // The exact number of ../ is derived from tar errors like here
         // https://github.com/nix-community/cache-nix-action/issues/9#issue-1831764494
         // https://github.com/nix-community/cache-nix-action/issues/48#issue-2611829659
-        const excludePaths = fs
-            .readdirSync("/nix/store")
-            .map(x => `../../../../../nix/store/${x}`)
+        const excludePaths = (forRestore
+            ? fs
+                .readdirSync("/nix/store")
+                .map(x => `../../../../../nix/store/${x}`)
+            : [])
             .concat(fs
             .readdirSync("/nix/var/nix")
             .filter(x => x != "db")
@@ -84545,7 +84548,7 @@ function prepareExcludeFromFile() {
             .filter(x => x != "db.sqlite")
             .map(x => `../../../../../nix/var/nix/db/${x}`));
         const tmp = yield cacheBackend_1.cacheUtils.createTempDirectory();
-        const excludeFromFile = `${tmp}/nix-store-paths`;
+        const excludeFromFile = `${tmp}/paths`;
         fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
         const extraTarArgs = ["--exclude-from", excludeFromFile];
         return extraTarArgs;
@@ -84555,7 +84558,7 @@ function restoreCache(_a) {
     return __awaiter(this, arguments, void 0, function* ({ primaryKey, restoreKeys, lookupOnly }) {
         let extraTarArgs = [];
         if (inputs.nix && !lookupOnly) {
-            extraTarArgs = yield prepareExcludeFromFile();
+            extraTarArgs = yield prepareExcludeFromFile(true);
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
         // The "restoreCache" implementation is selected at runtime.
