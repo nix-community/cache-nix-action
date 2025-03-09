@@ -54,6 +54,8 @@ export async function saveImpl(
                     `Purging the cache with the key "${primaryKey}" because of "${Inputs.PurgePrimaryKey}: always".`
                 );
             } else {
+                // We try to purge the cache by the primary key
+                // to potentially save a new cache with that key
                 await purgeCaches({
                     primaryKey,
                     prefixes: [],

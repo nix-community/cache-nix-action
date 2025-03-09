@@ -47,7 +47,7 @@ export const filterCachesByTime = ({
         } else return false;
     });
 
-async function purgeCachesByPrefixes({
+async function purgeCachesByPrimaryKeyAndPrefixes({
     primaryKey,
     prefixes,
     doUseTime,
@@ -62,55 +62,60 @@ async function purgeCachesByPrefixes({
 }): Promise<void> {
     const verb = doUseLastAccessedTime ? "last accessed" : "created";
 
+    const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
+
     let caches: utils.Cache[] = [];
 
-    if (prefixes.length > 0) {
-        const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
-
-        utils.info(
-            `
-            Purging cache(s) ${doUseTime ? `${verb} before ${maxDate.toISOString()}, ` : ""}scoped to "${
-                github.context.ref
-            }"${doUseTime ? "," : ""} and with one of the key prefixes:
-            ${utils.stringify(prefixes)}
-            `
-        );
-
-        const cachesFound = await utils.getCachesByPrefixes({
-            prefixes,
-            anyRef: false
-        });
-
-        if (doUseTime) {
-            caches = filterCachesByTime({
-                caches: cachesFound,
-                doUseLastAccessedTime,
-                maxDate
-            });
+    utils.info(
+        `
+        Purging cache(s) ${doUseTime ? `${verb} before ${maxDate.toISOString()}, ` : ""}scoped to "${
+            github.context.ref
+        }"${doUseTime ? "," : ""} and with ${
+            prefixes.length > 0
+                ? `one of the key prefixes:\n${utils.stringify(prefixes)}`
+                : `the key "${primaryKey}".`
         }
-    } else {
+        `
+    );
+
+    caches = await utils.getCachesByPrefixes({
+        prefixes: prefixes.length > 0 ? prefixes : [primaryKey],
+        anyRef: false
+    });
+
+    if (doUseTime) {
+        caches = filterCachesByTime({
+            caches,
+            doUseLastAccessedTime,
+            maxDate
+        });
+    }
+
+    if (prefixes.length == 0) {
+        caches = caches.filter(x => utils.isExactKeyMatch(primaryKey, x.key));
+    }
+
+    if (caches.length == 0) {
         utils.info(
             `
-            No "${Inputs.PurgePrefixes}" specified.
-            Not purging caches.
+            No cache(s) found.
+            Not purging.
             `
         );
 
         return;
-    }
-
-    utils.info(
-        caches.length > 0
-            ? `
+    } else {
+        utils.info(
+            `
             Found ${caches.length} cache(s):
             ${utils.stringify(caches)}
             `
-            : `Found no cache(s).`
-    );
+        );
+    }
 
     if (
-        inputs.purgePrimaryKey === "never" &&
-        caches.filter(x => utils.isExactKeyMatch(primaryKey, x.key)).length > 0
+        inputs.purgePrimaryKey == "never" &&
+        caches.some(x => utils.isExactKeyMatch(primaryKey, x.key))
     ) {
         utils.info(
             `Skipping cache(s) with the key "${primaryKey}" because of "${Inputs.PurgePrimaryKey}: never".`
@@ -158,7 +163,7 @@ export async function purgeCaches({
         inputs.purgeLastAccessed === undefined &&
         inputs.purgeCreated === undefined
     ) {
-        purgeCachesByPrefixes({
+        purgeCachesByPrimaryKeyAndPrefixes({
             primaryKey,
             prefixes,
             doUseTime: false,
@@ -172,7 +177,7 @@ export async function purgeCaches({
                     ? inputs.purgeLastAccessed
                     : inputs.purgeCreated) !== undefined
             ) {
-                await purgeCachesByPrefixes({
+                await purgeCachesByPrimaryKeyAndPrefixes({
                     primaryKey,
                     prefixes,
                     doUseTime: true,
