@@ -91,10 +91,18 @@ export async function saveImpl(
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
+                const extraTarArgs = await utils.prepareExcludeFromFile();
+
                 // can throw
-                cacheId = await cache.saveCache(inputs.paths, primaryKey, {
-                    uploadChunkSize: inputs.uploadChunkSize
-                });
+                cacheId = await cache.saveCache(
+                    inputs.paths,
+                    primaryKey,
+                    {
+                        uploadChunkSize: inputs.uploadChunkSize
+                    },
+                    undefined,
+                    extraTarArgs
+                );
 
                 utils.info(
                     cacheId !== -1
