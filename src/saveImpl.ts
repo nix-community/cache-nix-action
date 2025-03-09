@@ -91,7 +91,7 @@ export async function saveImpl(
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
-                const extraTarArgs = await utils.prepareExcludeFromFile();
+                const extraTarArgs = await utils.prepareExcludeFromFile(false);
 
                 // can throw
                 cacheId = await cache.saveCache(

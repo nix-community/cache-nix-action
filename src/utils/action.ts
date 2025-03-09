@@ -72,13 +72,17 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
     return false;
 }
 
-export async function prepareExcludeFromFile() {
+export async function prepareExcludeFromFile(forRestore: boolean) {
     // The exact number of ../ is derived from tar errors like here
     // https://github.com/nix-community/cache-nix-action/issues/9#issue-1831764494
     // https://github.com/nix-community/cache-nix-action/issues/48#issue-2611829659
-    const excludePaths = fs
-        .readdirSync("/nix/store")
-        .map(x => `../../../../../nix/store/${x}`)
+    const excludePaths = (
+        forRestore
+            ? fs
+                  .readdirSync("/nix/store")
+                  .map(x => `../../../../../nix/store/${x}`)
+            : []
+    )
         .concat(
             fs
                 .readdirSync("/nix/var/nix")
@@ -93,7 +97,7 @@ export async function prepareExcludeFromFile() {
         );
 
     const tmp = await cacheUtils.createTempDirectory();
-    const excludeFromFile = `${tmp}/nix-store-paths`;
+    const excludeFromFile = `${tmp}/paths`;
     fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
     const extraTarArgs = ["--exclude-from", excludeFromFile];
     return extraTarArgs;
@@ -111,7 +115,7 @@ export async function restoreCache({
     let extraTarArgs: string[] = [];
 
     if (inputs.nix && !lookupOnly) {
-        extraTarArgs = await prepareExcludeFromFile();
+        extraTarArgs = await prepareExcludeFromFile(true);
 
         info(`::group::Logs produced while restoring a cache.`);
     }
