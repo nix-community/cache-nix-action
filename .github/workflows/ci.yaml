@@ -38,6 +38,8 @@ jobs:
           submodules: true
 
       - uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: ${{ env.nix_conf }}
 
       - name: Restore and save Nix store and npm cache
         uses: ./.
@@ -121,6 +123,8 @@ jobs:
           }}
 
       - uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: ${{ env.nix_conf }}
 
       - name: Restore Nix store - ${{ matrix.id }}
         id: restore
@@ -186,6 +190,8 @@ jobs:
             }}
 
       - uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: ${{ env.nix_conf }}
 
       - uses: ./.
         with:
@@ -259,6 +265,8 @@ jobs:
             }}
 
       - uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: ${{ env.nix_conf }}
 
       - name: Restore Nix store
         uses: ./restore
@@ -323,6 +331,8 @@ jobs:
           }}
 
       - uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: ${{ env.nix_conf }}
 
       - if: matrix.do-cache
         uses: ./.
