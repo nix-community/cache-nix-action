@@ -75542,6 +75542,8 @@ function saveImpl(stateProvider) {
                     yield (0, purge_1.purgeCacheByKey)(primaryKey, `Purging the cache with the key "${primaryKey}" because of "${constants_1.Inputs.PurgePrimaryKey}: always".`);
                 }
                 else {
+                    // We try to purge the cache by the primary key
+                    // to potentially save a new cache with that key
                     yield (0, purge_1.purgeCaches)({
                         primaryKey,
                         prefixes: [],
@@ -75871,6 +75873,8 @@ function restoreCache(_a) {
             extraTarArgs = ["--exclude-from", excludeFromFile];
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
+        // The "restoreCache" implementation is selected at runtime.
+        // The options are in the "cache" module.
         const key = yield cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, extraTarArgs);
         if (inputs.nix && !lookupOnly) {
             (0, exports.info)(`::endgroup::`);
@@ -75987,8 +75991,8 @@ const actionsCacheUtils = __importStar(__nccwpck_require__(9225));
 const buildjetCache = __importStar(__nccwpck_require__(8966));
 const buildjetCacheUtils = __importStar(__nccwpck_require__(749));
 const inputs_1 = __nccwpck_require__(8422);
-exports.cache = inputs_1.backend == inputs_1.Backend.BuildJet ? buildjetCache : actionsCache;
-exports.cacheUtils = inputs_1.backend == inputs_1.Backend.BuildJet ? buildjetCacheUtils : actionsCacheUtils;
+exports.cache = inputs_1.backend == inputs_1.Backend.Actions ? actionsCache : buildjetCache;
+exports.cacheUtils = inputs_1.backend == inputs_1.Backend.Actions ? actionsCacheUtils : buildjetCacheUtils;
 
 
 /***/ }),
@@ -76238,43 +76242,45 @@ const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => cache
         return false;
 });
 exports.filterCachesByTime = filterCachesByTime;
-function purgeCachesByPrefixes(_a) {
+function purgeCachesByPrimaryKeyAndPrefixes(_a) {
     return __awaiter(this, arguments, void 0, function* ({ primaryKey, prefixes, doUseTime, doUseLastAccessedTime, time }) {
         const verb = doUseLastAccessedTime ? "last accessed" : "created";
+        const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
         let caches = [];
-        if (prefixes.length > 0) {
-            const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
-            utils.info(`
-            Purging cache(s) ${doUseTime ? `${verb} before ${maxDate.toISOString()}, ` : ""}scoped to "${github.context.ref}"${doUseTime ? "," : ""} and with one of the key prefixes:
-            ${utils.stringify(prefixes)}
-            `);
-            const cachesFound = yield utils.getCachesByPrefixes({
-                prefixes,
-                anyRef: false
+        utils.info(`
+        Purging cache(s) ${doUseTime ? `${verb} before ${maxDate.toISOString()}, ` : ""}scoped to "${github.context.ref}"${doUseTime ? "," : ""} and with ${prefixes.length > 0
+            ? `one of the key prefixes:\n${utils.stringify(prefixes)}`
+            : `the key "${primaryKey}".`}
+        `);
+        caches = yield utils.getCachesByPrefixes({
+            prefixes: prefixes.length > 0 ? prefixes : [primaryKey],
+            anyRef: false
+        });
+        if (doUseTime) {
+            caches = (0, exports.filterCachesByTime)({
+                caches,
+                doUseLastAccessedTime,
+                maxDate
             });
-            if (doUseTime) {
-                caches = (0, exports.filterCachesByTime)({
-                    caches: cachesFound,
-                    doUseLastAccessedTime,
-                    maxDate
-                });
-            }
         }
-        else {
+        if (prefixes.length == 0) {
+            caches = caches.filter(x => utils.isExactKeyMatch(primaryKey, x.key));
+        }
+        if (caches.length == 0) {
             utils.info(`
-            No "${constants_1.Inputs.PurgePrefixes}" specified.
-            Not purging caches.
+            No cache(s) found.
+            Not purging.
             `);
             return;
         }
-        utils.info(caches.length > 0
-            ? `
+        else {
+            utils.info(`
             Found ${caches.length} cache(s):
             ${utils.stringify(caches)}
-            `
-            : `Found no cache(s).`);
-        if (inputs.purgePrimaryKey === "never" &&
-            caches.filter(x => utils.isExactKeyMatch(primaryKey, x.key)).length > 0) {
+            `);
+        }
+        if (inputs.purgePrimaryKey == "never" &&
+            caches.some(x => utils.isExactKeyMatch(primaryKey, x.key))) {
             utils.info(`Skipping cache(s) with the key "${primaryKey}" because of "${constants_1.Inputs.PurgePrimaryKey}: never".`);
             caches = caches.filter(x => !utils.isExactKeyMatch(primaryKey, x.key));
         }
@@ -76302,7 +76308,7 @@ function purgeCaches(_a) {
     return __awaiter(this, arguments, void 0, function* ({ primaryKey, prefixes, time }) {
         if (inputs.purgeLastAccessed === undefined &&
             inputs.purgeCreated === undefined) {
-            purgeCachesByPrefixes({
+            purgeCachesByPrimaryKeyAndPrefixes({
                 primaryKey,
                 prefixes,
                 doUseTime: false,
@@ -76315,7 +76321,7 @@ function purgeCaches(_a) {
                 if ((doUseLastAccessedTime
                     ? inputs.purgeLastAccessed
                     : inputs.purgeCreated) !== undefined) {
-                    yield purgeCachesByPrefixes({
+                    yield purgeCachesByPrimaryKeyAndPrefixes({
                         primaryKey,
                         prefixes,
                         doUseTime: true,

@@ -83935,7 +83935,7 @@ function restoreImpl(stateProvider, earlyExit) {
                         throw errorNotFound;
                     }
                     else {
-                        utils.info(`Could not find a cache with the given "${constants_1.Inputs.PrimaryKey}".`);
+                        utils.info(`Could not find a cache with the given "${constants_1.Inputs.PrimaryKey}" and "${constants_1.Inputs.Paths}".`);
                     }
                 }
                 else if (utils.isExactKeyMatch(primaryKey, lookedUpPrimaryKey)) {
@@ -84540,6 +84540,8 @@ function restoreCache(_a) {
             extraTarArgs = ["--exclude-from", excludeFromFile];
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
+        // The "restoreCache" implementation is selected at runtime.
+        // The options are in the "cache" module.
         const key = yield cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, extraTarArgs);
         if (inputs.nix && !lookupOnly) {
             (0, exports.info)(`::endgroup::`);
@@ -84656,8 +84658,8 @@ const actionsCacheUtils = __importStar(__nccwpck_require__(9225));
 const buildjetCache = __importStar(__nccwpck_require__(8966));
 const buildjetCacheUtils = __importStar(__nccwpck_require__(749));
 const inputs_1 = __nccwpck_require__(8422);
-exports.cache = inputs_1.backend == inputs_1.Backend.BuildJet ? buildjetCache : actionsCache;
-exports.cacheUtils = inputs_1.backend == inputs_1.Backend.BuildJet ? buildjetCacheUtils : actionsCacheUtils;
+exports.cache = inputs_1.backend == inputs_1.Backend.Actions ? actionsCache : buildjetCache;
+exports.cacheUtils = inputs_1.backend == inputs_1.Backend.Actions ? actionsCacheUtils : buildjetCacheUtils;
 
 
 /***/ }),
