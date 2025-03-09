@@ -79132,17 +79132,17 @@ function restoreCacheV2(paths_1, primaryKey_1, restoreKeys_1, options_1) {
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
 function saveCache(paths_1, key_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false) {
+    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
         const cacheServiceVersion = (0, config_1.getCacheServiceVersion)();
         core.debug(`Cache service version: ${cacheServiceVersion}`);
         checkPaths(paths);
         checkKey(key);
         switch (cacheServiceVersion) {
             case 'v2':
-                return yield saveCacheV2(paths, key, options, enableCrossOsArchive);
+                return yield saveCacheV2(paths, key, options, enableCrossOsArchive, extraTarArgs);
             case 'v1':
             default:
-                return yield saveCacheV1(paths, key, options, enableCrossOsArchive);
+                return yield saveCacheV1(paths, key, options, enableCrossOsArchive, extraTarArgs);
         }
     });
 }
@@ -79156,7 +79156,7 @@ function saveCache(paths_1, key_1, options_1) {
  * @returns
  */
 function saveCacheV1(paths_1, key_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false) {
+    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
         var _a, _b, _c, _d, _e;
         const compressionMethod = yield utils.getCompressionMethod();
         let cacheId = -1;
@@ -79170,7 +79170,7 @@ function saveCacheV1(paths_1, key_1, options_1) {
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
         core.debug(`Archive Path: ${archivePath}`);
         try {
-            yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod);
+            yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, extraTarArgs);
             if (core.isDebug()) {
                 yield (0, tar_1.listTar)(archivePath, compressionMethod);
             }
@@ -79233,7 +79233,7 @@ function saveCacheV1(paths_1, key_1, options_1) {
  * @returns
  */
 function saveCacheV2(paths_1, key_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false) {
+    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
         // Override UploadOptions to force the use of Azure
         // ...options goes first because we want to override the default values
         // set in UploadOptions with these specific figures
@@ -79251,7 +79251,7 @@ function saveCacheV2(paths_1, key_1, options_1) {
         const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
         core.debug(`Archive Path: ${archivePath}`);
         try {
-            yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod);
+            yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, extraTarArgs);
             if (core.isDebug()) {
                 yield (0, tar_1.listTar)(archivePath, compressionMethod);
             }
@@ -79269,12 +79269,20 @@ function saveCacheV2(paths_1, key_1, options_1) {
                 key,
                 version
             };
-            const response = yield twirpClient.CreateCacheEntry(request);
-            if (!response.ok) {
+            let signedUploadUrl;
+            try {
+                const response = yield twirpClient.CreateCacheEntry(request);
+                if (!response.ok) {
+                    throw new Error('Response was not ok');
+                }
+                signedUploadUrl = response.signedUploadUrl;
+            }
+            catch (error) {
+                core.debug(`Failed to reserve cache: ${error}`);
                 throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache.`);
             }
             core.debug(`Attempting to upload cache located at: ${archivePath}`);
-            yield cacheHttpClient.saveCache(cacheId, archivePath, response.signedUploadUrl, options);
+            yield cacheHttpClient.saveCache(cacheId, archivePath, signedUploadUrl, options);
             const finalizeRequest = {
                 key,
                 version,
@@ -81607,11 +81615,11 @@ function extractTar(archivePath_1, compressionMethod_1) {
     });
 }
 // Create a tar
-function createTar(archiveFolder, sourceDirectories, compressionMethod) {
-    return __awaiter(this, void 0, void 0, function* () {
+function createTar(archiveFolder_1, sourceDirectories_1, compressionMethod_1) {
+    return __awaiter(this, arguments, void 0, function* (archiveFolder, sourceDirectories, compressionMethod, extraTarArgs = []) {
         // Write source directories to manifest.txt to avoid command length limits
         (0, fs_1.writeFileSync)(path.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join('\n'));
-        const commands = yield getCommands(compressionMethod, 'create');
+        const commands = yield getCommands(compressionMethod, 'create', undefined, extraTarArgs);
         yield execCommands(commands, archiveFolder);
     });
 }
@@ -84462,6 +84470,7 @@ exports.logWarning = logWarning;
 exports.logError = logError;
 exports.isValidEvent = isValidEvent;
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
+exports.prepareExcludeFromFile = prepareExcludeFromFile;
 exports.restoreCache = restoreCache;
 exports.getCachesByPrefixes = getCachesByPrefixes;
 exports.getMaxDate = getMaxDate;
@@ -84519,25 +84528,34 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
     logWarning("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
     return false;
 }
+function prepareExcludeFromFile() {
+    return __awaiter(this, void 0, void 0, function* () {
+        // The exact number of ../ is derived from tar errors like here
+        // https://github.com/nix-community/cache-nix-action/issues/9#issue-1831764494
+        // https://github.com/nix-community/cache-nix-action/issues/48#issue-2611829659
+        const excludePaths = fs
+            .readdirSync("/nix/store")
+            .map(x => `../../../../../nix/store/${x}`)
+            .concat(fs
+            .readdirSync("/nix/var/nix")
+            .filter(x => x != "db")
+            .map(x => `../../../../../nix/var/nix/${x}`))
+            .concat(fs
+            .readdirSync("/nix/var/nix/db")
+            .filter(x => x != "db.sqlite")
+            .map(x => `../../../../../nix/var/nix/db/${x}`));
+        const tmp = yield cacheBackend_1.cacheUtils.createTempDirectory();
+        const excludeFromFile = `${tmp}/nix-store-paths`;
+        fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
+        const extraTarArgs = ["--exclude-from", excludeFromFile];
+        return extraTarArgs;
+    });
+}
 function restoreCache(_a) {
     return __awaiter(this, arguments, void 0, function* ({ primaryKey, restoreKeys, lookupOnly }) {
         let extraTarArgs = [];
         if (inputs.nix && !lookupOnly) {
-            const excludePaths = fs
-                .readdirSync("/nix/store")
-                .map(x => `../../../../../nix/store/${x}`)
-                .concat(fs
-                .readdirSync("/nix/var/nix")
-                .filter(x => x != "db")
-                .map(x => `../../../../../nix/var/nix/${x}`))
-                .concat(fs
-                .readdirSync("/nix/var/nix/db")
-                .filter(x => x != "db.sqlite")
-                .map(x => `../../../../../nix/var/nix/db/${x}`));
-            const tmp = yield cacheBackend_1.cacheUtils.createTempDirectory();
-            const excludeFromFile = `${tmp}/nix-store-paths`;
-            fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
-            extraTarArgs = ["--exclude-from", excludeFromFile];
+            extraTarArgs = yield prepareExcludeFromFile();
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
         // The "restoreCache" implementation is selected at runtime.
@@ -96292,7 +96310,7 @@ module.exports["default"] = exports.default;
 /***/ ((module) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"@actions/cache","version":"4.0.1","preview":true,"description":"Actions cache lib","keywords":["github","actions","cache"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/cache","license":"MIT","main":"lib/cache.js","types":"lib/cache.d.ts","directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/cache"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"echo \\"Error: run tests from root\\" && exit 1","tsc":"tsc"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^1.11.1","@actions/exec":"^1.0.1","@actions/glob":"^0.1.0","@actions/http-client":"^2.1.1","@actions/io":"^1.0.1","@azure/abort-controller":"^1.1.0","@azure/ms-rest-js":"^2.6.0","@azure/storage-blob":"^12.13.0","@protobuf-ts/plugin":"^2.9.4","semver":"^6.3.1"},"devDependencies":{"@types/semver":"^6.0.0","typescript":"^5.2.2"}}');
+module.exports = /*#__PURE__*/JSON.parse('{"name":"@actions/cache","version":"4.0.2","preview":true,"description":"Actions cache lib","keywords":["github","actions","cache"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/cache","license":"MIT","main":"lib/cache.js","types":"lib/cache.d.ts","directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/cache"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"echo \\"Error: run tests from root\\" && exit 1","tsc":"tsc"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^1.11.1","@actions/exec":"^1.0.1","@actions/glob":"^0.1.0","@actions/http-client":"^2.1.1","@actions/io":"^1.0.1","@azure/abort-controller":"^1.1.0","@azure/ms-rest-js":"^2.6.0","@azure/storage-blob":"^12.13.0","@protobuf-ts/plugin":"^2.9.4","semver":"^6.3.1"},"devDependencies":{"@types/semver":"^6.0.0","typescript":"^5.2.2"}}');
 
 /***/ })
 
