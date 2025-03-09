@@ -72,6 +72,33 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
     return false;
 }
 
+export async function prepareExcludeFromFile() {
+    // The exact number of ../ is derived from tar errors like here
+    // https://github.com/nix-community/cache-nix-action/issues/9#issue-1831764494
+    // https://github.com/nix-community/cache-nix-action/issues/48#issue-2611829659
+    const excludePaths = fs
+        .readdirSync("/nix/store")
+        .map(x => `../../../../../nix/store/${x}`)
+        .concat(
+            fs
+                .readdirSync("/nix/var/nix")
+                .filter(x => x != "db")
+                .map(x => `../../../../../nix/var/nix/${x}`)
+        )
+        .concat(
+            fs
+                .readdirSync("/nix/var/nix/db")
+                .filter(x => x != "db.sqlite")
+                .map(x => `../../../../../nix/var/nix/db/${x}`)
+        );
+
+    const tmp = await cacheUtils.createTempDirectory();
+    const excludeFromFile = `${tmp}/nix-store-paths`;
+    fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
+    const extraTarArgs = ["--exclude-from", excludeFromFile];
+    return extraTarArgs;
+}
+
 export async function restoreCache({
     primaryKey,
     restoreKeys,
@@ -84,30 +111,11 @@ export async function restoreCache({
     let extraTarArgs: string[] = [];
 
     if (inputs.nix && !lookupOnly) {
-        const excludePaths = fs
-            .readdirSync("/nix/store")
-            .map(x => `../../../../../nix/store/${x}`)
-            .concat(
-                fs
-                    .readdirSync("/nix/var/nix")
-                    .filter(x => x != "db")
-                    .map(x => `../../../../../nix/var/nix/${x}`)
-            )
-            .concat(
-                fs
-                    .readdirSync("/nix/var/nix/db")
-                    .filter(x => x != "db.sqlite")
-                    .map(x => `../../../../../nix/var/nix/db/${x}`)
-            );
-
-        const tmp = await cacheUtils.createTempDirectory();
-        const excludeFromFile = `${tmp}/nix-store-paths`;
-        fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
-        extraTarArgs = ["--exclude-from", excludeFromFile];
+        extraTarArgs = await prepareExcludeFromFile();
 
         info(`::group::Logs produced while restoring a cache.`);
     }
-    
+
     // The "restoreCache" implementation is selected at runtime.
     // The options are in the "cache" module.
     const key = await cache.restoreCache(
