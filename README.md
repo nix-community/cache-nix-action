@@ -74,7 +74,7 @@ See [Caching Approaches](#caching-approaches).
 > For purging, the workflow or the job must have the [permission](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#permissions) `actions: write`.
 
 ```yaml
-- uses: nixbuild/nix-quick-install-action@v29
+- uses: nixbuild/nix-quick-install-action@v30
 
 - uses: nix-community/cache-nix-action@v6
   with:
@@ -90,9 +90,10 @@ See [Caching Approaches](#caching-approaches).
     purge: true
     # purge all versions of the cache
     purge-prefixes: nix-${{ runner.os }}-
-    # created more than this number of seconds ago relative to the start of the `Post Restore` phase
+    # created more than this number of seconds ago
+    # relative to the start of the `Post Restore and save Nix store` phase
     purge-created: 0
-    # except the version with the `primary-key`, if it exists
+    # except any version with the key that is the same as the `primary-key`
     purge-primary-key: never
 ```
 
