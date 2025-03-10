@@ -41,7 +41,7 @@ export const failOn: FailOn | undefined = (function () {
     }
 })();
 
-function choose<T>(linuxOption: T, macosOption: T, defaultOption: T): T {
+export function choose<T>(linuxOption: T, macosOption: T, defaultOption: T): T {
     switch (process.env.RUNNER_OS) {
         case "Linux":
             return linuxOption;
@@ -86,15 +86,17 @@ export const paths = (
 
 export const save = utils.getInputAsBool(Inputs.Save);
 
+export const gcMaxStoreSizeInputName = choose(
+    Inputs.GCMaxStoreSizeLinux,
+    Inputs.GCMaxStoreSizeMacos,
+    Inputs.GCMaxStoreSize
+);
+
 export const gcMaxStoreSize = nix
     ? (function () {
-          const gcMaxStoreSize = utils.getInputAsInt(Inputs.GCMaxStoreSize);
-          const gcMaxStoreSizePlatform = utils.getInputAsInt(
-              choose(
-                  Inputs.GCMaxStoreSizeLinux,
-                  Inputs.GCMaxStoreSizeMacos,
-                  Inputs.GCMaxStoreSize
-              )
+          const gcMaxStoreSize = utils.parseNixGcMax(Inputs.GCMaxStoreSize);
+          const gcMaxStoreSizePlatform = utils.parseNixGcMax(
+              gcMaxStoreSizeInputName
           );
           return gcMaxStoreSizePlatform !== undefined
               ? gcMaxStoreSizePlatform

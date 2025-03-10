@@ -350,7 +350,7 @@ jobs:
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
           # and collect garbage in the Nix store until it reaches this size in bytes
-          gc-max-store-size: 0
+          gc-max-store-size: 0M
 
       # Uncomment to debug this job
       # - name: Setup tmate session

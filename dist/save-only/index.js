@@ -75369,7 +75369,8 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.backend = exports.Backend = exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgePrimaryKey = exports.purge = exports.gcMaxStoreSize = exports.save = exports.paths = exports.nix = exports.isMacos = exports.isLinux = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
+exports.backend = exports.Backend = exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgePrimaryKey = exports.purge = exports.gcMaxStoreSize = exports.gcMaxStoreSizeInputName = exports.save = exports.paths = exports.nix = exports.isMacos = exports.isLinux = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
+exports.choose = choose;
 const core = __importStar(__nccwpck_require__(7484));
 const constants_1 = __nccwpck_require__(7242);
 const utils = __importStar(__nccwpck_require__(9612));
@@ -75425,10 +75426,11 @@ exports.paths = (exports.nix
         return paths;
 })());
 exports.save = utils.getInputAsBool(constants_1.Inputs.Save);
+exports.gcMaxStoreSizeInputName = choose(constants_1.Inputs.GCMaxStoreSizeLinux, constants_1.Inputs.GCMaxStoreSizeMacos, constants_1.Inputs.GCMaxStoreSize);
 exports.gcMaxStoreSize = exports.nix
     ? (function () {
-        const gcMaxStoreSize = utils.getInputAsInt(constants_1.Inputs.GCMaxStoreSize);
-        const gcMaxStoreSizePlatform = utils.getInputAsInt(choose(constants_1.Inputs.GCMaxStoreSizeLinux, constants_1.Inputs.GCMaxStoreSizeMacos, constants_1.Inputs.GCMaxStoreSize));
+        const gcMaxStoreSize = utils.parseNixGcMax(constants_1.Inputs.GCMaxStoreSize);
+        const gcMaxStoreSizePlatform = utils.parseNixGcMax(exports.gcMaxStoreSizeInputName);
         return gcMaxStoreSizePlatform !== undefined
             ? gcMaxStoreSizePlatform
             : gcMaxStoreSize;
@@ -76068,6 +76070,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.collectGarbage = collectGarbage;
+const constants_1 = __nccwpck_require__(7242);
 const inputs = __importStar(__nccwpck_require__(8422));
 const utils = __importStar(__nccwpck_require__(9603));
 function collectGarbage() {
@@ -76085,7 +76088,7 @@ function collectGarbage() {
         }
         const storeSize = yield getStoreSize();
         if (inputs.gcMaxStoreSize === undefined) {
-            utils.info(`Not collecting garbage.`);
+            utils.info(`Not collecting garbage because none of "${constants_1.Inputs.GCMaxStoreSize}", "${inputs.gcMaxStoreSizeInputName}" are specified.`);
         }
         else {
             utils.info(`Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize}.`);
@@ -76150,6 +76153,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getInputAsArray = getInputAsArray;
+exports.parseNixGcMax = parseNixGcMax;
 exports.getInputAsInt = getInputAsInt;
 exports.getInputAsBool = getInputAsBool;
 const core = __importStar(__nccwpck_require__(7484));
@@ -76159,6 +76163,38 @@ function getInputAsArray(name, options) {
         .split("\n")
         .map(s => s.replace(/^!\s+/, "!").trim())
         .filter(x => x !== "");
+}
+// https://github.com/NixOS/nix/blob/a047dec120672d00e069bacf10ffdda420fd1048/src/libutil/util.hh#L88
+function parseNixGcMax(name, options) {
+    const input = core.getInput(name, options);
+    const chars = [...input];
+    let result = 0;
+    for (let i = 0; i < chars.length; i++) {
+        const char = chars[i];
+        const digit = parseInt(char);
+        if (!isNaN(digit)) {
+            result = result * 10 + digit;
+        }
+        else {
+            if (i == chars.length - 1) {
+                switch (char) {
+                    case "K":
+                        result <<= 10;
+                    case "M":
+                        result <<= 20;
+                    case "G":
+                        result <<= 30;
+                    default:
+                        result = NaN;
+                }
+            }
+            else {
+                result = NaN;
+                break;
+            }
+        }
+    }
+    return isNaN(result) ? undefined : result;
 }
 function getInputAsInt(name, options) {
     const value = parseInt(core.getInput(name, options));

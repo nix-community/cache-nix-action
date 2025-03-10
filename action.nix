@@ -163,7 +163,8 @@ in
                   ]
                 }
                 - The input has no effect if "${primary-key}" hit occurs when starting to save the new cache.
-                - When a non-negative number, the action collects garbage (via `nix store gc --max ...`) until the Nix store size (in bytes) is at most this number just before the action tries to save a new cache.
+                - When a non-negative integer number (possibly with a suffix), the action collects garbage (via `nix store gc --max ...`) until the Nix store size (in bytes) is at most this number just before the action tries to save a new cache.
+                - If you specify a suffix, it must be `K` (kibibytes, 2 ^ 10 bytes), `M` (mebibytes, 2 ^ 20 bytes) or `G` (gibibytes, 2 ^ 30 bytes), where `2 ^ N` means `2 to the power N`.
                 - ${noEffectOtherwise}
               default: ""
             ${gc-max-store-size}-macos:
