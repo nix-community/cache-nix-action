@@ -11,6 +11,45 @@ export function getInputAsArray(
         .filter(x => x !== "");
 }
 
+// https://github.com/NixOS/nix/blob/a047dec120672d00e069bacf10ffdda420fd1048/src/libutil/util.hh#L88
+export function parseNixGcMax(name: string, options?: core.InputOptions) {
+    const input = core.getInput(name, options);
+
+    if (input.length == 0) {
+        return undefined;
+    }
+
+    const chars = [...input];
+
+    let result: number = 0;
+
+    for (let i = 0; i < chars.length; i++) {
+        const char = chars[i];
+        const digit = parseInt(char);
+        if (!isNaN(digit)) {
+            result = result * 10 + digit;
+        } else {
+            if (i == chars.length - 1) {
+                switch (char) {
+                    case "K":
+                        result <<= 10;
+                    case "M":
+                        result <<= 20;
+                    case "G":
+                        result <<= 30;
+                    default:
+                        result = NaN;
+                }
+            } else {
+                result = NaN;
+                break;
+            }
+        }
+    }
+
+    return isNaN(result) ? undefined : { input, value: result };
+}
+
 export function getInputAsInt(
     name: string,
     options?: core.InputOptions

@@ -29,17 +29,17 @@ export async function collectGarbage() {
         );
     } else {
         utils.info(
-            `Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize}.`
+            `Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize.value} (${inputs.gcMaxStoreSize.input}).`
         );
 
-        if (storeSize <= inputs.gcMaxStoreSize) {
+        if (storeSize <= inputs.gcMaxStoreSize.value) {
             utils.info("No garbage to collect.");
             return;
         } else {
             utils.info("Collecting garbage.");
         }
 
-        const maxBytesToFree = storeSize - inputs.gcMaxStoreSize;
+        const maxBytesToFree = storeSize - inputs.gcMaxStoreSize.value;
 
         utils.info(`Max bytes to free: ${maxBytesToFree}.`);
 
