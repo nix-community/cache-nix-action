@@ -1,3 +1,4 @@
+import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 
@@ -23,7 +24,9 @@ export async function collectGarbage() {
     const storeSize = await getStoreSize();
 
     if (inputs.gcMaxStoreSize === undefined) {
-        utils.info(`Not collecting garbage.`);
+        utils.info(
+            `Not collecting garbage because none of "${Inputs.GCMaxStoreSize}", "${inputs.gcMaxStoreSizeInputName}" are specified.`
+        );
     } else {
         utils.info(
             `Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize}.`
