@@ -84,8 +84,8 @@ See [Caching Approaches](#caching-approaches).
     restore-prefixes-first-match: nix-${{ runner.os }}-
     # collect garbage until Nix store size (in bytes) is at most this number
     # before trying to save a new cache
-    # 1 GB = 1073741824 B
-    gc-max-store-size-linux: 1073741824
+    # 1G = 1073741824
+    gc-max-store-size-linux: 1G
     # do purge caches
     purge: true
     # purge all versions of the cache
