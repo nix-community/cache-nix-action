@@ -15,6 +15,10 @@ export function getInputAsArray(
 export function parseNixGcMax(name: string, options?: core.InputOptions) {
     const input = core.getInput(name, options);
 
+    if (input.length == 0) {
+        return undefined;
+    }
+
     const chars = [...input];
 
     let result: number = 0;
