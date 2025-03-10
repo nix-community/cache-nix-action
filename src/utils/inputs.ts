@@ -47,7 +47,7 @@ export function parseNixGcMax(name: string, options?: core.InputOptions) {
         }
     }
 
-    return isNaN(result) ? undefined : result;
+    return isNaN(result) ? undefined : { input, value: result };
 }
 
 export function getInputAsInt(
