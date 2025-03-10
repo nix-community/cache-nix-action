@@ -84741,6 +84741,9 @@ function getInputAsArray(name, options) {
 // https://github.com/NixOS/nix/blob/a047dec120672d00e069bacf10ffdda420fd1048/src/libutil/util.hh#L88
 function parseNixGcMax(name, options) {
     const input = core.getInput(name, options);
+    if (input.length == 0) {
+        return undefined;
+    }
     const chars = [...input];
     let result = 0;
     for (let i = 0; i < chars.length; i++) {
@@ -84768,7 +84771,7 @@ function parseNixGcMax(name, options) {
             }
         }
     }
-    return isNaN(result) ? undefined : result;
+    return isNaN(result) ? undefined : { input, value: result };
 }
 function getInputAsInt(name, options) {
     const value = parseInt(core.getInput(name, options));

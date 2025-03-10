@@ -76091,15 +76091,15 @@ function collectGarbage() {
             utils.info(`Not collecting garbage because none of "${constants_1.Inputs.GCMaxStoreSize}", "${inputs.gcMaxStoreSizeInputName}" are specified.`);
         }
         else {
-            utils.info(`Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize}.`);
-            if (storeSize <= inputs.gcMaxStoreSize) {
+            utils.info(`Maximum allowed store size in bytes: ${inputs.gcMaxStoreSize.value} (${inputs.gcMaxStoreSize.input}).`);
+            if (storeSize <= inputs.gcMaxStoreSize.value) {
                 utils.info("No garbage to collect.");
                 return;
             }
             else {
                 utils.info("Collecting garbage.");
             }
-            const maxBytesToFree = storeSize - inputs.gcMaxStoreSize;
+            const maxBytesToFree = storeSize - inputs.gcMaxStoreSize.value;
             utils.info(`Max bytes to free: ${maxBytesToFree}.`);
             utils.info(`::group::Logs produced while collecting garbage.`);
             yield utils.run(`nix store gc --max ${maxBytesToFree}`, true);
@@ -76167,6 +76167,9 @@ function getInputAsArray(name, options) {
 // https://github.com/NixOS/nix/blob/a047dec120672d00e069bacf10ffdda420fd1048/src/libutil/util.hh#L88
 function parseNixGcMax(name, options) {
     const input = core.getInput(name, options);
+    if (input.length == 0) {
+        return undefined;
+    }
     const chars = [...input];
     let result = 0;
     for (let i = 0; i < chars.length; i++) {
@@ -76194,7 +76197,7 @@ function parseNixGcMax(name, options) {
             }
         }
     }
-    return isNaN(result) ? undefined : result;
+    return isNaN(result) ? undefined : { input, value: result };
 }
 function getInputAsInt(name, options) {
     const value = parseInt(core.getInput(name, options));
