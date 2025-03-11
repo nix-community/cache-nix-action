@@ -15,11 +15,11 @@ export function getInputAsArray(
 export function parseNixGcMax(name: string, options?: core.InputOptions) {
     const input = core.getInput(name, options);
 
-    if (input.length == 0) {
+    const chars = [...input];
+
+    if (chars.length == 0) {
         return undefined;
     }
-
-    const chars = [...input];
 
     let result: number = 0;
 
@@ -33,10 +33,13 @@ export function parseNixGcMax(name: string, options?: core.InputOptions) {
                 switch (char) {
                     case "K":
                         result <<= 10;
+                        break;
                     case "M":
                         result <<= 20;
+                        break;
                     case "G":
                         result <<= 30;
+                        break;
                     default:
                         result = NaN;
                 }
