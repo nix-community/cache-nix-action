@@ -84,6 +84,14 @@ export async function saveImpl(
                     Not saving a new cache.
                     `
                 );
+                
+                // Since we don't save a cache
+                // it's probably safe to set the value 
+                // to something other than -1 
+                // so that the warning 
+                // in the try block in saveOnlyRun
+                // is not printed
+                cacheId = 0;
             } else {
                 utils.info(`Found no cache with this key.`);
 
