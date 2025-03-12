@@ -76174,10 +76174,10 @@ function getInputAsArray(name, options) {
 // https://github.com/NixOS/nix/blob/a047dec120672d00e069bacf10ffdda420fd1048/src/libutil/util.hh#L88
 function parseNixGcMax(name, options) {
     const input = core.getInput(name, options);
-    if (input.length == 0) {
+    const chars = [...input];
+    if (chars.length == 0) {
         return undefined;
     }
-    const chars = [...input];
     let result = 0;
     for (let i = 0; i < chars.length; i++) {
         const char = chars[i];
@@ -76190,10 +76190,13 @@ function parseNixGcMax(name, options) {
                 switch (char) {
                     case "K":
                         result <<= 10;
+                        break;
                     case "M":
                         result <<= 20;
+                        break;
                     case "G":
                         result <<= 30;
+                        break;
                     default:
                         result = NaN;
                 }
