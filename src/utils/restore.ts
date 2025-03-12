@@ -49,6 +49,8 @@ export async function restoreCache(key: string, ref?: string) {
             utils.info(`Checking the store database.`);
 
             await utils.run(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
+            
+            utils.info(`The store database is consistent.`)
         }
 
         return cacheKey;
