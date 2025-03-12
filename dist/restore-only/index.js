@@ -84229,7 +84229,7 @@ drop table if exists DerivationOutputs;
 
 create table DerivationOutputs
 (
-    drv  integer not null,
+    drv  integer not null, -- index of a path of a derivation in ValidPaths
     id   text    not null, -- symbolic output id, usually "out"
     path text    not null,
     primary key (drv, id),
@@ -84344,14 +84344,11 @@ from DerivationOutputs1;
 -- Calculate updated derivation outputs for the second store
 -- =====
 
--- drv | id | path
+-- drv | id | path | drvPath
 drop view if exists DerivationIdPaths;
 
-
--- TODO what is drv?
-
 create view DerivationIdPaths as
-select drv, DerivationOutputs2.id, ValidPaths2_.path
+select drv, DerivationOutputs2.id, DerivationOutputs2.path, ValidPaths2_.path as drvPath
 from DerivationOutputs2
          join (select id, path from ValidPaths2) as ValidPaths2_  on ValidPaths2_.id = drv;
 
@@ -84360,9 +84357,9 @@ drop view if exists DerivationOutputs2Updated;
 
 create view DerivationOutputs2Updated as
 select ValidPaths_.drvNew as drv, id, DerivationIdPaths_.path
-from (select id, path from DerivationIdPaths) as DerivationIdPaths_
+from (select id, path, drvPath from DerivationIdPaths) as DerivationIdPaths_
          join (select id as drvNew, path from ValidPaths) as ValidPaths_
-              on DerivationIdPaths_.path = ValidPaths_.path;
+              on DerivationIdPaths_.drvPath = ValidPaths_.path;
 
 -- =====
 -- Insert updated derivation outputs from the second store
@@ -85015,6 +85012,7 @@ function restoreCache(key, ref) {
                 yield (0, mergeStoreDatabases_1.mergeStoreDatabases)(tempDir, dbPath1, dbPath2, dbPath);
                 utils.info(`Checking the store database.`);
                 yield utils.run(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
+                utils.info(`The store database is consistent.`);
             }
             return cacheKey;
         }
