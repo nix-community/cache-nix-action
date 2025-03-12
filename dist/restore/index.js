@@ -85012,6 +85012,7 @@ function restoreCache(key, ref) {
                 yield (0, mergeStoreDatabases_1.mergeStoreDatabases)(tempDir, dbPath1, dbPath2, dbPath);
                 utils.info(`Checking the store database.`);
                 yield utils.run(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
+                utils.info(`The store database is consistent.`);
             }
             return cacheKey;
         }
