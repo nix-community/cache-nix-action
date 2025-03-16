@@ -88,8 +88,7 @@ jobs:
           git push
 
       - name: Save flake attributes from garbage collection
-        run: |
-          nix profile install .#saveFromGC
+        run: nix profile install .#saveFromGC
 
   # Make `individual` caches
   # Restore `individual` or `common` caches
@@ -356,61 +355,39 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - name: Show profile
-        run: nix profile list
+      - run: nix profile list
 
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
 
-      - name: List registry
-        run: nix registry list
+      - run: nix registry list
 
-      - name: Install nixpkgs
+      - name: Save nixpkgs from garbage collection
         # About nixpkgs#path
         # https://github.com/NixOS/nixpkgs/issues/270292
         run: nix profile install $(nix eval nixpkgs#path)
 
-      - name: Show profile
-        run: nix profile list
+      - run: nix profile list
 
-      - name: Install nixpkgs#hello
-        run: |
-          nix profile install nixpkgs#hello
+      - run: nix profile install nixpkgs#hello
 
-      - name: Install nixpkgs#cachix
-        run: |
-          nix profile install nixpkgs#cachix
+      - run: nix profile install nixpkgs#cachix
 
-      - name: Install nixpkgs#nixpkgs-fmt
-        run: |
-          nix profile install nixpkgs#nixpkgs-fmt
+      - run: nix profile install nixpkgs#nixpkgs-fmt
 
-      - name: Install nixpkgs#alejandra
-        run: |
-          nix profile install nixpkgs#alejandra
+      - run: nix profile install nixpkgs#alejandra
 
-      - name: Install nixpkgs#nixd
-        run: |
-          nix profile install nixpkgs#nixd
+      - run: nix profile install nixpkgs#nixd
 
-      - name: Install nixpkgs#ghc
-        run: |
-          nix profile install nixpkgs#ghc
+      - run: nix profile install nixpkgs#ghc
 
-      - name: Install nixpkgs#haskell-language-server
-        run: |
-          nix profile install nixpkgs#haskell-language-server
+      - run: nix profile install nixpkgs#haskell-language-server
 
-      - name: Install nixpkgs#purescript
-        run: |
-          nix profile install nixpkgs#purescript
+      - run: nix profile install nixpkgs#purescript
 
-      - name: Install nixpkgs#nodejs
-        run: |
-          nix profile install nixpkgs#nodejs
+      - run: nix profile install nixpkgs#nodejs
 
-      - name: Show profile
-        run: nix profile list
+      - run: nix profile list
 
   test-collision-produce:
     needs: build
