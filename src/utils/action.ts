@@ -8,6 +8,7 @@ import { devNull } from "os";
 import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
 import { cache, cacheUtils } from "./cacheBackend";
+import { TarCommandModifiers } from "actions/toolkit/packages/cache/src/options";
 
 const myDedent = dedent.withOptions({});
 
@@ -99,8 +100,7 @@ export async function prepareExcludeFromFile(forRestore: boolean) {
     const tmp = await cacheUtils.createTempDirectory();
     const excludeFromFile = `${tmp}/paths`;
     fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
-    const extraTarArgs = ["--exclude-from", excludeFromFile];
-    return extraTarArgs;
+    return ["--exclude-from", excludeFromFile];
 }
 
 export async function restoreCache({
@@ -112,10 +112,10 @@ export async function restoreCache({
     restoreKeys: string[];
     lookupOnly: boolean;
 }) {
-    let extraTarArgs: string[] = [];
+    let tarCommandModifiers = new TarCommandModifiers();
 
     if (inputs.nix && !lookupOnly) {
-        extraTarArgs = await prepareExcludeFromFile(true);
+        tarCommandModifiers.extractArgs = await prepareExcludeFromFile(true);
 
         info(`::group::Logs produced while restoring a cache.`);
     }
@@ -128,7 +128,7 @@ export async function restoreCache({
         restoreKeys,
         { lookupOnly },
         false,
-        extraTarArgs
+        tarCommandModifiers
     );
 
     if (inputs.nix && !lookupOnly) {

@@ -12,6 +12,7 @@ import * as utils from "./utils/action";
 import { cache } from "./utils/cacheBackend";
 import { collectGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCaches } from "./utils/purge";
+import { TarCommandModifiers } from "actions/toolkit/packages/cache/src/options";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
@@ -84,11 +85,11 @@ export async function saveImpl(
                     Not saving a new cache.
                     `
                 );
-                
+
                 // Since we don't save a cache
-                // it's probably safe to set the value 
-                // to something other than -1 
-                // so that the warning 
+                // it's probably safe to set the value
+                // to something other than -1
+                // so that the warning
                 // in the try block in saveOnlyRun
                 // is not printed
                 cacheId = 0;
@@ -99,7 +100,10 @@ export async function saveImpl(
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
 
-                const extraTarArgs = await utils.prepareExcludeFromFile(false);
+                let tarCommandModifiers = new TarCommandModifiers();
+
+                tarCommandModifiers.createArgs =
+                    await utils.prepareExcludeFromFile(false);
 
                 // can throw
                 cacheId = await cache.saveCache(
@@ -109,7 +113,7 @@ export async function saveImpl(
                         uploadChunkSize: inputs.uploadChunkSize
                     },
                     undefined,
-                    extraTarArgs
+                    tarCommandModifiers
                 );
 
                 utils.info(
