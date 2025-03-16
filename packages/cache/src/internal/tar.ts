@@ -161,7 +161,17 @@ async function getCommands(
   if (BSD_TAR_ZSTD && type !== 'create') {
     args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')]
   } else {
-    args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')]
+    let sudo: string[] = []
+    
+    switch (process.platform) {
+      case 'linux':
+      case 'darwin':
+        sudo = ['sudo']
+        break
+      default:
+        sudo = []
+    }
+    args = [[...sudo,...tarArgs].join(' '), [...compressionArgs].join(' ')]
   }
 
   if (BSD_TAR_ZSTD) {
