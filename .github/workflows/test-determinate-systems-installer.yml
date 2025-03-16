@@ -1,0 +1,23 @@
+on:
+  workflow_call:
+
+jobs:
+  determinate-systems:
+    strategy:
+      matrix:
+        os:
+          - macos-13
+          - macos-15
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: ./.
+        with:
+          primary-key: determinate-systems-${{ runner.os }}-${{ runner.arch }}
+      # Uncomment to debug this job
+      - run: nix profile install nixpkgs#hello
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
