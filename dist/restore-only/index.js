@@ -84638,7 +84638,7 @@ function run(command_1) {
                 ? undefined
                 : fs.createWriteStream(os_1.devNull)
         };
-        (0, exports.info)(command);
+        (0, exports.info)(`[command]${command}`);
         const result = yield exec.exec("bash", ["-c", command], options);
         return { stdout, stderr, result };
     });

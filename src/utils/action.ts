@@ -234,7 +234,7 @@ export async function run(
             : fs.createWriteStream(devNull)
     };
 
-    info(command);
+    info(`[command]${command}`);
 
     const result = await exec.exec("bash", ["-c", command], options);
 
