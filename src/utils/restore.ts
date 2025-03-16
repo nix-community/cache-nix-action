@@ -1,4 +1,4 @@
-import { copyFileSync } from "fs";
+import { copyFileSync, existsSync } from "fs";
 
 import { Inputs } from "../constants";
 import * as inputs from "../inputs";
@@ -11,6 +11,7 @@ export async function restoreCache(key: string, ref?: string) {
     const dbPath = "/nix/var/nix/db/db.sqlite";
     const dbPath1 = `${tempDir}/old.sqlite`;
     const dbPath2 = `${tempDir}/new.sqlite`;
+    const dbPath3 = `${tempDir}/merged.sqlite`;
 
     if (inputs.nix) {
         utils.info(`Copying "${dbPath}" to "${dbPath1}".`);
@@ -40,17 +41,27 @@ export async function restoreCache(key: string, ref?: string) {
             utils.info(
                 `
                 Merging store databases "${dbPath1}" and "${dbPath2}"
-                into "${dbPath}".
+                into the new database "${dbPath3}".
                 `
             );
 
-            await mergeStoreDatabases(tempDir, dbPath1, dbPath2, dbPath);
+            await mergeStoreDatabases(
+                tempDir,
+                dbPath1,
+                dbPath2,
+                dbPath3,
+                dbPath
+            );
 
-            utils.info(`Checking the store database.`);
+            const nixCacheDir = `${process.env.HOME}/.cache/nix`;
 
-            await utils.run(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
-            
-            utils.info(`The store database is consistent.`)
+            if (existsSync(nixCacheDir)) {
+                utils.info(
+                    `Giving write permissions for ${nixCacheDir} to all users.`
+                );
+                
+                await utils.run(`sudo chmod a+w -R ${nixCacheDir}`);
+            }
         }
 
         return cacheKey;

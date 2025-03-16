@@ -115,7 +115,10 @@ export async function restoreCache({
     let extraTarArgs: string[] = [];
 
     if (inputs.nix && !lookupOnly) {
-        extraTarArgs = await prepareExcludeFromFile(true);
+        extraTarArgs = [
+            ...(await prepareExcludeFromFile(true)),
+            "--no-same-owner"
+        ];
 
         info(`::group::Logs produced while restoring a cache.`);
     }
@@ -230,6 +233,8 @@ export async function run(
             ? undefined
             : fs.createWriteStream(devNull)
     };
+
+    info(command);
 
     const result = await exec.exec("bash", ["-c", command], options);
 

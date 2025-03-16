@@ -10,6 +10,7 @@ import {
 import * as utils from "./utils/action";
 import * as install from "./utils/install";
 import * as restore from "./utils/restore";
+import { existsSync } from "fs";
 
 export async function restoreImpl(
     stateProvider: IStateProvider,

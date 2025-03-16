@@ -73112,7 +73112,16 @@ function getCommands(compressionMethod_1, type_1) {
             args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
         }
         else {
-            args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
+            let sudo = [];
+            switch (process.platform) {
+                case 'linux':
+                case 'darwin':
+                    sudo = ['sudo'];
+                    break;
+                default:
+                    sudo = [];
+            }
+            args = [[...sudo, ...tarArgs].join(' '), [...compressionArgs].join(' ')];
         }
         if (BSD_TAR_ZSTD) {
             return args;
@@ -75414,6 +75423,7 @@ exports.paths = (exports.nix
         // if they rely on internal Nix store database information
         // such as `id`s.
         "~/.cache/nix",
+        // TODO remove as ~root expands to /root on linux, and there's no /root/.cache
         "~root/.cache/nix"
     ]
     : []).concat((function () {
@@ -75901,7 +75911,10 @@ function restoreCache(_a) {
     return __awaiter(this, arguments, void 0, function* ({ primaryKey, restoreKeys, lookupOnly }) {
         let extraTarArgs = [];
         if (inputs.nix && !lookupOnly) {
-            extraTarArgs = yield prepareExcludeFromFile(true);
+            extraTarArgs = [
+                ...(yield prepareExcludeFromFile(true)),
+                "--no-same-owner"
+            ];
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
         // The "restoreCache" implementation is selected at runtime.
@@ -75969,6 +75982,7 @@ function run(command_1) {
                 ? undefined
                 : fs.createWriteStream(os_1.devNull)
         };
+        (0, exports.info)(command);
         const result = yield exec.exec("bash", ["-c", command], options);
         return { stdout, stderr, result };
     });

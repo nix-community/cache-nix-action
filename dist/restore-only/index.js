@@ -81496,7 +81496,16 @@ function getCommands(compressionMethod_1, type_1) {
             args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
         }
         else {
-            args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
+            let sudo = [];
+            switch (process.platform) {
+                case 'linux':
+                case 'darwin':
+                    sudo = ['sudo'];
+                    break;
+                default:
+                    sudo = [];
+            }
+            args = [[...sudo, ...tarArgs].join(' '), [...compressionArgs].join(' ')];
         }
         if (BSD_TAR_ZSTD) {
             return args;
@@ -83798,6 +83807,7 @@ exports.paths = (exports.nix
         // if they rely on internal Nix store database information
         // such as `id`s.
         "~/.cache/nix",
+        // TODO remove as ~root expands to /root on linux, and there's no /root/.cache
         "~root/.cache/nix"
     ]
     : []).concat((function () {
@@ -84557,7 +84567,10 @@ function restoreCache(_a) {
     return __awaiter(this, arguments, void 0, function* ({ primaryKey, restoreKeys, lookupOnly }) {
         let extraTarArgs = [];
         if (inputs.nix && !lookupOnly) {
-            extraTarArgs = yield prepareExcludeFromFile(true);
+            extraTarArgs = [
+                ...(yield prepareExcludeFromFile(true)),
+                "--no-same-owner"
+            ];
             (0, exports.info)(`::group::Logs produced while restoring a cache.`);
         }
         // The "restoreCache" implementation is selected at runtime.
@@ -84625,6 +84638,7 @@ function run(command_1) {
                 ? undefined
                 : fs.createWriteStream(os_1.devNull)
         };
+        (0, exports.info)(command);
         const result = yield exec.exec("bash", ["-c", command], options);
         return { stdout, stderr, result };
     });
@@ -84913,15 +84927,20 @@ const fs_1 = __nccwpck_require__(9896);
 const handlebars_1 = __importDefault(__nccwpck_require__(8508));
 const merge_1 = __nccwpck_require__(3031);
 const utils = __importStar(__nccwpck_require__(9603));
-function mergeStoreDatabases(tempDir, dbPath1, dbPath2, dbPath) {
+function mergeStoreDatabases(tempDir, dbPath1, dbPath2, dbPath3, dbPath) {
     return __awaiter(this, void 0, void 0, function* () {
         if ((0, fs_1.existsSync)(dbPath)) {
-            (0, fs_1.unlinkSync)(dbPath);
+            yield utils.run(`sudo rm -f ${dbPath}`);
         }
         const mergeSqlFile = `${tempDir}/merge.sql`;
         const template = handlebars_1.default.compile(merge_1.mergeSqlTemplate);
         (0, fs_1.writeFileSync)(mergeSqlFile, template({ dbPath1, dbPath2 }));
-        yield utils.run(`sqlite3 ${dbPath} < ${mergeSqlFile}`);
+        yield utils.run(`sqlite3 ${dbPath3} < ${mergeSqlFile}`);
+        utils.info(`Checking the new database.`);
+        yield utils.run(`sqlite3 "${dbPath3}" 'PRAGMA integrity_check;'`);
+        utils.info(`The new database is consistent.`);
+        yield utils.run(`sudo mv ${dbPath3} ${dbPath}`);
+        utils.info(`Moved the new database to ${dbPath}.`);
     });
 }
 
@@ -84990,6 +85009,7 @@ function restoreCache(key, ref) {
         const dbPath = "/nix/var/nix/db/db.sqlite";
         const dbPath1 = `${tempDir}/old.sqlite`;
         const dbPath2 = `${tempDir}/new.sqlite`;
+        const dbPath3 = `${tempDir}/merged.sqlite`;
         if (inputs.nix) {
             utils.info(`Copying "${dbPath}" to "${dbPath1}".`);
             (0, fs_1.copyFileSync)(dbPath, dbPath1);
@@ -85007,12 +85027,14 @@ function restoreCache(key, ref) {
                 (0, fs_1.copyFileSync)(dbPath, dbPath2);
                 utils.info(`
                 Merging store databases "${dbPath1}" and "${dbPath2}"
-                into "${dbPath}".
+                into the new database "${dbPath3}".
                 `);
-                yield (0, mergeStoreDatabases_1.mergeStoreDatabases)(tempDir, dbPath1, dbPath2, dbPath);
-                utils.info(`Checking the store database.`);
-                yield utils.run(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
-                utils.info(`The store database is consistent.`);
+                yield (0, mergeStoreDatabases_1.mergeStoreDatabases)(tempDir, dbPath1, dbPath2, dbPath3, dbPath);
+                const nixCacheDir = `${process.env.HOME}/.cache/nix`;
+                if ((0, fs_1.existsSync)(nixCacheDir)) {
+                    utils.info(`Giving write permissions for ${nixCacheDir} to all users.`);
+                    yield utils.run(`sudo chmod a+w -R ${nixCacheDir}`);
+                }
             }
             return cacheKey;
         }
