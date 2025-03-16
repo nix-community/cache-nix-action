@@ -49,6 +49,10 @@ jobs:
           submodules: true
 
       - uses: DeterminateSystems/nix-installer-action@v16
+        with:
+          extra-conf: |
+            accept-flake-config = true
+          
       
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
