@@ -43,7 +43,7 @@
     "@typescript-eslint/parser": "^8.26.0",
     "@vercel/ncc": "^0.38.3",
     "action-docs": "^2.5.1",
-    "eslint": "^9.22.0",
+    "eslint": "^9.23.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-config-love": "^119.0.0",
     "eslint-import-resolver-typescript": "^3.8.3",
