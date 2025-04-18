@@ -4,6 +4,11 @@ A GitHub Action to restore and save Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
 
+## Additional actions
+
+- [Restore action](./restore/README.md)
+- [Save action](./save/README.md)
+
 ## Features
 
 - Restore and save the Nix store on `Linux` and `macOS` runners.
@@ -12,41 +17,41 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - Merge caches produced by several jobs.
 - Purge caches created or last accessed at least the given time ago.
 
-## Additional actions
-
-- [Restore action](./restore/README.md)
-- [Save action](./save/README.md)
-
-These actions are used to [Merge caches](#merge-caches) and in other [Caching Strategies](#caching-strategies), e.g., [Always save cache](./caching-strategies.md#saving-cache-even-if-the-build-fails).
-
 ## A typical job
+
+> [!NOTE]
+> Inputs are given for reference. All available inputs are specified [below](#inputs).
 
 1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) installs Nix in single-user mode.
 
 1. `Restore` phase:
 
-   1. The `cache-nix-action` tries to restore a cache whose key is the same as the primary key.
+   > [!NOTE]
+   > For a cache to be restored in the current step, `paths` used to create that cache must be the same as the `paths` specified in the current step.
 
-   1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in a given list of key prefixes.
+   1. The `cache-nix-action` tries to restore a cache whose key is the same as the specified one (inputs: `primary-key`, `paths`).
 
-   1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in another given list of key prefixes.
+   1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in a given list of key prefixes (inputs: `restore-prefixes-first-match`, `paths`).
+
+   1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in another given list of key prefixes (inputs: `restore-prefixes-all-matches`, `paths`).
 
 1. Other job steps run.
 
 1. `Post Restore` phase:
 
-   1. The `cache-nix-action` purges caches whose keys are the same as the primary key and that were created more than a given time ago.
+   1. The `cache-nix-action` purges caches whose keys are the same as the primary key and that were created or last accessed more than a given time ago (inputs: `purge`, `purge-created`, `purge-last-accessed`, `purge-primary-key`).
 
-   1. When there's no cache whose key is the same as the primary key, the `cache-nix-action` collects garbage in the Nix store and saves a new cache.
+   1. When there's no cache whose key is the same as the primary key, the `cache-nix-action` collects garbage in the Nix store and saves a new cache (inputs: `save`, `gc-max-store-size`, `gc-max-store-size-linux`, `gc-max-store-size-macos`).
 
-   1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created more than a given time ago relative to the start of the `Post Restore` phase.
+   1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created or last accessed more than a given time ago relative to the start of the `Post Restore` phase (`purge`, `purge-prefixes`, `purge-created`, `purge-last-accessed`, `purge-primary-key`).
 
 ## Limitations
 
-- Uses nix3 commands like [nix store gc](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-store-gc) and [nix path-info](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-path-info).
-- By default, the action caches and restores only `/nix`.
-  - The action doesn't manage stores specified via the `--store` flag ([link](https://nixos.org/manual/nix/unstable/store/types/local-store.html#local-store)).
-  - When restoring a cache, the action ignores existing `/nix/store` paths and cached `/nix/var` except `/nix/var/nix/db/db.sqlite`.
+- Uses experimental [nix](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix) commands like [nix store gc](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-store-gc) and [nix path-info](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-path-info).
+- By default, the action caches and restores only `/nix`, `~/.cache/nix`, `~root/.cache/nix` (see [documentation](#inputs) for the `paths` input).
+  - The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nixos.org/manual/nix/unstable/store/types/local-store.html#local-store)).
+  - When restoring a cache, the action doesn't extract from the cache the `/nix/store` paths that already exist on the runner.
+  - Additionally, the action unarchives only the `/nix/var/nix/db/db.sqlite` and skips other cached `/nix/var` directories.
   - The action merges existing and new databases when restoring a cache.
 - The action requires [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
 - The action supports only `Linux` and `macOS` runners for Nix store caching.
@@ -68,21 +73,30 @@ These actions are used to [Merge caches](#merge-caches) and in other [Caching St
 
 See [Caching Approaches](#caching-approaches).
 
-## Example steps
+## Examples
+
+### Single step for restore and save
 
 > [!NOTE]
 > For purging, the workflow or the job must have the [permission](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#permissions) `actions: write`.
 
+> [!NOTE]
+> If the `paths` input is specified, the action will be able to restore only caches created with the same `paths`.
+
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v30
+  nix_conf: |
+    keep-env-derivations = true
+    keep-outputs = true
 
-- uses: nix-community/cache-nix-action@v6
+- name: Restore and save Nix store
+  uses: nix-community/cache-nix-action@v6
   with:
     # restore and save a cache using this key
     primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
     # if there's no cache hit, restore a cache by this prefix
     restore-prefixes-first-match: nix-${{ runner.os }}-
-    # collect garbage until Nix store size (in bytes) is at most this number
+    # collect garbage until the Nix store size (in bytes) is at most this number
     # before trying to save a new cache
     # 1G = 1073741824
     gc-max-store-size-linux: 1G
@@ -91,19 +105,28 @@ See [Caching Approaches](#caching-approaches).
     # purge all versions of the cache
     purge-prefixes: nix-${{ runner.os }}-
     # created more than this number of seconds ago
-    # relative to the start of the `Post Restore and save Nix store` phase
     purge-created: 0
+    # or, last accessed more than this number of seconds ago
+    # relative to the start of the `Post Restore and save Nix store` phase
+    purge-last-accessed: 0
     # except any version with the key that is the same as the `primary-key`
     purge-primary-key: never
 ```
 
-### Explanation
-
-- `nix-quick-install-action` loads `nixConfig` from `flake.nix` and writes to [nix.conf](https://nixos.org/manual/nix/unstable/command-ref/conf-file.html) (see [action.yml](https://github.com/nixbuild/nix-quick-install-action/blob/master/action.yml) in `the nix-quick-install` repo).
-- Due to `gc-max-store-size-linux: 1073741824`, on `Linux` runners, garbage in the Nix store is collected until store size reaches `1GB` or until there's no garbage to collect.
+- `nix-quick-install-action` writes the supplied [nix_conf](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/action.yml#L19) to [nix.conf](https://nixos.org/manual/nix/unstable/command-ref/conf-file.html) (see [action.yml](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/action.yml#L63), [script](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/nix-quick-install.sh#L99)).
+- `nix-quick-install-action` enables [flakes](https://nixos.wiki/wiki/Flakes) and accepts `nixConfig` from `flake.nix` (see [script](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/nix-quick-install.sh#L113)).
+- Due to `gc-max-store-size-linux: 1G`, on `Linux` runners, garbage in the Nix store is collected until the store size reaches `1GB` or until there's no garbage to collect.
 - Since `gc-max-store-size-macos` isn't set to a number, on `macOS` runners, no garbage is collected in the Nix store.
-- The `cache-nix-action` purges caches:
-  - (with a key prefix `cache-${{ runner.os }}-`) **AND** (created more than `42` seconds ago **OR** last accessed more than `42` seconds ago).
+- At the end of the job, and before trying to save a new cache, the `cache-nix-action` purges caches:
+  - (with the key prefix `nix-${{ runner.os }}-`) **AND** (created more than `0` seconds ago **OR** last accessed more than `0` seconds ago).
+
+### Separate steps for restore and save
+
+See [Always save cache](./caching-strategies.md#saving-cache-even-if-the-build-fails).
+
+### Other examples
+
+See [Merge caches](#merge-caches), [Example cache workflow](#example-cache-workflow), [Caching Strategies](#caching-strategies).
 
 ### Example workflow
 
@@ -371,7 +394,7 @@ Output (edited):
 
 ## Caching approaches
 
-Discussed in more details [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
+Initially discussed [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) and [here](https://github.com/nixbuild/nix-quick-install-action/issues/33).
 
 Caching approaches work at different "distances" from `/nix/store` of GitHub Actions runner.
 These distances affect the restore and save speed.
@@ -605,6 +628,9 @@ jobs:
 The `cache-nix-action` provides the `hit-primary-key` output which is set to `'true'` when the cache is restored using the `primary-key` and `'false'` otherwise.
 
 #### Using a combination of restore and save actions
+
+> [!NOTE]
+> The `paths` input in the `cache-nix-action/restore` and `cache-nix-action/save` must be the same.
 
 ```yaml
 name: Caching Primes
