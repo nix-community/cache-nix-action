@@ -5,8 +5,8 @@ on:
     # https://github.com/orgs/community/discussions/25615
     tags-ignore:
       - "**"
-    # branches:
-    #   - 
+    branches:
+      - '*'
   # pull_request:
   schedule:
     - cron: 0 0 * * *
