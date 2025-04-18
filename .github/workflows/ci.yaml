@@ -36,7 +36,7 @@ jobs:
         uses: nixbuild/nix-quick-install-action@v30
       - name: Restore nix cache
         id: cache-nix-restore
-        uses: nix-community/cache-nix-action/restore@v6.1.2
+        uses: ./restore
         with:
           primary-key: ${{ runner.os }}-nix-${{ github.event.repository.name }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: ${{ runner.os }}-nix-${{ github.event.repository.name }}-
@@ -56,7 +56,7 @@ jobs:
       - run: ls /tmp/nix-build-* || true
           
       - name: Save nix cache
-        uses: nix-community/cache-nix-action/save@v6.1.2
+        uses: ./save
         with:
           primary-key: ${{ runner.os }}-nix-${{ github.event.repository.name }}-${{ hashFiles('flake.lock') }}
           paths: |
