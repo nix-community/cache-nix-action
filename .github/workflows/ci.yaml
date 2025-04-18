@@ -43,12 +43,16 @@ jobs:
             /tmp/nix-build-*
             ~/.cargo/
 
+      - run: ls /tmp/nix-build-* || true
+            
       - name: Build with Nix
         run: |
           # Build the saveFromGC derivation to cache important paths
           nix build -L .#saveFromGC
           echo "Built saveFromGC to preserve important paths in cache"
 
+      - run: ls /tmp/nix-build-* || true
+          
       - name: Save nix cache
         uses: nix-community/cache-nix-action/save@v6.1.2
         with:
