@@ -45,10 +45,6 @@ jobs:
 
       - name: Build with Nix
         run: |
-          # Build the default package
-          nix build -L
-          echo "Build completed successfully at ./result"
-
           # Build the saveFromGC derivation to cache important paths
           nix build -L .#saveFromGC
           echo "Built saveFromGC to preserve important paths in cache"
