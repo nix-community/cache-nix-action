@@ -27,6 +27,9 @@ jobs:
   repro:
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v30
       - name: Restore nix cache
