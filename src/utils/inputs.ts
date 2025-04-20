@@ -21,36 +21,37 @@ export function parseNixGcMax(name: string, options?: core.InputOptions) {
         return undefined;
     }
 
-    let result: number = 0;
-
+    let result: bigint = 0n;
+    let invalidNumber: bigint = -1n;
+    
     for (let i = 0; i < chars.length; i++) {
         const char = chars[i];
         const digit = parseInt(char);
         if (!isNaN(digit)) {
-            result = result * 10 + digit;
+            result = result * 10n + BigInt(digit);
         } else {
             if (i == chars.length - 1) {
                 switch (char) {
                     case "K":
-                        result <<= 10;
+                        result <<= 10n;
                         break;
                     case "M":
-                        result <<= 20;
+                        result <<= 20n;
                         break;
                     case "G":
-                        result <<= 30;
+                        result <<= 30n;
                         break;
                     default:
-                        result = NaN;
+                        result = invalidNumber;
                 }
             } else {
-                result = NaN;
+                result = invalidNumber;
                 break;
             }
         }
     }
 
-    return isNaN(result) ? undefined : { input, value: result };
+    return result === invalidNumber ? undefined : { input, value: result };
 }
 
 export function getInputAsInt(
