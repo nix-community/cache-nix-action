@@ -14,7 +14,21 @@ export async function collectGarbage() {
             `nix path-info --json --all | jq 'map(.narSize) | add'`
         );
 
-        const storeSize = parseInt(stdout);
+        const storeSize = (() => {
+            try {
+                return BigInt(stdout);
+            } catch (err) {
+                let sizeDummy = 1_000_000_000_000n;
+                utils.warning(
+                    `
+                    Expected a number as the store size, but got: ${stdout}.
+                    
+                    Assuming the store has size: ${sizeDummy}.
+                    `
+                );
+                return sizeDummy;
+            }
+        })();
 
         utils.info(`Current store size in bytes: ${storeSize}.`);
 
