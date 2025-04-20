@@ -159,6 +159,8 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
+          # and collect garbage in the Nix store until it reaches this size in bytes
+          gc-max-store-size: 8G
 
   # Merge similar `individual` caches
   # Purge `individual` caches and old `common` caches
