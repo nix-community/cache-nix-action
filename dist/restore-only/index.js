@@ -78886,15 +78886,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReserveCacheError = exports.ValidationError = void 0;
 exports.isFeatureAvailable = isFeatureAvailable;
@@ -78956,19 +78947,17 @@ function isFeatureAvailable() {
  * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-function restoreCache(paths_1, primaryKey_1, restoreKeys_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
-        const cacheServiceVersion = (0, config_1.getCacheServiceVersion)();
-        core.debug(`Cache service version: ${cacheServiceVersion}`);
-        checkPaths(paths);
-        switch (cacheServiceVersion) {
-            case 'v2':
-                return yield restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, extraTarArgs);
-            case 'v1':
-            default:
-                return yield restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, extraTarArgs);
-        }
-    });
+async function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
+    const cacheServiceVersion = (0, config_1.getCacheServiceVersion)();
+    core.debug(`Cache service version: ${cacheServiceVersion}`);
+    checkPaths(paths);
+    switch (cacheServiceVersion) {
+        case 'v2':
+            return await restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, extraTarArgs);
+        case 'v1':
+        default:
+            return await restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, extraTarArgs);
+    }
 }
 /**
  * Restores cache using the legacy Cache Service
@@ -78980,68 +78969,66 @@ function restoreCache(paths_1, primaryKey_1, restoreKeys_1, options_1) {
  * @param enableCrossOsArchive an optional boolean enabled to restore on Windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-function restoreCacheV1(paths_1, primaryKey_1, restoreKeys_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
-        restoreKeys = restoreKeys || [];
-        const keys = [primaryKey, ...restoreKeys];
-        core.debug('Resolved Keys:');
-        core.debug(JSON.stringify(keys));
-        if (keys.length > 10) {
-            throw new ValidationError(`Key Validation Error: Keys are limited to a maximum of 10.`);
+async function restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
+    restoreKeys = restoreKeys || [];
+    const keys = [primaryKey, ...restoreKeys];
+    core.debug('Resolved Keys:');
+    core.debug(JSON.stringify(keys));
+    if (keys.length > 10) {
+        throw new ValidationError(`Key Validation Error: Keys are limited to a maximum of 10.`);
+    }
+    for (const key of keys) {
+        checkKey(key);
+    }
+    const compressionMethod = await utils.getCompressionMethod();
+    let archivePath = '';
+    try {
+        // path are needed to compute version
+        const cacheEntry = await cacheHttpClient.getCacheEntry(keys, paths, {
+            compressionMethod,
+            enableCrossOsArchive
+        });
+        if (!cacheEntry?.archiveLocation) {
+            // Cache not found
+            return undefined;
         }
-        for (const key of keys) {
-            checkKey(key);
-        }
-        const compressionMethod = yield utils.getCompressionMethod();
-        let archivePath = '';
-        try {
-            // path are needed to compute version
-            const cacheEntry = yield cacheHttpClient.getCacheEntry(keys, paths, {
-                compressionMethod,
-                enableCrossOsArchive
-            });
-            if (!(cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.archiveLocation)) {
-                // Cache not found
-                return undefined;
-            }
-            if (options === null || options === void 0 ? void 0 : options.lookupOnly) {
-                core.info('Lookup only - skipping download');
-                return cacheEntry.cacheKey;
-            }
-            archivePath = path.join(yield utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
-            core.debug(`Archive Path: ${archivePath}`);
-            // Download the cache from the cache entry
-            yield cacheHttpClient.downloadCache(cacheEntry.archiveLocation, archivePath, options);
-            if (core.isDebug()) {
-                yield (0, tar_1.listTar)(archivePath, compressionMethod);
-            }
-            const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
-            core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
-            yield (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
-            core.info('Cache restored successfully');
+        if (options?.lookupOnly) {
+            core.info('Lookup only - skipping download');
             return cacheEntry.cacheKey;
         }
+        archivePath = path.join(await utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
+        core.debug(`Archive Path: ${archivePath}`);
+        // Download the cache from the cache entry
+        await cacheHttpClient.downloadCache(cacheEntry.archiveLocation, archivePath, options);
+        if (core.isDebug()) {
+            await (0, tar_1.listTar)(archivePath, compressionMethod);
+        }
+        const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
+        core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
+        await (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
+        core.info('Cache restored successfully');
+        return cacheEntry.cacheKey;
+    }
+    catch (error) {
+        const typedError = error;
+        if (typedError.name === ValidationError.name) {
+            throw error;
+        }
+        else {
+            // Supress all non-validation cache related errors because caching should be optional
+            core.warning(`Failed to restore: ${error.message}`);
+        }
+    }
+    finally {
+        // Try to delete the archive to save space
+        try {
+            await utils.unlinkFile(archivePath);
+        }
         catch (error) {
-            const typedError = error;
-            if (typedError.name === ValidationError.name) {
-                throw error;
-            }
-            else {
-                // Supress all non-validation cache related errors because caching should be optional
-                core.warning(`Failed to restore: ${error.message}`);
-            }
+            core.debug(`Failed to delete archive: ${error}`);
         }
-        finally {
-            // Try to delete the archive to save space
-            try {
-                yield utils.unlinkFile(archivePath);
-            }
-            catch (error) {
-                core.debug(`Failed to delete archive: ${error}`);
-            }
-        }
-        return undefined;
-    });
+    }
+    return undefined;
 }
 /**
  * Restores cache using Cache Service v2
@@ -79053,74 +79040,75 @@ function restoreCacheV1(paths_1, primaryKey_1, restoreKeys_1, options_1) {
  * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-function restoreCacheV2(paths_1, primaryKey_1, restoreKeys_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
-        // Override UploadOptions to force the use of Azure
-        options = Object.assign(Object.assign({}, options), { useAzureSdk: true });
-        restoreKeys = restoreKeys || [];
-        const keys = [primaryKey, ...restoreKeys];
-        core.debug('Resolved Keys:');
-        core.debug(JSON.stringify(keys));
-        if (keys.length > 10) {
-            throw new ValidationError(`Key Validation Error: Keys are limited to a maximum of 10.`);
+async function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
+    // Override UploadOptions to force the use of Azure
+    options = {
+        ...options,
+        useAzureSdk: true
+    };
+    restoreKeys = restoreKeys || [];
+    const keys = [primaryKey, ...restoreKeys];
+    core.debug('Resolved Keys:');
+    core.debug(JSON.stringify(keys));
+    if (keys.length > 10) {
+        throw new ValidationError(`Key Validation Error: Keys are limited to a maximum of 10.`);
+    }
+    for (const key of keys) {
+        checkKey(key);
+    }
+    let archivePath = '';
+    try {
+        const twirpClient = cacheTwirpClient.internalCacheTwirpClient();
+        const compressionMethod = await utils.getCompressionMethod();
+        const request = {
+            key: primaryKey,
+            restoreKeys,
+            version: utils.getCacheVersion(paths, compressionMethod, enableCrossOsArchive)
+        };
+        const response = await twirpClient.GetCacheEntryDownloadURL(request);
+        if (!response.ok) {
+            core.debug(`Cache not found for version ${request.version} of keys: ${keys.join(', ')}`);
+            return undefined;
         }
-        for (const key of keys) {
-            checkKey(key);
-        }
-        let archivePath = '';
-        try {
-            const twirpClient = cacheTwirpClient.internalCacheTwirpClient();
-            const compressionMethod = yield utils.getCompressionMethod();
-            const request = {
-                key: primaryKey,
-                restoreKeys,
-                version: utils.getCacheVersion(paths, compressionMethod, enableCrossOsArchive)
-            };
-            const response = yield twirpClient.GetCacheEntryDownloadURL(request);
-            if (!response.ok) {
-                core.debug(`Cache not found for version ${request.version} of keys: ${keys.join(', ')}`);
-                return undefined;
-            }
-            core.info(`Cache hit for: ${response.matchedKey}`);
-            if (options === null || options === void 0 ? void 0 : options.lookupOnly) {
-                core.info('Lookup only - skipping download');
-                return response.matchedKey;
-            }
-            archivePath = path.join(yield utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
-            core.debug(`Archive path: ${archivePath}`);
-            core.debug(`Starting download of archive to: ${archivePath}`);
-            yield cacheHttpClient.downloadCache(response.signedDownloadUrl, archivePath, options);
-            const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
-            core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
-            if (core.isDebug()) {
-                yield (0, tar_1.listTar)(archivePath, compressionMethod);
-            }
-            yield (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
-            core.info('Cache restored successfully');
+        core.info(`Cache hit for: ${response.matchedKey}`);
+        if (options?.lookupOnly) {
+            core.info('Lookup only - skipping download');
             return response.matchedKey;
         }
+        archivePath = path.join(await utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
+        core.debug(`Archive path: ${archivePath}`);
+        core.debug(`Starting download of archive to: ${archivePath}`);
+        await cacheHttpClient.downloadCache(response.signedDownloadUrl, archivePath, options);
+        const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
+        core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
+        if (core.isDebug()) {
+            await (0, tar_1.listTar)(archivePath, compressionMethod);
+        }
+        await (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
+        core.info('Cache restored successfully');
+        return response.matchedKey;
+    }
+    catch (error) {
+        const typedError = error;
+        if (typedError.name === ValidationError.name) {
+            throw error;
+        }
+        else {
+            // Supress all non-validation cache related errors because caching should be optional
+            core.warning(`Failed to restore: ${error.message}`);
+        }
+    }
+    finally {
+        try {
+            if (archivePath) {
+                await utils.unlinkFile(archivePath);
+            }
+        }
         catch (error) {
-            const typedError = error;
-            if (typedError.name === ValidationError.name) {
-                throw error;
-            }
-            else {
-                // Supress all non-validation cache related errors because caching should be optional
-                core.warning(`Failed to restore: ${error.message}`);
-            }
+            core.debug(`Failed to delete archive: ${error}`);
         }
-        finally {
-            try {
-                if (archivePath) {
-                    yield utils.unlinkFile(archivePath);
-                }
-            }
-            catch (error) {
-                core.debug(`Failed to delete archive: ${error}`);
-            }
-        }
-        return undefined;
-    });
+    }
+    return undefined;
 }
 /**
  * Saves a list of files with the specified key
@@ -79131,20 +79119,18 @@ function restoreCacheV2(paths_1, primaryKey_1, restoreKeys_1, options_1) {
  * @param options cache upload options
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
-function saveCache(paths_1, key_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
-        const cacheServiceVersion = (0, config_1.getCacheServiceVersion)();
-        core.debug(`Cache service version: ${cacheServiceVersion}`);
-        checkPaths(paths);
-        checkKey(key);
-        switch (cacheServiceVersion) {
-            case 'v2':
-                return yield saveCacheV2(paths, key, options, enableCrossOsArchive, extraTarArgs);
-            case 'v1':
-            default:
-                return yield saveCacheV1(paths, key, options, enableCrossOsArchive, extraTarArgs);
-        }
-    });
+async function saveCache(paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
+    const cacheServiceVersion = (0, config_1.getCacheServiceVersion)();
+    core.debug(`Cache service version: ${cacheServiceVersion}`);
+    checkPaths(paths);
+    checkKey(key);
+    switch (cacheServiceVersion) {
+        case 'v2':
+            return await saveCacheV2(paths, key, options, enableCrossOsArchive, extraTarArgs);
+        case 'v1':
+        default:
+            return await saveCacheV1(paths, key, options, enableCrossOsArchive, extraTarArgs);
+    }
 }
 /**
  * Save cache using the legacy Cache Service
@@ -79155,73 +79141,71 @@ function saveCache(paths_1, key_1, options_1) {
  * @param enableCrossOsArchive
  * @returns
  */
-function saveCacheV1(paths_1, key_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
-        var _a, _b, _c, _d, _e;
-        const compressionMethod = yield utils.getCompressionMethod();
-        let cacheId = -1;
-        const cachePaths = yield utils.resolvePaths(paths);
-        core.debug('Cache Paths:');
-        core.debug(`${JSON.stringify(cachePaths)}`);
-        if (cachePaths.length === 0) {
-            throw new Error(`Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.`);
+async function saveCacheV1(paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
+    const compressionMethod = await utils.getCompressionMethod();
+    let cacheId = -1;
+    const cachePaths = await utils.resolvePaths(paths);
+    core.debug('Cache Paths:');
+    core.debug(`${JSON.stringify(cachePaths)}`);
+    if (cachePaths.length === 0) {
+        throw new Error(`Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.`);
+    }
+    const archiveFolder = await utils.createTempDirectory();
+    const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+    core.debug(`Archive Path: ${archivePath}`);
+    try {
+        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, extraTarArgs);
+        if (core.isDebug()) {
+            await (0, tar_1.listTar)(archivePath, compressionMethod);
         }
-        const archiveFolder = yield utils.createTempDirectory();
-        const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
-        core.debug(`Archive Path: ${archivePath}`);
+        const fileSizeLimit = 10 * 1024 * 1024 * 1024; // 10GB per repo limit
+        const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
+        core.debug(`File Size: ${archiveFileSize}`);
+        // For GHES, this check will take place in ReserveCache API with enterprise file size limit
+        if (archiveFileSize > fileSizeLimit && !(0, config_1.isGhes)()) {
+            throw new Error(`Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the 10GB limit, not saving cache.`);
+        }
+        core.debug('Reserving Cache');
+        const reserveCacheResponse = await cacheHttpClient.reserveCache(key, paths, {
+            compressionMethod,
+            enableCrossOsArchive,
+            cacheSize: archiveFileSize
+        });
+        if (reserveCacheResponse?.result?.cacheId) {
+            cacheId = reserveCacheResponse?.result?.cacheId;
+        }
+        else if (reserveCacheResponse?.statusCode === 400) {
+            throw new Error(reserveCacheResponse?.error?.message ??
+                `Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`);
+        }
+        else {
+            throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache. More details: ${reserveCacheResponse?.error?.message}`);
+        }
+        core.debug(`Saving Cache (ID: ${cacheId})`);
+        await cacheHttpClient.saveCache(cacheId, archivePath, '', options);
+    }
+    catch (error) {
+        const typedError = error;
+        if (typedError.name === ValidationError.name) {
+            throw error;
+        }
+        else if (typedError.name === ReserveCacheError.name) {
+            core.info(`Failed to save: ${typedError.message}`);
+        }
+        else {
+            core.warning(`Failed to save: ${typedError.message}`);
+        }
+    }
+    finally {
+        // Try to delete the archive to save space
         try {
-            yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, extraTarArgs);
-            if (core.isDebug()) {
-                yield (0, tar_1.listTar)(archivePath, compressionMethod);
-            }
-            const fileSizeLimit = 10 * 1024 * 1024 * 1024; // 10GB per repo limit
-            const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
-            core.debug(`File Size: ${archiveFileSize}`);
-            // For GHES, this check will take place in ReserveCache API with enterprise file size limit
-            if (archiveFileSize > fileSizeLimit && !(0, config_1.isGhes)()) {
-                throw new Error(`Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the 10GB limit, not saving cache.`);
-            }
-            core.debug('Reserving Cache');
-            const reserveCacheResponse = yield cacheHttpClient.reserveCache(key, paths, {
-                compressionMethod,
-                enableCrossOsArchive,
-                cacheSize: archiveFileSize
-            });
-            if ((_a = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.result) === null || _a === void 0 ? void 0 : _a.cacheId) {
-                cacheId = (_b = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.result) === null || _b === void 0 ? void 0 : _b.cacheId;
-            }
-            else if ((reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.statusCode) === 400) {
-                throw new Error((_d = (_c = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _c === void 0 ? void 0 : _c.message) !== null && _d !== void 0 ? _d : `Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`);
-            }
-            else {
-                throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache. More details: ${(_e = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _e === void 0 ? void 0 : _e.message}`);
-            }
-            core.debug(`Saving Cache (ID: ${cacheId})`);
-            yield cacheHttpClient.saveCache(cacheId, archivePath, '', options);
+            await utils.unlinkFile(archivePath);
         }
         catch (error) {
-            const typedError = error;
-            if (typedError.name === ValidationError.name) {
-                throw error;
-            }
-            else if (typedError.name === ReserveCacheError.name) {
-                core.info(`Failed to save: ${typedError.message}`);
-            }
-            else {
-                core.warning(`Failed to save: ${typedError.message}`);
-            }
+            core.debug(`Failed to delete archive: ${error}`);
         }
-        finally {
-            // Try to delete the archive to save space
-            try {
-                yield utils.unlinkFile(archivePath);
-            }
-            catch (error) {
-                core.debug(`Failed to delete archive: ${error}`);
-            }
-        }
-        return cacheId;
-    });
+    }
+    return cacheId;
 }
 /**
  * Save cache using Cache Service v2
@@ -79232,92 +79216,95 @@ function saveCacheV1(paths_1, key_1, options_1) {
  * @param enableCrossOsArchive an optional boolean enabled to save cache on windows which could be restored on any platform
  * @returns
  */
-function saveCacheV2(paths_1, key_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
-        // Override UploadOptions to force the use of Azure
-        // ...options goes first because we want to override the default values
-        // set in UploadOptions with these specific figures
-        options = Object.assign(Object.assign({}, options), { uploadChunkSize: 64 * 1024 * 1024, uploadConcurrency: 8, useAzureSdk: true });
-        const compressionMethod = yield utils.getCompressionMethod();
-        const twirpClient = cacheTwirpClient.internalCacheTwirpClient();
-        let cacheId = -1;
-        const cachePaths = yield utils.resolvePaths(paths);
-        core.debug('Cache Paths:');
-        core.debug(`${JSON.stringify(cachePaths)}`);
-        if (cachePaths.length === 0) {
-            throw new Error(`Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.`);
+async function saveCacheV2(paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
+    // Override UploadOptions to force the use of Azure
+    // ...options goes first because we want to override the default values
+    // set in UploadOptions with these specific figures
+    options = {
+        ...options,
+        uploadChunkSize: 64 * 1024 * 1024, // 64 MiB
+        uploadConcurrency: 8, // 8 workers for parallel upload
+        useAzureSdk: true
+    };
+    const compressionMethod = await utils.getCompressionMethod();
+    const twirpClient = cacheTwirpClient.internalCacheTwirpClient();
+    let cacheId = -1;
+    const cachePaths = await utils.resolvePaths(paths);
+    core.debug('Cache Paths:');
+    core.debug(`${JSON.stringify(cachePaths)}`);
+    if (cachePaths.length === 0) {
+        throw new Error(`Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.`);
+    }
+    const archiveFolder = await utils.createTempDirectory();
+    const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+    core.debug(`Archive Path: ${archivePath}`);
+    try {
+        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, extraTarArgs);
+        if (core.isDebug()) {
+            await (0, tar_1.listTar)(archivePath, compressionMethod);
         }
-        const archiveFolder = yield utils.createTempDirectory();
-        const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
-        core.debug(`Archive Path: ${archivePath}`);
+        const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
+        core.debug(`File Size: ${archiveFileSize}`);
+        // For GHES, this check will take place in ReserveCache API with enterprise file size limit
+        if (archiveFileSize > constants_1.CacheFileSizeLimit && !(0, config_1.isGhes)()) {
+            throw new Error(`Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the 10GB limit, not saving cache.`);
+        }
+        // Set the archive size in the options, will be used to display the upload progress
+        options.archiveSizeBytes = archiveFileSize;
+        core.debug('Reserving Cache');
+        const version = utils.getCacheVersion(paths, compressionMethod, enableCrossOsArchive);
+        const request = {
+            key,
+            version
+        };
+        let signedUploadUrl;
         try {
-            yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, extraTarArgs);
-            if (core.isDebug()) {
-                yield (0, tar_1.listTar)(archivePath, compressionMethod);
+            const response = await twirpClient.CreateCacheEntry(request);
+            if (!response.ok) {
+                throw new Error('Response was not ok');
             }
-            const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
-            core.debug(`File Size: ${archiveFileSize}`);
-            // For GHES, this check will take place in ReserveCache API with enterprise file size limit
-            if (archiveFileSize > constants_1.CacheFileSizeLimit && !(0, config_1.isGhes)()) {
-                throw new Error(`Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the 10GB limit, not saving cache.`);
-            }
-            // Set the archive size in the options, will be used to display the upload progress
-            options.archiveSizeBytes = archiveFileSize;
-            core.debug('Reserving Cache');
-            const version = utils.getCacheVersion(paths, compressionMethod, enableCrossOsArchive);
-            const request = {
-                key,
-                version
-            };
-            let signedUploadUrl;
-            try {
-                const response = yield twirpClient.CreateCacheEntry(request);
-                if (!response.ok) {
-                    throw new Error('Response was not ok');
-                }
-                signedUploadUrl = response.signedUploadUrl;
-            }
-            catch (error) {
-                core.debug(`Failed to reserve cache: ${error}`);
-                throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache.`);
-            }
-            core.debug(`Attempting to upload cache located at: ${archivePath}`);
-            yield cacheHttpClient.saveCache(cacheId, archivePath, signedUploadUrl, options);
-            const finalizeRequest = {
-                key,
-                version,
-                sizeBytes: `${archiveFileSize}`
-            };
-            const finalizeResponse = yield twirpClient.FinalizeCacheEntryUpload(finalizeRequest);
-            core.debug(`FinalizeCacheEntryUploadResponse: ${finalizeResponse.ok}`);
-            if (!finalizeResponse.ok) {
-                throw new Error(`Unable to finalize cache with key ${key}, another job may be finalizing this cache.`);
-            }
-            cacheId = parseInt(finalizeResponse.entryId);
+            signedUploadUrl = response.signedUploadUrl;
         }
         catch (error) {
-            const typedError = error;
-            if (typedError.name === ValidationError.name) {
-                throw error;
-            }
-            else if (typedError.name === ReserveCacheError.name) {
-                core.info(`Failed to save: ${typedError.message}`);
-            }
-            else {
-                core.warning(`Failed to save: ${typedError.message}`);
-            }
+            core.debug(`Failed to reserve cache: ${error}`);
+            throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache.`);
         }
-        finally {
-            // Try to delete the archive to save space
-            try {
-                yield utils.unlinkFile(archivePath);
-            }
-            catch (error) {
-                core.debug(`Failed to delete archive: ${error}`);
-            }
+        core.debug(`Attempting to upload cache located at: ${archivePath}`);
+        await cacheHttpClient.saveCache(cacheId, archivePath, signedUploadUrl, options);
+        const finalizeRequest = {
+            key,
+            version,
+            sizeBytes: `${archiveFileSize}`
+        };
+        const finalizeResponse = await twirpClient.FinalizeCacheEntryUpload(finalizeRequest);
+        core.debug(`FinalizeCacheEntryUploadResponse: ${finalizeResponse.ok}`);
+        if (!finalizeResponse.ok) {
+            throw new Error(`Unable to finalize cache with key ${key}, another job may be finalizing this cache.`);
         }
-        return cacheId;
-    });
+        cacheId = parseInt(finalizeResponse.entryId);
+    }
+    catch (error) {
+        const typedError = error;
+        if (typedError.name === ValidationError.name) {
+            throw error;
+        }
+        else if (typedError.name === ReserveCacheError.name) {
+            core.info(`Failed to save: ${typedError.message}`);
+        }
+        else {
+            core.warning(`Failed to save: ${typedError.message}`);
+        }
+    }
+    finally {
+        // Try to delete the archive to save space
+        try {
+            await utils.unlinkFile(archivePath);
+        }
+        catch (error) {
+            core.debug(`Failed to delete archive: ${error}`);
+        }
+    }
+    return cacheId;
 }
 
 
@@ -79357,7 +79344,7 @@ class CreateCacheEntryRequest$Type extends runtime_5.MessageType {
         return message;
     }
     internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
+        let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
@@ -79417,7 +79404,7 @@ class CreateCacheEntryResponse$Type extends runtime_5.MessageType {
         return message;
     }
     internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
+        let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
@@ -79473,7 +79460,7 @@ class FinalizeCacheEntryUploadRequest$Type extends runtime_5.MessageType {
         return message;
     }
     internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
+        let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
@@ -79539,7 +79526,7 @@ class FinalizeCacheEntryUploadResponse$Type extends runtime_5.MessageType {
         return message;
     }
     internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
+        let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
@@ -79595,7 +79582,7 @@ class GetCacheEntryDownloadURLRequest$Type extends runtime_5.MessageType {
         return message;
     }
     internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
+        let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
@@ -79662,7 +79649,7 @@ class GetCacheEntryDownloadURLResponse$Type extends runtime_5.MessageType {
         return message;
     }
     internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
+        let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
@@ -79727,6 +79714,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CacheServiceClientProtobuf = exports.CacheServiceClientJSON = void 0;
 const cache_1 = __nccwpck_require__(146);
 class CacheServiceClientJSON {
+    rpc;
     constructor(rpc) {
         this.rpc = rpc;
         this.CreateCacheEntry.bind(this);
@@ -79766,6 +79754,7 @@ class CacheServiceClientJSON {
 }
 exports.CacheServiceClientJSON = CacheServiceClientJSON;
 class CacheServiceClientProtobuf {
+    rpc;
     constructor(rpc) {
         this.rpc = rpc;
         this.CreateCacheEntry.bind(this);
@@ -79822,7 +79811,7 @@ class CacheMetadata$Type extends runtime_5.MessageType {
         return message;
     }
     internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
+        let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
@@ -79892,7 +79881,7 @@ class CacheScope$Type extends runtime_5.MessageType {
         return message;
     }
     internalBinaryRead(reader, length, options, target) {
-        let message = target !== null && target !== void 0 ? target : this.create(), end = reader.pos + length;
+        let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
@@ -79972,15 +79961,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCacheEntry = getCacheEntry;
 exports.downloadCache = downloadCache;
@@ -80023,89 +80003,79 @@ function createHttpClient() {
     const bearerCredentialHandler = new auth_1.BearerCredentialHandler(token);
     return new http_client_1.HttpClient((0, user_agent_1.getUserAgentString)(), [bearerCredentialHandler], getRequestOptions());
 }
-function getCacheEntry(keys, paths, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const httpClient = createHttpClient();
-        const version = utils.getCacheVersion(paths, options === null || options === void 0 ? void 0 : options.compressionMethod, options === null || options === void 0 ? void 0 : options.enableCrossOsArchive);
-        const resource = `cache?keys=${encodeURIComponent(keys.join(','))}&version=${version}`;
-        const response = yield (0, requestUtils_1.retryTypedResponse)('getCacheEntry', () => __awaiter(this, void 0, void 0, function* () { return httpClient.getJson(getCacheApiUrl(resource)); }));
-        // Cache not found
-        if (response.statusCode === 204) {
-            // List cache for primary key only if cache miss occurs
-            if (core.isDebug()) {
-                yield printCachesListForDiagnostics(keys[0], httpClient, version);
-            }
-            return null;
+async function getCacheEntry(keys, paths, options) {
+    const httpClient = createHttpClient();
+    const version = utils.getCacheVersion(paths, options?.compressionMethod, options?.enableCrossOsArchive);
+    const resource = `cache?keys=${encodeURIComponent(keys.join(','))}&version=${version}`;
+    const response = await (0, requestUtils_1.retryTypedResponse)('getCacheEntry', async () => httpClient.getJson(getCacheApiUrl(resource)));
+    // Cache not found
+    if (response.statusCode === 204) {
+        // List cache for primary key only if cache miss occurs
+        if (core.isDebug()) {
+            await printCachesListForDiagnostics(keys[0], httpClient, version);
         }
-        if (!(0, requestUtils_1.isSuccessStatusCode)(response.statusCode)) {
-            throw new Error(`Cache service responded with ${response.statusCode}`);
-        }
-        const cacheResult = response.result;
-        const cacheDownloadUrl = cacheResult === null || cacheResult === void 0 ? void 0 : cacheResult.archiveLocation;
-        if (!cacheDownloadUrl) {
-            // Cache achiveLocation not found. This should never happen, and hence bail out.
-            throw new Error('Cache not found.');
-        }
-        core.setSecret(cacheDownloadUrl);
-        core.debug(`Cache Result:`);
-        core.debug(JSON.stringify(cacheResult));
-        return cacheResult;
-    });
+        return null;
+    }
+    if (!(0, requestUtils_1.isSuccessStatusCode)(response.statusCode)) {
+        throw new Error(`Cache service responded with ${response.statusCode}`);
+    }
+    const cacheResult = response.result;
+    const cacheDownloadUrl = cacheResult?.archiveLocation;
+    if (!cacheDownloadUrl) {
+        // Cache achiveLocation not found. This should never happen, and hence bail out.
+        throw new Error('Cache not found.');
+    }
+    core.setSecret(cacheDownloadUrl);
+    core.debug(`Cache Result:`);
+    core.debug(JSON.stringify(cacheResult));
+    return cacheResult;
 }
-function printCachesListForDiagnostics(key, httpClient, version) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const resource = `caches?key=${encodeURIComponent(key)}`;
-        const response = yield (0, requestUtils_1.retryTypedResponse)('listCache', () => __awaiter(this, void 0, void 0, function* () { return httpClient.getJson(getCacheApiUrl(resource)); }));
-        if (response.statusCode === 200) {
-            const cacheListResult = response.result;
-            const totalCount = cacheListResult === null || cacheListResult === void 0 ? void 0 : cacheListResult.totalCount;
-            if (totalCount && totalCount > 0) {
-                core.debug(`No matching cache found for cache key '${key}', version '${version} and scope ${process.env['GITHUB_REF']}. There exist one or more cache(s) with similar key but they have different version or scope. See more info on cache matching here: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key \nOther caches with similar key:`);
-                for (const cacheEntry of (cacheListResult === null || cacheListResult === void 0 ? void 0 : cacheListResult.artifactCaches) || []) {
-                    core.debug(`Cache Key: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.cacheKey}, Cache Version: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.cacheVersion}, Cache Scope: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.scope}, Cache Created: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.creationTime}`);
-                }
+async function printCachesListForDiagnostics(key, httpClient, version) {
+    const resource = `caches?key=${encodeURIComponent(key)}`;
+    const response = await (0, requestUtils_1.retryTypedResponse)('listCache', async () => httpClient.getJson(getCacheApiUrl(resource)));
+    if (response.statusCode === 200) {
+        const cacheListResult = response.result;
+        const totalCount = cacheListResult?.totalCount;
+        if (totalCount && totalCount > 0) {
+            core.debug(`No matching cache found for cache key '${key}', version '${version} and scope ${process.env['GITHUB_REF']}. There exist one or more cache(s) with similar key but they have different version or scope. See more info on cache matching here: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key \nOther caches with similar key:`);
+            for (const cacheEntry of cacheListResult?.artifactCaches || []) {
+                core.debug(`Cache Key: ${cacheEntry?.cacheKey}, Cache Version: ${cacheEntry?.cacheVersion}, Cache Scope: ${cacheEntry?.scope}, Cache Created: ${cacheEntry?.creationTime}`);
             }
         }
-    });
+    }
 }
-function downloadCache(archiveLocation, archivePath, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const archiveUrl = new url_1.URL(archiveLocation);
-        const downloadOptions = (0, options_1.getDownloadOptions)(options);
-        if (archiveUrl.hostname.endsWith('.blob.core.windows.net')) {
-            if (downloadOptions.useAzureSdk) {
-                // Use Azure storage SDK to download caches hosted on Azure to improve speed and reliability.
-                yield (0, downloadUtils_1.downloadCacheStorageSDK)(archiveLocation, archivePath, downloadOptions);
-            }
-            else if (downloadOptions.concurrentBlobDownloads) {
-                // Use concurrent implementation with HttpClient to work around blob SDK issue
-                yield (0, downloadUtils_1.downloadCacheHttpClientConcurrent)(archiveLocation, archivePath, downloadOptions);
-            }
-            else {
-                // Otherwise, download using the Actions http-client.
-                yield (0, downloadUtils_1.downloadCacheHttpClient)(archiveLocation, archivePath);
-            }
+async function downloadCache(archiveLocation, archivePath, options) {
+    const archiveUrl = new url_1.URL(archiveLocation);
+    const downloadOptions = (0, options_1.getDownloadOptions)(options);
+    if (archiveUrl.hostname.endsWith('.blob.core.windows.net')) {
+        if (downloadOptions.useAzureSdk) {
+            // Use Azure storage SDK to download caches hosted on Azure to improve speed and reliability.
+            await (0, downloadUtils_1.downloadCacheStorageSDK)(archiveLocation, archivePath, downloadOptions);
+        }
+        else if (downloadOptions.concurrentBlobDownloads) {
+            // Use concurrent implementation with HttpClient to work around blob SDK issue
+            await (0, downloadUtils_1.downloadCacheHttpClientConcurrent)(archiveLocation, archivePath, downloadOptions);
         }
         else {
-            yield (0, downloadUtils_1.downloadCacheHttpClient)(archiveLocation, archivePath);
+            // Otherwise, download using the Actions http-client.
+            await (0, downloadUtils_1.downloadCacheHttpClient)(archiveLocation, archivePath);
         }
-    });
+    }
+    else {
+        await (0, downloadUtils_1.downloadCacheHttpClient)(archiveLocation, archivePath);
+    }
 }
 // Reserve Cache
-function reserveCache(key, paths, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const httpClient = createHttpClient();
-        const version = utils.getCacheVersion(paths, options === null || options === void 0 ? void 0 : options.compressionMethod, options === null || options === void 0 ? void 0 : options.enableCrossOsArchive);
-        const reserveCacheRequest = {
-            key,
-            version,
-            cacheSize: options === null || options === void 0 ? void 0 : options.cacheSize
-        };
-        const response = yield (0, requestUtils_1.retryTypedResponse)('reserveCache', () => __awaiter(this, void 0, void 0, function* () {
-            return httpClient.postJson(getCacheApiUrl('caches'), reserveCacheRequest);
-        }));
-        return response;
-    });
+async function reserveCache(key, paths, options) {
+    const httpClient = createHttpClient();
+    const version = utils.getCacheVersion(paths, options?.compressionMethod, options?.enableCrossOsArchive);
+    const reserveCacheRequest = {
+        key,
+        version,
+        cacheSize: options?.cacheSize
+    };
+    const response = await (0, requestUtils_1.retryTypedResponse)('reserveCache', async () => httpClient.postJson(getCacheApiUrl('caches'), reserveCacheRequest));
+    return response;
 }
 function getContentRange(start, end) {
     // Format: `bytes start-end/filesize
@@ -80115,92 +80085,80 @@ function getContentRange(start, end) {
     // Content-Range: bytes 0-199/*
     return `bytes ${start}-${end}/*`;
 }
-function uploadChunk(httpClient, resourceUrl, openStream, start, end) {
-    return __awaiter(this, void 0, void 0, function* () {
-        core.debug(`Uploading chunk of size ${end - start + 1} bytes at offset ${start} with content range: ${getContentRange(start, end)}`);
-        const additionalHeaders = {
-            'Content-Type': 'application/octet-stream',
-            'Content-Range': getContentRange(start, end)
-        };
-        const uploadChunkResponse = yield (0, requestUtils_1.retryHttpClientResponse)(`uploadChunk (start: ${start}, end: ${end})`, () => __awaiter(this, void 0, void 0, function* () {
-            return httpClient.sendStream('PATCH', resourceUrl, openStream(), additionalHeaders);
-        }));
-        if (!(0, requestUtils_1.isSuccessStatusCode)(uploadChunkResponse.message.statusCode)) {
-            throw new Error(`Cache service responded with ${uploadChunkResponse.message.statusCode} during upload chunk.`);
-        }
-    });
+async function uploadChunk(httpClient, resourceUrl, openStream, start, end) {
+    core.debug(`Uploading chunk of size ${end - start + 1} bytes at offset ${start} with content range: ${getContentRange(start, end)}`);
+    const additionalHeaders = {
+        'Content-Type': 'application/octet-stream',
+        'Content-Range': getContentRange(start, end)
+    };
+    const uploadChunkResponse = await (0, requestUtils_1.retryHttpClientResponse)(`uploadChunk (start: ${start}, end: ${end})`, async () => httpClient.sendStream('PATCH', resourceUrl, openStream(), additionalHeaders));
+    if (!(0, requestUtils_1.isSuccessStatusCode)(uploadChunkResponse.message.statusCode)) {
+        throw new Error(`Cache service responded with ${uploadChunkResponse.message.statusCode} during upload chunk.`);
+    }
 }
-function uploadFile(httpClient, cacheId, archivePath, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Upload Chunks
-        const fileSize = utils.getArchiveFileSizeInBytes(archivePath);
-        const resourceUrl = getCacheApiUrl(`caches/${cacheId.toString()}`);
-        const fd = fs.openSync(archivePath, 'r');
-        const uploadOptions = (0, options_1.getUploadOptions)(options);
-        const concurrency = utils.assertDefined('uploadConcurrency', uploadOptions.uploadConcurrency);
-        const maxChunkSize = utils.assertDefined('uploadChunkSize', uploadOptions.uploadChunkSize);
-        const parallelUploads = [...new Array(concurrency).keys()];
-        core.debug('Awaiting all uploads');
-        let offset = 0;
-        try {
-            yield Promise.all(parallelUploads.map(() => __awaiter(this, void 0, void 0, function* () {
-                while (offset < fileSize) {
-                    const chunkSize = Math.min(fileSize - offset, maxChunkSize);
-                    const start = offset;
-                    const end = offset + chunkSize - 1;
-                    offset += maxChunkSize;
-                    yield uploadChunk(httpClient, resourceUrl, () => fs
-                        .createReadStream(archivePath, {
-                        fd,
-                        start,
-                        end,
-                        autoClose: false
-                    })
-                        .on('error', error => {
-                        throw new Error(`Cache upload failed because file read failed with ${error.message}`);
-                    }), start, end);
-                }
-            })));
-        }
-        finally {
-            fs.closeSync(fd);
-        }
-        return;
-    });
-}
-function commitCache(httpClient, cacheId, filesize) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const commitCacheRequest = { size: filesize };
-        return yield (0, requestUtils_1.retryTypedResponse)('commitCache', () => __awaiter(this, void 0, void 0, function* () {
-            return httpClient.postJson(getCacheApiUrl(`caches/${cacheId.toString()}`), commitCacheRequest);
-        }));
-    });
-}
-function saveCache(cacheId, archivePath, signedUploadURL, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const uploadOptions = (0, options_1.getUploadOptions)(options);
-        if (uploadOptions.useAzureSdk) {
-            // Use Azure storage SDK to upload caches directly to Azure
-            if (!signedUploadURL) {
-                throw new Error('Azure Storage SDK can only be used when a signed URL is provided.');
+async function uploadFile(httpClient, cacheId, archivePath, options) {
+    // Upload Chunks
+    const fileSize = utils.getArchiveFileSizeInBytes(archivePath);
+    const resourceUrl = getCacheApiUrl(`caches/${cacheId.toString()}`);
+    const fd = fs.openSync(archivePath, 'r');
+    const uploadOptions = (0, options_1.getUploadOptions)(options);
+    const concurrency = utils.assertDefined('uploadConcurrency', uploadOptions.uploadConcurrency);
+    const maxChunkSize = utils.assertDefined('uploadChunkSize', uploadOptions.uploadChunkSize);
+    const parallelUploads = [...new Array(concurrency).keys()];
+    core.debug('Awaiting all uploads');
+    let offset = 0;
+    try {
+        await Promise.all(parallelUploads.map(async () => {
+            while (offset < fileSize) {
+                const chunkSize = Math.min(fileSize - offset, maxChunkSize);
+                const start = offset;
+                const end = offset + chunkSize - 1;
+                offset += maxChunkSize;
+                await uploadChunk(httpClient, resourceUrl, () => fs
+                    .createReadStream(archivePath, {
+                    fd,
+                    start,
+                    end,
+                    autoClose: false
+                })
+                    .on('error', error => {
+                    throw new Error(`Cache upload failed because file read failed with ${error.message}`);
+                }), start, end);
             }
-            yield (0, uploadUtils_1.uploadCacheArchiveSDK)(signedUploadURL, archivePath, options);
+        }));
+    }
+    finally {
+        fs.closeSync(fd);
+    }
+    return;
+}
+async function commitCache(httpClient, cacheId, filesize) {
+    const commitCacheRequest = { size: filesize };
+    return await (0, requestUtils_1.retryTypedResponse)('commitCache', async () => httpClient.postJson(getCacheApiUrl(`caches/${cacheId.toString()}`), commitCacheRequest));
+}
+async function saveCache(cacheId, archivePath, signedUploadURL, options) {
+    const uploadOptions = (0, options_1.getUploadOptions)(options);
+    if (uploadOptions.useAzureSdk) {
+        // Use Azure storage SDK to upload caches directly to Azure
+        if (!signedUploadURL) {
+            throw new Error('Azure Storage SDK can only be used when a signed URL is provided.');
         }
-        else {
-            const httpClient = createHttpClient();
-            core.debug('Upload cache');
-            yield uploadFile(httpClient, cacheId, archivePath, options);
-            // Commit Cache
-            core.debug('Commiting cache');
-            const cacheSize = utils.getArchiveFileSizeInBytes(archivePath);
-            core.info(`Cache Size: ~${Math.round(cacheSize / (1024 * 1024))} MB (${cacheSize} B)`);
-            const commitCacheResponse = yield commitCache(httpClient, cacheId, cacheSize);
-            if (!(0, requestUtils_1.isSuccessStatusCode)(commitCacheResponse.statusCode)) {
-                throw new Error(`Cache service responded with ${commitCacheResponse.statusCode} during commit cache.`);
-            }
-            core.info('Cache saved successfully');
+        await (0, uploadUtils_1.uploadCacheArchiveSDK)(signedUploadURL, archivePath, options);
+    }
+    else {
+        const httpClient = createHttpClient();
+        core.debug('Upload cache');
+        await uploadFile(httpClient, cacheId, archivePath, options);
+        // Commit Cache
+        core.debug('Commiting cache');
+        const cacheSize = utils.getArchiveFileSizeInBytes(archivePath);
+        core.info(`Cache Size: ~${Math.round(cacheSize / (1024 * 1024))} MB (${cacheSize} B)`);
+        const commitCacheResponse = await commitCache(httpClient, cacheId, cacheSize);
+        if (!(0, requestUtils_1.isSuccessStatusCode)(commitCacheResponse.statusCode)) {
+            throw new Error(`Cache service responded with ${commitCacheResponse.statusCode} during commit cache.`);
         }
-    });
+        core.info('Cache saved successfully');
+    }
 }
 
 
@@ -80244,22 +80202,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createTempDirectory = createTempDirectory;
 exports.getArchiveFileSizeInBytes = getArchiveFileSizeInBytes;
@@ -80283,127 +80225,101 @@ const util = __importStar(__nccwpck_require__(9023));
 const constants_1 = __nccwpck_require__(6741);
 const versionSalt = '1.0';
 // From https://github.com/actions/toolkit/blob/main/packages/tool-cache/src/tool-cache.ts#L23
-function createTempDirectory() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const IS_WINDOWS = process.platform === 'win32';
-        let tempDirectory = process.env['RUNNER_TEMP'] || '';
-        if (!tempDirectory) {
-            let baseLocation;
-            if (IS_WINDOWS) {
-                // On Windows use the USERPROFILE env variable
-                baseLocation = process.env['USERPROFILE'] || 'C:\\';
+async function createTempDirectory() {
+    const IS_WINDOWS = process.platform === 'win32';
+    let tempDirectory = process.env['RUNNER_TEMP'] || '';
+    if (!tempDirectory) {
+        let baseLocation;
+        if (IS_WINDOWS) {
+            // On Windows use the USERPROFILE env variable
+            baseLocation = process.env['USERPROFILE'] || 'C:\\';
+        }
+        else {
+            if (process.platform === 'darwin') {
+                baseLocation = '/Users';
             }
             else {
-                if (process.platform === 'darwin') {
-                    baseLocation = '/Users';
-                }
-                else {
-                    baseLocation = '/home';
-                }
+                baseLocation = '/home';
             }
-            tempDirectory = path.join(baseLocation, 'actions', 'temp');
         }
-        const dest = path.join(tempDirectory, crypto.randomUUID());
-        yield io.mkdirP(dest);
-        return dest;
-    });
+        tempDirectory = path.join(baseLocation, 'actions', 'temp');
+    }
+    const dest = path.join(tempDirectory, crypto.randomUUID());
+    await io.mkdirP(dest);
+    return dest;
 }
 function getArchiveFileSizeInBytes(filePath) {
     return fs.statSync(filePath).size;
 }
-function resolvePaths(patterns) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, e_1, _b, _c;
-        var _d;
-        const paths = [];
-        const workspace = (_d = process.env['GITHUB_WORKSPACE']) !== null && _d !== void 0 ? _d : process.cwd();
-        const globber = yield glob.create(patterns.join('\n'), {
-            implicitDescendants: false
-        });
-        try {
-            for (var _e = true, _f = __asyncValues(globber.globGenerator()), _g; _g = yield _f.next(), _a = _g.done, !_a; _e = true) {
-                _c = _g.value;
-                _e = false;
-                const file = _c;
-                const relativeFile = path
-                    .relative(workspace, file)
-                    .replace(new RegExp(`\\${path.sep}`, 'g'), '/');
-                core.debug(`Matched: ${relativeFile}`);
-                // Paths are made relative so the tar entries are all relative to the root of the workspace.
-                if (relativeFile === '') {
-                    // path.relative returns empty string if workspace and file are equal
-                    paths.push('.');
-                }
-                else {
-                    paths.push(`${relativeFile}`);
-                }
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (!_e && !_a && (_b = _f.return)) yield _b.call(_f);
-            }
-            finally { if (e_1) throw e_1.error; }
-        }
-        return paths;
+async function resolvePaths(patterns) {
+    const paths = [];
+    const workspace = process.env['GITHUB_WORKSPACE'] ?? process.cwd();
+    const globber = await glob.create(patterns.join('\n'), {
+        implicitDescendants: false
     });
-}
-function unlinkFile(filePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return util.promisify(fs.unlink)(filePath);
-    });
-}
-function getVersion(app_1) {
-    return __awaiter(this, arguments, void 0, function* (app, additionalArgs = []) {
-        let versionOutput = '';
-        additionalArgs.push('--version');
-        core.debug(`Checking ${app} ${additionalArgs.join(' ')}`);
-        try {
-            yield exec.exec(`${app}`, additionalArgs, {
-                ignoreReturnCode: true,
-                silent: true,
-                listeners: {
-                    stdout: (data) => (versionOutput += data.toString()),
-                    stderr: (data) => (versionOutput += data.toString())
-                }
-            });
-        }
-        catch (err) {
-            core.debug(err.message);
-        }
-        versionOutput = versionOutput.trim();
-        core.debug(versionOutput);
-        return versionOutput;
-    });
-}
-// Use zstandard if possible to maximize cache performance
-function getCompressionMethod() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const versionOutput = yield getVersion('zstd', ['--quiet']);
-        const version = semver.clean(versionOutput);
-        core.debug(`zstd version: ${version}`);
-        if (versionOutput === '') {
-            return constants_1.CompressionMethod.Gzip;
+    for await (const file of globber.globGenerator()) {
+        const relativeFile = path
+            .relative(workspace, file)
+            .replace(new RegExp(`\\${path.sep}`, 'g'), '/');
+        core.debug(`Matched: ${relativeFile}`);
+        // Paths are made relative so the tar entries are all relative to the root of the workspace.
+        if (relativeFile === '') {
+            // path.relative returns empty string if workspace and file are equal
+            paths.push('.');
         }
         else {
-            return constants_1.CompressionMethod.ZstdWithoutLong;
+            paths.push(`${relativeFile}`);
         }
-    });
+    }
+    return paths;
+}
+async function unlinkFile(filePath) {
+    return util.promisify(fs.unlink)(filePath);
+}
+async function getVersion(app, additionalArgs = []) {
+    let versionOutput = '';
+    additionalArgs.push('--version');
+    core.debug(`Checking ${app} ${additionalArgs.join(' ')}`);
+    try {
+        await exec.exec(`${app}`, additionalArgs, {
+            ignoreReturnCode: true,
+            silent: true,
+            listeners: {
+                stdout: (data) => (versionOutput += data.toString()),
+                stderr: (data) => (versionOutput += data.toString())
+            }
+        });
+    }
+    catch (err) {
+        core.debug(err.message);
+    }
+    versionOutput = versionOutput.trim();
+    core.debug(versionOutput);
+    return versionOutput;
+}
+// Use zstandard if possible to maximize cache performance
+async function getCompressionMethod() {
+    const versionOutput = await getVersion('zstd', ['--quiet']);
+    const version = semver.clean(versionOutput);
+    core.debug(`zstd version: ${version}`);
+    if (versionOutput === '') {
+        return constants_1.CompressionMethod.Gzip;
+    }
+    else {
+        return constants_1.CompressionMethod.ZstdWithoutLong;
+    }
 }
 function getCacheFileName(compressionMethod) {
     return compressionMethod === constants_1.CompressionMethod.Gzip
         ? constants_1.CacheFilename.Gzip
         : constants_1.CacheFilename.Zstd;
 }
-function getGnuTarPathOnWindows() {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (fs.existsSync(constants_1.GnuTarPathOnWindows)) {
-            return constants_1.GnuTarPathOnWindows;
-        }
-        const versionOutput = yield getVersion('tar');
-        return versionOutput.toLowerCase().includes('gnu tar') ? io.which('tar') : '';
-    });
+async function getGnuTarPathOnWindows() {
+    if (fs.existsSync(constants_1.GnuTarPathOnWindows)) {
+        return constants_1.GnuTarPathOnWindows;
+    }
+    const versionOutput = await getVersion('tar');
+    return versionOutput.toLowerCase().includes('gnu tar') ? io.which('tar') : '';
 }
 function assertDefined(name, value) {
     if (value === undefined) {
@@ -80563,15 +80479,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DownloadProgress = void 0;
 exports.downloadCacheHttpClient = downloadCacheHttpClient;
@@ -80594,16 +80501,22 @@ const abort_controller_1 = __nccwpck_require__(8110);
  * @param response the HTTP response
  * @param output the writable stream
  */
-function pipeResponseToStream(response, output) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const pipeline = util.promisify(stream.pipeline);
-        yield pipeline(response.message, output);
-    });
+async function pipeResponseToStream(response, output) {
+    const pipeline = util.promisify(stream.pipeline);
+    await pipeline(response.message, output);
 }
 /**
  * Class for tracking the download state and displaying stats.
  */
 class DownloadProgress {
+    contentLength;
+    segmentIndex;
+    segmentSize;
+    segmentOffset;
+    receivedBytes;
+    startTime;
+    displayedComplete;
+    timeoutHandle;
     constructor(contentLength) {
         this.contentLength = contentLength;
         this.segmentIndex = 0;
@@ -80707,30 +80620,28 @@ exports.DownloadProgress = DownloadProgress;
  * @param archiveLocation the URL for the cache
  * @param archivePath the local path where the cache is saved
  */
-function downloadCacheHttpClient(archiveLocation, archivePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const writeStream = fs.createWriteStream(archivePath);
-        const httpClient = new http_client_1.HttpClient('actions/cache');
-        const downloadResponse = yield (0, requestUtils_1.retryHttpClientResponse)('downloadCache', () => __awaiter(this, void 0, void 0, function* () { return httpClient.get(archiveLocation); }));
-        // Abort download if no traffic received over the socket.
-        downloadResponse.message.socket.setTimeout(constants_1.SocketTimeout, () => {
-            downloadResponse.message.destroy();
-            core.debug(`Aborting download, socket timed out after ${constants_1.SocketTimeout} ms`);
-        });
-        yield pipeResponseToStream(downloadResponse, writeStream);
-        // Validate download size.
-        const contentLengthHeader = downloadResponse.message.headers['content-length'];
-        if (contentLengthHeader) {
-            const expectedLength = parseInt(contentLengthHeader);
-            const actualLength = utils.getArchiveFileSizeInBytes(archivePath);
-            if (actualLength !== expectedLength) {
-                throw new Error(`Incomplete download. Expected file size: ${expectedLength}, actual file size: ${actualLength}`);
-            }
-        }
-        else {
-            core.debug('Unable to validate download, no Content-Length header');
-        }
+async function downloadCacheHttpClient(archiveLocation, archivePath) {
+    const writeStream = fs.createWriteStream(archivePath);
+    const httpClient = new http_client_1.HttpClient('actions/cache');
+    const downloadResponse = await (0, requestUtils_1.retryHttpClientResponse)('downloadCache', async () => httpClient.get(archiveLocation));
+    // Abort download if no traffic received over the socket.
+    downloadResponse.message.socket.setTimeout(constants_1.SocketTimeout, () => {
+        downloadResponse.message.destroy();
+        core.debug(`Aborting download, socket timed out after ${constants_1.SocketTimeout} ms`);
     });
+    await pipeResponseToStream(downloadResponse, writeStream);
+    // Validate download size.
+    const contentLengthHeader = downloadResponse.message.headers['content-length'];
+    if (contentLengthHeader) {
+        const expectedLength = parseInt(contentLengthHeader);
+        const actualLength = utils.getArchiveFileSizeInBytes(archivePath);
+        if (actualLength !== expectedLength) {
+            throw new Error(`Incomplete download. Expected file size: ${expectedLength}, actual file size: ${actualLength}`);
+        }
+    }
+    else {
+        core.debug('Unable to validate download, no Content-Length header');
+    }
 }
 /**
  * Download the cache using the Actions toolkit http-client concurrently
@@ -80738,107 +80649,98 @@ function downloadCacheHttpClient(archiveLocation, archivePath) {
  * @param archiveLocation the URL for the cache
  * @param archivePath the local path where the cache is saved
  */
-function downloadCacheHttpClientConcurrent(archiveLocation, archivePath, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        const archiveDescriptor = yield fs.promises.open(archivePath, 'w');
-        const httpClient = new http_client_1.HttpClient('actions/cache', undefined, {
-            socketTimeout: options.timeoutInMs,
-            keepAlive: true
-        });
-        try {
-            const res = yield (0, requestUtils_1.retryHttpClientResponse)('downloadCacheMetadata', () => __awaiter(this, void 0, void 0, function* () { return yield httpClient.request('HEAD', archiveLocation, null, {}); }));
-            const lengthHeader = res.message.headers['content-length'];
-            if (lengthHeader === undefined || lengthHeader === null) {
-                throw new Error('Content-Length not found on blob response');
-            }
-            const length = parseInt(lengthHeader);
-            if (Number.isNaN(length)) {
-                throw new Error(`Could not interpret Content-Length: ${length}`);
-            }
-            const downloads = [];
-            const blockSize = 4 * 1024 * 1024;
-            for (let offset = 0; offset < length; offset += blockSize) {
-                const count = Math.min(blockSize, length - offset);
-                downloads.push({
-                    offset,
-                    promiseGetter: () => __awaiter(this, void 0, void 0, function* () {
-                        return yield downloadSegmentRetry(httpClient, archiveLocation, offset, count);
-                    })
-                });
-            }
-            // reverse to use .pop instead of .shift
-            downloads.reverse();
-            let actives = 0;
-            let bytesDownloaded = 0;
-            const progress = new DownloadProgress(length);
-            progress.startDisplayTimer();
-            const progressFn = progress.onProgress();
-            const activeDownloads = [];
-            let nextDownload;
-            const waitAndWrite = () => __awaiter(this, void 0, void 0, function* () {
-                const segment = yield Promise.race(Object.values(activeDownloads));
-                yield archiveDescriptor.write(segment.buffer, 0, segment.count, segment.offset);
-                actives--;
-                delete activeDownloads[segment.offset];
-                bytesDownloaded += segment.count;
-                progressFn({ loadedBytes: bytesDownloaded });
-            });
-            while ((nextDownload = downloads.pop())) {
-                activeDownloads[nextDownload.offset] = nextDownload.promiseGetter();
-                actives++;
-                if (actives >= ((_a = options.downloadConcurrency) !== null && _a !== void 0 ? _a : 10)) {
-                    yield waitAndWrite();
-                }
-            }
-            while (actives > 0) {
-                yield waitAndWrite();
-            }
-        }
-        finally {
-            httpClient.dispose();
-            yield archiveDescriptor.close();
-        }
+async function downloadCacheHttpClientConcurrent(archiveLocation, archivePath, options) {
+    const archiveDescriptor = await fs.promises.open(archivePath, 'w');
+    const httpClient = new http_client_1.HttpClient('actions/cache', undefined, {
+        socketTimeout: options.timeoutInMs,
+        keepAlive: true
     });
-}
-function downloadSegmentRetry(httpClient, archiveLocation, offset, count) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const retries = 5;
-        let failures = 0;
-        while (true) {
-            try {
-                const timeout = 30000;
-                const result = yield promiseWithTimeout(timeout, downloadSegment(httpClient, archiveLocation, offset, count));
-                if (typeof result === 'string') {
-                    throw new Error('downloadSegmentRetry failed due to timeout');
-                }
-                return result;
-            }
-            catch (err) {
-                if (failures >= retries) {
-                    throw err;
-                }
-                failures++;
-            }
+    try {
+        const res = await (0, requestUtils_1.retryHttpClientResponse)('downloadCacheMetadata', async () => await httpClient.request('HEAD', archiveLocation, null, {}));
+        const lengthHeader = res.message.headers['content-length'];
+        if (lengthHeader === undefined || lengthHeader === null) {
+            throw new Error('Content-Length not found on blob response');
         }
-    });
-}
-function downloadSegment(httpClient, archiveLocation, offset, count) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const partRes = yield (0, requestUtils_1.retryHttpClientResponse)('downloadCachePart', () => __awaiter(this, void 0, void 0, function* () {
-            return yield httpClient.get(archiveLocation, {
-                Range: `bytes=${offset}-${offset + count - 1}`
+        const length = parseInt(lengthHeader);
+        if (Number.isNaN(length)) {
+            throw new Error(`Could not interpret Content-Length: ${length}`);
+        }
+        const downloads = [];
+        const blockSize = 4 * 1024 * 1024;
+        for (let offset = 0; offset < length; offset += blockSize) {
+            const count = Math.min(blockSize, length - offset);
+            downloads.push({
+                offset,
+                promiseGetter: async () => {
+                    return await downloadSegmentRetry(httpClient, archiveLocation, offset, count);
+                }
             });
-        }));
-        if (!partRes.readBodyBuffer) {
-            throw new Error('Expected HttpClientResponse to implement readBodyBuffer');
         }
-        return {
-            offset,
-            count,
-            buffer: yield partRes.readBodyBuffer()
+        // reverse to use .pop instead of .shift
+        downloads.reverse();
+        let actives = 0;
+        let bytesDownloaded = 0;
+        const progress = new DownloadProgress(length);
+        progress.startDisplayTimer();
+        const progressFn = progress.onProgress();
+        const activeDownloads = [];
+        let nextDownload;
+        const waitAndWrite = async () => {
+            const segment = await Promise.race(Object.values(activeDownloads));
+            await archiveDescriptor.write(segment.buffer, 0, segment.count, segment.offset);
+            actives--;
+            delete activeDownloads[segment.offset];
+            bytesDownloaded += segment.count;
+            progressFn({ loadedBytes: bytesDownloaded });
         };
-    });
+        while ((nextDownload = downloads.pop())) {
+            activeDownloads[nextDownload.offset] = nextDownload.promiseGetter();
+            actives++;
+            if (actives >= (options.downloadConcurrency ?? 10)) {
+                await waitAndWrite();
+            }
+        }
+        while (actives > 0) {
+            await waitAndWrite();
+        }
+    }
+    finally {
+        httpClient.dispose();
+        await archiveDescriptor.close();
+    }
+}
+async function downloadSegmentRetry(httpClient, archiveLocation, offset, count) {
+    const retries = 5;
+    let failures = 0;
+    while (true) {
+        try {
+            const timeout = 30000;
+            const result = await promiseWithTimeout(timeout, downloadSegment(httpClient, archiveLocation, offset, count));
+            if (typeof result === 'string') {
+                throw new Error('downloadSegmentRetry failed due to timeout');
+            }
+            return result;
+        }
+        catch (err) {
+            if (failures >= retries) {
+                throw err;
+            }
+            failures++;
+        }
+    }
+}
+async function downloadSegment(httpClient, archiveLocation, offset, count) {
+    const partRes = await (0, requestUtils_1.retryHttpClientResponse)('downloadCachePart', async () => await httpClient.get(archiveLocation, {
+        Range: `bytes=${offset}-${offset + count - 1}`
+    }));
+    if (!partRes.readBodyBuffer) {
+        throw new Error('Expected HttpClientResponse to implement readBodyBuffer');
+    }
+    return {
+        offset,
+        count,
+        buffer: await partRes.readBodyBuffer()
+    };
 }
 /**
  * Download the cache using the Azure Storage SDK.  Only call this method if the
@@ -80848,65 +80750,62 @@ function downloadSegment(httpClient, archiveLocation, offset, count) {
  * @param archivePath the local path where the cache is saved
  * @param options the download options with the defaults set
  */
-function downloadCacheStorageSDK(archiveLocation, archivePath, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        const client = new storage_blob_1.BlockBlobClient(archiveLocation, undefined, {
-            retryOptions: {
-                // Override the timeout used when downloading each 4 MB chunk
-                // The default is 2 min / MB, which is way too slow
-                tryTimeoutInMs: options.timeoutInMs
-            }
-        });
-        const properties = yield client.getProperties();
-        const contentLength = (_a = properties.contentLength) !== null && _a !== void 0 ? _a : -1;
-        if (contentLength < 0) {
-            // We should never hit this condition, but just in case fall back to downloading the
-            // file as one large stream
-            core.debug('Unable to determine content length, downloading file with http-client...');
-            yield downloadCacheHttpClient(archiveLocation, archivePath);
-        }
-        else {
-            // Use downloadToBuffer for faster downloads, since internally it splits the
-            // file into 4 MB chunks which can then be parallelized and retried independently
-            //
-            // If the file exceeds the buffer maximum length (~1 GB on 32-bit systems and ~2 GB
-            // on 64-bit systems), split the download into multiple segments
-            // ~2 GB = 2147483647, beyond this, we start getting out of range error. So, capping it accordingly.
-            // Updated segment size to 128MB = 134217728 bytes, to complete a segment faster and fail fast
-            const maxSegmentSize = Math.min(134217728, buffer.constants.MAX_LENGTH);
-            const downloadProgress = new DownloadProgress(contentLength);
-            const fd = fs.openSync(archivePath, 'w');
-            try {
-                downloadProgress.startDisplayTimer();
-                const controller = new abort_controller_1.AbortController();
-                const abortSignal = controller.signal;
-                while (!downloadProgress.isDone()) {
-                    const segmentStart = downloadProgress.segmentOffset + downloadProgress.segmentSize;
-                    const segmentSize = Math.min(maxSegmentSize, contentLength - segmentStart);
-                    downloadProgress.nextSegment(segmentSize);
-                    const result = yield promiseWithTimeout(options.segmentTimeoutInMs || 3600000, client.downloadToBuffer(segmentStart, segmentSize, {
-                        abortSignal,
-                        concurrency: options.downloadConcurrency,
-                        onProgress: downloadProgress.onProgress()
-                    }));
-                    if (result === 'timeout') {
-                        controller.abort();
-                        throw new Error('Aborting cache download as the download time exceeded the timeout.');
-                    }
-                    else if (Buffer.isBuffer(result)) {
-                        fs.writeFileSync(fd, result);
-                    }
-                }
-            }
-            finally {
-                downloadProgress.stopDisplayTimer();
-                fs.closeSync(fd);
-            }
+async function downloadCacheStorageSDK(archiveLocation, archivePath, options) {
+    const client = new storage_blob_1.BlockBlobClient(archiveLocation, undefined, {
+        retryOptions: {
+            // Override the timeout used when downloading each 4 MB chunk
+            // The default is 2 min / MB, which is way too slow
+            tryTimeoutInMs: options.timeoutInMs
         }
     });
+    const properties = await client.getProperties();
+    const contentLength = properties.contentLength ?? -1;
+    if (contentLength < 0) {
+        // We should never hit this condition, but just in case fall back to downloading the
+        // file as one large stream
+        core.debug('Unable to determine content length, downloading file with http-client...');
+        await downloadCacheHttpClient(archiveLocation, archivePath);
+    }
+    else {
+        // Use downloadToBuffer for faster downloads, since internally it splits the
+        // file into 4 MB chunks which can then be parallelized and retried independently
+        //
+        // If the file exceeds the buffer maximum length (~1 GB on 32-bit systems and ~2 GB
+        // on 64-bit systems), split the download into multiple segments
+        // ~2 GB = 2147483647, beyond this, we start getting out of range error. So, capping it accordingly.
+        // Updated segment size to 128MB = 134217728 bytes, to complete a segment faster and fail fast
+        const maxSegmentSize = Math.min(134217728, buffer.constants.MAX_LENGTH);
+        const downloadProgress = new DownloadProgress(contentLength);
+        const fd = fs.openSync(archivePath, 'w');
+        try {
+            downloadProgress.startDisplayTimer();
+            const controller = new abort_controller_1.AbortController();
+            const abortSignal = controller.signal;
+            while (!downloadProgress.isDone()) {
+                const segmentStart = downloadProgress.segmentOffset + downloadProgress.segmentSize;
+                const segmentSize = Math.min(maxSegmentSize, contentLength - segmentStart);
+                downloadProgress.nextSegment(segmentSize);
+                const result = await promiseWithTimeout(options.segmentTimeoutInMs || 3600000, client.downloadToBuffer(segmentStart, segmentSize, {
+                    abortSignal,
+                    concurrency: options.downloadConcurrency,
+                    onProgress: downloadProgress.onProgress()
+                }));
+                if (result === 'timeout') {
+                    controller.abort();
+                    throw new Error('Aborting cache download as the download time exceeded the timeout.');
+                }
+                else if (Buffer.isBuffer(result)) {
+                    fs.writeFileSync(fd, result);
+                }
+            }
+        }
+        finally {
+            downloadProgress.stopDisplayTimer();
+            fs.closeSync(fd);
+        }
+    }
 }
-const promiseWithTimeout = (timeoutMs, promise) => __awaiter(void 0, void 0, void 0, function* () {
+const promiseWithTimeout = async (timeoutMs, promise) => {
     let timeoutHandle;
     const timeoutPromise = new Promise(resolve => {
         timeoutHandle = setTimeout(() => resolve('timeout'), timeoutMs);
@@ -80915,7 +80814,7 @@ const promiseWithTimeout = (timeoutMs, promise) => __awaiter(void 0, void 0, voi
         clearTimeout(timeoutHandle);
         return result;
     });
-});
+};
 
 
 /***/ }),
@@ -80958,15 +80857,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isSuccessStatusCode = isSuccessStatusCode;
 exports.isServerErrorStatusCode = isServerErrorStatusCode;
@@ -81000,93 +80890,76 @@ function isRetryableStatusCode(statusCode) {
     ];
     return retryableStatusCodes.includes(statusCode);
 }
-function sleep(milliseconds) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(resolve => setTimeout(resolve, milliseconds));
-    });
+async function sleep(milliseconds) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
-function retry(name_1, method_1, getStatusCode_1) {
-    return __awaiter(this, arguments, void 0, function* (name, method, getStatusCode, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay, onError = undefined) {
-        let errorMessage = '';
-        let attempt = 1;
-        while (attempt <= maxAttempts) {
-            let response = undefined;
-            let statusCode = undefined;
-            let isRetryable = false;
-            try {
-                response = yield method();
-            }
-            catch (error) {
-                if (onError) {
-                    response = onError(error);
-                }
-                isRetryable = true;
-                errorMessage = error.message;
-            }
-            if (response) {
-                statusCode = getStatusCode(response);
-                if (!isServerErrorStatusCode(statusCode)) {
-                    return response;
-                }
-            }
-            if (statusCode) {
-                isRetryable = isRetryableStatusCode(statusCode);
-                errorMessage = `Cache service responded with ${statusCode}`;
-            }
-            core.debug(`${name} - Attempt ${attempt} of ${maxAttempts} failed with error: ${errorMessage}`);
-            if (!isRetryable) {
-                core.debug(`${name} - Error is not retryable`);
-                break;
-            }
-            yield sleep(delay);
-            attempt++;
+async function retry(name, method, getStatusCode, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay, onError = undefined) {
+    let errorMessage = '';
+    let attempt = 1;
+    while (attempt <= maxAttempts) {
+        let response = undefined;
+        let statusCode = undefined;
+        let isRetryable = false;
+        try {
+            response = await method();
         }
-        throw Error(`${name} failed: ${errorMessage}`);
+        catch (error) {
+            if (onError) {
+                response = onError(error);
+            }
+            isRetryable = true;
+            errorMessage = error.message;
+        }
+        if (response) {
+            statusCode = getStatusCode(response);
+            if (!isServerErrorStatusCode(statusCode)) {
+                return response;
+            }
+        }
+        if (statusCode) {
+            isRetryable = isRetryableStatusCode(statusCode);
+            errorMessage = `Cache service responded with ${statusCode}`;
+        }
+        core.debug(`${name} - Attempt ${attempt} of ${maxAttempts} failed with error: ${errorMessage}`);
+        if (!isRetryable) {
+            core.debug(`${name} - Error is not retryable`);
+            break;
+        }
+        await sleep(delay);
+        attempt++;
+    }
+    throw Error(`${name} failed: ${errorMessage}`);
+}
+async function retryTypedResponse(name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
+    return await retry(name, method, (response) => response.statusCode, maxAttempts, delay, 
+    // If the error object contains the statusCode property, extract it and return
+    // an TypedResponse<T> so it can be processed by the retry logic.
+    (error) => {
+        if (error instanceof http_client_1.HttpClientError) {
+            return {
+                statusCode: error.statusCode,
+                result: null,
+                headers: {},
+                error
+            };
+        }
+        else {
+            return undefined;
+        }
     });
 }
-function retryTypedResponse(name_1, method_1) {
-    return __awaiter(this, arguments, void 0, function* (name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
-        return yield retry(name, method, (response) => response.statusCode, maxAttempts, delay, 
-        // If the error object contains the statusCode property, extract it and return
-        // an TypedResponse<T> so it can be processed by the retry logic.
-        (error) => {
-            if (error instanceof http_client_1.HttpClientError) {
-                return {
-                    statusCode: error.statusCode,
-                    result: null,
-                    headers: {},
-                    error
-                };
-            }
-            else {
-                return undefined;
-            }
-        });
-    });
-}
-function retryHttpClientResponse(name_1, method_1) {
-    return __awaiter(this, arguments, void 0, function* (name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
-        return yield retry(name, method, (response) => response.message.statusCode, maxAttempts, delay);
-    });
+async function retryHttpClientResponse(name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
+    return await retry(name, method, (response) => response.message.statusCode, maxAttempts, delay);
 }
 
 
 /***/ }),
 
 /***/ 433:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.internalCacheTwirpClient = internalCacheTwirpClient;
 const core_1 = __nccwpck_require__(7484);
@@ -81106,10 +80979,12 @@ const util_1 = __nccwpck_require__(8634);
  * This class is used to interact with cache service v2.
  */
 class CacheServiceClient {
+    httpClient;
+    baseUrl;
+    maxAttempts = 5;
+    baseRetryIntervalMilliseconds = 3000;
+    retryMultiplier = 1.5;
     constructor(userAgent, maxAttempts, baseRetryIntervalMilliseconds, retryMultiplier) {
-        this.maxAttempts = 5;
-        this.baseRetryIntervalMilliseconds = 3000;
-        this.retryMultiplier = 1.5;
         const token = (0, cacheUtils_1.getRuntimeToken)();
         this.baseUrl = (0, config_1.getCacheServiceURL)();
         if (maxAttempts) {
@@ -81127,76 +81002,72 @@ class CacheServiceClient {
     }
     // This function satisfies the Rpc interface. It is compatible with the JSON
     // JSON generated client.
-    request(service, method, contentType, data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const url = new URL(`/twirp/${service}/${method}`, this.baseUrl).href;
-            (0, core_1.debug)(`[Request] ${method} ${url}`);
-            const headers = {
-                'Content-Type': contentType
-            };
+    async request(service, method, contentType, data) {
+        const url = new URL(`/twirp/${service}/${method}`, this.baseUrl).href;
+        (0, core_1.debug)(`[Request] ${method} ${url}`);
+        const headers = {
+            'Content-Type': contentType
+        };
+        try {
+            const { body } = await this.retryableRequest(async () => this.httpClient.post(url, JSON.stringify(data), headers));
+            return body;
+        }
+        catch (error) {
+            throw new Error(`Failed to ${method}: ${error.message}`);
+        }
+    }
+    async retryableRequest(operation) {
+        let attempt = 0;
+        let errorMessage = '';
+        let rawBody = '';
+        while (attempt < this.maxAttempts) {
+            let isRetryable = false;
             try {
-                const { body } = yield this.retryableRequest(() => __awaiter(this, void 0, void 0, function* () { return this.httpClient.post(url, JSON.stringify(data), headers); }));
-                return body;
+                const response = await operation();
+                const statusCode = response.message.statusCode;
+                rawBody = await response.readBody();
+                (0, core_1.debug)(`[Response] - ${response.message.statusCode}`);
+                (0, core_1.debug)(`Headers: ${JSON.stringify(response.message.headers, null, 2)}`);
+                const body = JSON.parse(rawBody);
+                (0, util_1.maskSecretUrls)(body);
+                (0, core_1.debug)(`Body: ${JSON.stringify(body, null, 2)}`);
+                if (this.isSuccessStatusCode(statusCode)) {
+                    return { response, body };
+                }
+                isRetryable = this.isRetryableHttpStatusCode(statusCode);
+                errorMessage = `Failed request: (${statusCode}) ${response.message.statusMessage}`;
+                if (body.msg) {
+                    if (errors_1.UsageError.isUsageErrorMessage(body.msg)) {
+                        throw new errors_1.UsageError();
+                    }
+                    errorMessage = `${errorMessage}: ${body.msg}`;
+                }
             }
             catch (error) {
-                throw new Error(`Failed to ${method}: ${error.message}`);
+                if (error instanceof SyntaxError) {
+                    (0, core_1.debug)(`Raw Body: ${rawBody}`);
+                }
+                if (error instanceof errors_1.UsageError) {
+                    throw error;
+                }
+                if (errors_1.NetworkError.isNetworkErrorCode(error?.code)) {
+                    throw new errors_1.NetworkError(error?.code);
+                }
+                isRetryable = true;
+                errorMessage = error.message;
             }
-        });
-    }
-    retryableRequest(operation) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let attempt = 0;
-            let errorMessage = '';
-            let rawBody = '';
-            while (attempt < this.maxAttempts) {
-                let isRetryable = false;
-                try {
-                    const response = yield operation();
-                    const statusCode = response.message.statusCode;
-                    rawBody = yield response.readBody();
-                    (0, core_1.debug)(`[Response] - ${response.message.statusCode}`);
-                    (0, core_1.debug)(`Headers: ${JSON.stringify(response.message.headers, null, 2)}`);
-                    const body = JSON.parse(rawBody);
-                    (0, util_1.maskSecretUrls)(body);
-                    (0, core_1.debug)(`Body: ${JSON.stringify(body, null, 2)}`);
-                    if (this.isSuccessStatusCode(statusCode)) {
-                        return { response, body };
-                    }
-                    isRetryable = this.isRetryableHttpStatusCode(statusCode);
-                    errorMessage = `Failed request: (${statusCode}) ${response.message.statusMessage}`;
-                    if (body.msg) {
-                        if (errors_1.UsageError.isUsageErrorMessage(body.msg)) {
-                            throw new errors_1.UsageError();
-                        }
-                        errorMessage = `${errorMessage}: ${body.msg}`;
-                    }
-                }
-                catch (error) {
-                    if (error instanceof SyntaxError) {
-                        (0, core_1.debug)(`Raw Body: ${rawBody}`);
-                    }
-                    if (error instanceof errors_1.UsageError) {
-                        throw error;
-                    }
-                    if (errors_1.NetworkError.isNetworkErrorCode(error === null || error === void 0 ? void 0 : error.code)) {
-                        throw new errors_1.NetworkError(error === null || error === void 0 ? void 0 : error.code);
-                    }
-                    isRetryable = true;
-                    errorMessage = error.message;
-                }
-                if (!isRetryable) {
-                    throw new Error(`Received non-retryable error: ${errorMessage}`);
-                }
-                if (attempt + 1 === this.maxAttempts) {
-                    throw new Error(`Failed to make request after ${this.maxAttempts} attempts: ${errorMessage}`);
-                }
-                const retryTimeMilliseconds = this.getExponentialRetryTimeMilliseconds(attempt);
-                (0, core_1.info)(`Attempt ${attempt + 1} of ${this.maxAttempts} failed with error: ${errorMessage}. Retrying request in ${retryTimeMilliseconds} ms...`);
-                yield this.sleep(retryTimeMilliseconds);
-                attempt++;
+            if (!isRetryable) {
+                throw new Error(`Received non-retryable error: ${errorMessage}`);
             }
-            throw new Error(`Request failed`);
-        });
+            if (attempt + 1 === this.maxAttempts) {
+                throw new Error(`Failed to make request after ${this.maxAttempts} attempts: ${errorMessage}`);
+            }
+            const retryTimeMilliseconds = this.getExponentialRetryTimeMilliseconds(attempt);
+            (0, core_1.info)(`Attempt ${attempt + 1} of ${this.maxAttempts} failed with error: ${errorMessage}. Retrying request in ${retryTimeMilliseconds} ms...`);
+            await this.sleep(retryTimeMilliseconds);
+            attempt++;
+        }
+        throw new Error(`Request failed`);
     }
     isSuccessStatusCode(statusCode) {
         if (!statusCode)
@@ -81215,10 +81086,8 @@ class CacheServiceClient {
         ];
         return retryableStatusCodes.includes(statusCode);
     }
-    sleep(milliseconds) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise(resolve => setTimeout(resolve, milliseconds));
-        });
+    async sleep(milliseconds) {
+        return new Promise(resolve => setTimeout(resolve, milliseconds));
     }
     getExponentialRetryTimeMilliseconds(attempt) {
         if (attempt < 0) {
@@ -81227,14 +81096,14 @@ class CacheServiceClient {
         if (attempt === 0) {
             return this.baseRetryIntervalMilliseconds;
         }
-        const minTime = this.baseRetryIntervalMilliseconds * Math.pow(this.retryMultiplier, attempt);
+        const minTime = this.baseRetryIntervalMilliseconds * this.retryMultiplier ** attempt;
         const maxTime = minTime * this.retryMultiplier;
         // returns a random number between minTime and maxTime (exclusive)
         return Math.trunc(Math.random() * (maxTime - minTime) + minTime);
     }
 }
 function internalCacheTwirpClient(options) {
-    const client = new CacheServiceClient((0, user_agent_1.getUserAgentString)(), options === null || options === void 0 ? void 0 : options.maxAttempts, options === null || options === void 0 ? void 0 : options.retryIntervalMs, options === null || options === void 0 ? void 0 : options.retryMultiplier);
+    const client = new CacheServiceClient((0, user_agent_1.getUserAgentString)(), options?.maxAttempts, options?.retryIntervalMs, options?.retryMultiplier);
     return new cache_twirp_client_1.CacheServiceClientJSON(client);
 }
 
@@ -81249,6 +81118,7 @@ function internalCacheTwirpClient(options) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UsageError = exports.NetworkError = exports.GHESNotSupportedError = exports.CacheNotFoundError = exports.InvalidResponseError = exports.FilesNotFoundError = void 0;
 class FilesNotFoundError extends Error {
+    files;
     constructor(files = []) {
         let message = 'No files were found to upload';
         if (files.length > 0) {
@@ -81282,38 +81152,39 @@ class GHESNotSupportedError extends Error {
 }
 exports.GHESNotSupportedError = GHESNotSupportedError;
 class NetworkError extends Error {
+    code;
     constructor(code) {
         const message = `Unable to make request: ${code}\nIf you are using self-hosted runners, please make sure your runner has access to all GitHub endpoints: https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#communication-between-self-hosted-runners-and-github`;
         super(message);
         this.code = code;
         this.name = 'NetworkError';
     }
+    static isNetworkErrorCode = (code) => {
+        if (!code)
+            return false;
+        return [
+            'ECONNRESET',
+            'ENOTFOUND',
+            'ETIMEDOUT',
+            'ECONNREFUSED',
+            'EHOSTUNREACH'
+        ].includes(code);
+    };
 }
 exports.NetworkError = NetworkError;
-NetworkError.isNetworkErrorCode = (code) => {
-    if (!code)
-        return false;
-    return [
-        'ECONNRESET',
-        'ENOTFOUND',
-        'ETIMEDOUT',
-        'ECONNREFUSED',
-        'EHOSTUNREACH'
-    ].includes(code);
-};
 class UsageError extends Error {
     constructor() {
         const message = `Cache storage quota has been hit. Unable to upload any new cache entries. Usage is recalculated every 6-12 hours.\nMore info on storage limits: https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#calculating-minute-and-storage-spending`;
         super(message);
         this.name = 'UsageError';
     }
+    static isUsageErrorMessage = (msg) => {
+        if (!msg)
+            return false;
+        return msg.includes('insufficient usage');
+    };
 }
 exports.UsageError = UsageError;
-UsageError.isUsageErrorMessage = (msg) => {
-    if (!msg)
-        return false;
-    return msg.includes('insufficient usage');
-};
 
 
 /***/ }),
@@ -81455,15 +81326,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.listTar = listTar;
 exports.extractTar = extractTar;
@@ -81477,152 +81339,143 @@ const core = __importStar(__nccwpck_require__(7484));
 const constants_1 = __nccwpck_require__(6741);
 const IS_WINDOWS = process.platform === 'win32';
 // Returns tar path and type: BSD or GNU
-function getTarPath() {
-    return __awaiter(this, void 0, void 0, function* () {
-        switch (process.platform) {
-            case 'win32': {
-                const gnuTar = yield utils.getGnuTarPathOnWindows();
-                const systemTar = constants_1.SystemTarPathOnWindows;
-                if (gnuTar) {
-                    // Use GNUtar as default on windows
-                    return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
-                }
-                else if ((0, fs_1.existsSync)(systemTar)) {
-                    return { path: systemTar, type: constants_1.ArchiveToolType.BSD };
-                }
-                break;
+async function getTarPath() {
+    switch (process.platform) {
+        case 'win32': {
+            const gnuTar = await utils.getGnuTarPathOnWindows();
+            const systemTar = constants_1.SystemTarPathOnWindows;
+            if (gnuTar) {
+                // Use GNUtar as default on windows
+                return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
             }
-            case 'darwin': {
-                const gnuTar = yield io.which('gtar', false);
-                if (gnuTar) {
-                    // fix permission denied errors when extracting BSD tar archive with GNU tar - https://github.com/actions/cache/issues/527
-                    return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
-                }
-                else {
-                    return {
-                        path: yield io.which('tar', true),
-                        type: constants_1.ArchiveToolType.BSD
-                    };
-                }
+            else if ((0, fs_1.existsSync)(systemTar)) {
+                return { path: systemTar, type: constants_1.ArchiveToolType.BSD };
             }
-            default:
-                break;
+            break;
         }
-        // Default assumption is GNU tar is present in path
-        return {
-            path: yield io.which('tar', true),
-            type: constants_1.ArchiveToolType.GNU
-        };
-    });
+        case 'darwin': {
+            const gnuTar = await io.which('gtar', false);
+            if (gnuTar) {
+                // fix permission denied errors when extracting BSD tar archive with GNU tar - https://github.com/actions/cache/issues/527
+                return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
+            }
+            else {
+                return {
+                    path: await io.which('tar', true),
+                    type: constants_1.ArchiveToolType.BSD
+                };
+            }
+        }
+        default:
+            break;
+    }
+    // Default assumption is GNU tar is present in path
+    return {
+        path: await io.which('tar', true),
+        type: constants_1.ArchiveToolType.GNU
+    };
 }
 // Return arguments for tar as per tarPath, compressionMethod, method type and os
-function getTarArgs(tarPath_1, compressionMethod_1, type_1) {
-    return __awaiter(this, arguments, void 0, function* (tarPath, compressionMethod, type, archivePath = '') {
-        const args = [`"${tarPath.path}"`];
-        const cacheFileName = utils.getCacheFileName(compressionMethod);
-        const tarFile = 'cache.tar';
-        const workingDirectory = getWorkingDirectory();
-        // Speficic args for BSD tar on windows for workaround
-        const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
-            compressionMethod !== constants_1.CompressionMethod.Gzip &&
-            IS_WINDOWS;
-        // Method specific args
-        switch (type) {
-            case 'create':
-                args.push('--posix', '-cf', BSD_TAR_ZSTD
-                    ? tarFile
-                    : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--exclude', BSD_TAR_ZSTD
-                    ? tarFile
-                    : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--files-from', constants_1.ManifestFilename);
+async function getTarArgs(tarPath, compressionMethod, type, archivePath = '') {
+    const args = [`"${tarPath.path}"`];
+    const cacheFileName = utils.getCacheFileName(compressionMethod);
+    const tarFile = 'cache.tar';
+    const workingDirectory = getWorkingDirectory();
+    // Speficic args for BSD tar on windows for workaround
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+        compressionMethod !== constants_1.CompressionMethod.Gzip &&
+        IS_WINDOWS;
+    // Method specific args
+    switch (type) {
+        case 'create':
+            args.push('--posix', '-cf', BSD_TAR_ZSTD
+                ? tarFile
+                : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--exclude', BSD_TAR_ZSTD
+                ? tarFile
+                : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--files-from', constants_1.ManifestFilename);
+            break;
+        case 'extract':
+            args.push('-xf', BSD_TAR_ZSTD
+                ? tarFile
+                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'));
+            break;
+        case 'list':
+            args.push('-tf', BSD_TAR_ZSTD
+                ? tarFile
+                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P');
+            break;
+    }
+    // Platform specific args
+    if (tarPath.type === constants_1.ArchiveToolType.GNU) {
+        switch (process.platform) {
+            case 'win32':
+                args.push('--force-local');
                 break;
-            case 'extract':
-                args.push('-xf', BSD_TAR_ZSTD
-                    ? tarFile
-                    : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'));
-                break;
-            case 'list':
-                args.push('-tf', BSD_TAR_ZSTD
-                    ? tarFile
-                    : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P');
+            case 'darwin':
+                args.push('--delay-directory-restore');
                 break;
         }
-        // Platform specific args
-        if (tarPath.type === constants_1.ArchiveToolType.GNU) {
-            switch (process.platform) {
-                case 'win32':
-                    args.push('--force-local');
-                    break;
-                case 'darwin':
-                    args.push('--delay-directory-restore');
-                    break;
-            }
-        }
-        return args;
-    });
+    }
+    return args;
 }
 // Returns commands to run tar and compression program
-function getCommands(compressionMethod_1, type_1) {
-    return __awaiter(this, arguments, void 0, function* (compressionMethod, type, archivePath = '', extraTarArgs = []) {
-        let args;
-        const tarPath = yield getTarPath();
-        const tarArgs = yield getTarArgs(tarPath, compressionMethod, type, archivePath);
-        tarArgs.push(...extraTarArgs);
-        const compressionArgs = type !== 'create'
-            ? yield getDecompressionProgram(tarPath, compressionMethod, archivePath)
-            : yield getCompressionProgram(tarPath, compressionMethod);
-        const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
-            compressionMethod !== constants_1.CompressionMethod.Gzip &&
-            IS_WINDOWS;
-        if (BSD_TAR_ZSTD && type !== 'create') {
-            args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
-        }
-        else {
-            args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
-        }
-        if (BSD_TAR_ZSTD) {
-            return args;
-        }
-        return [args.join(' ')];
-    });
+async function getCommands(compressionMethod, type, archivePath = '', extraTarArgs = []) {
+    let args;
+    const tarPath = await getTarPath();
+    const tarArgs = await getTarArgs(tarPath, compressionMethod, type, archivePath);
+    tarArgs.push(...extraTarArgs);
+    const compressionArgs = type !== 'create'
+        ? await getDecompressionProgram(tarPath, compressionMethod, archivePath)
+        : await getCompressionProgram(tarPath, compressionMethod);
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+        compressionMethod !== constants_1.CompressionMethod.Gzip &&
+        IS_WINDOWS;
+    if (BSD_TAR_ZSTD && type !== 'create') {
+        args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
+    }
+    else {
+        args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
+    }
+    if (BSD_TAR_ZSTD) {
+        return args;
+    }
+    return [args.join(' ')];
 }
 function getWorkingDirectory() {
-    var _a;
-    return (_a = process.env['GITHUB_WORKSPACE']) !== null && _a !== void 0 ? _a : process.cwd();
+    return process.env['GITHUB_WORKSPACE'] ?? process.cwd();
 }
 // Common function for extractTar and listTar to get the compression method
-function getDecompressionProgram(tarPath, compressionMethod, archivePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // -d: Decompress.
-        // unzstd is equivalent to 'zstd -d'
-        // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
-        // Using 30 here because we also support 32-bit self-hosted runners.
-        const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
-            compressionMethod !== constants_1.CompressionMethod.Gzip &&
-            IS_WINDOWS;
-        switch (compressionMethod) {
-            case constants_1.CompressionMethod.Zstd:
-                return BSD_TAR_ZSTD
-                    ? [
-                        'zstd -d --long=30 --force -o',
-                        constants_1.TarFilename,
-                        archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
-                    ]
-                    : [
-                        '--use-compress-program',
-                        IS_WINDOWS ? '"zstd -d --long=30"' : 'unzstd --long=30'
-                    ];
-            case constants_1.CompressionMethod.ZstdWithoutLong:
-                return BSD_TAR_ZSTD
-                    ? [
-                        'zstd -d --force -o',
-                        constants_1.TarFilename,
-                        archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
-                    ]
-                    : ['--use-compress-program', IS_WINDOWS ? '"zstd -d"' : 'unzstd'];
-            default:
-                return ['-z'];
-        }
-    });
+async function getDecompressionProgram(tarPath, compressionMethod, archivePath) {
+    // -d: Decompress.
+    // unzstd is equivalent to 'zstd -d'
+    // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
+    // Using 30 here because we also support 32-bit self-hosted runners.
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+        compressionMethod !== constants_1.CompressionMethod.Gzip &&
+        IS_WINDOWS;
+    switch (compressionMethod) {
+        case constants_1.CompressionMethod.Zstd:
+            return BSD_TAR_ZSTD
+                ? [
+                    'zstd -d --long=30 --force -o',
+                    constants_1.TarFilename,
+                    archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
+                ]
+                : [
+                    '--use-compress-program',
+                    IS_WINDOWS ? '"zstd -d --long=30"' : 'unzstd --long=30'
+                ];
+        case constants_1.CompressionMethod.ZstdWithoutLong:
+            return BSD_TAR_ZSTD
+                ? [
+                    'zstd -d --force -o',
+                    constants_1.TarFilename,
+                    archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
+                ]
+                : ['--use-compress-program', IS_WINDOWS ? '"zstd -d"' : 'unzstd'];
+        default:
+            return ['-z'];
+    }
 }
 // Used for creating the archive
 // -T#: Compress using # working thread. If # is 0, attempt to detect and use the number of physical CPU cores.
@@ -81630,80 +81483,70 @@ function getDecompressionProgram(tarPath, compressionMethod, archivePath) {
 // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
 // Using 30 here because we also support 32-bit self-hosted runners.
 // Long range mode is added to zstd in v1.3.2 release, so we will not use --long in older version of zstd.
-function getCompressionProgram(tarPath, compressionMethod) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const cacheFileName = utils.getCacheFileName(compressionMethod);
-        const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
-            compressionMethod !== constants_1.CompressionMethod.Gzip &&
-            IS_WINDOWS;
-        switch (compressionMethod) {
-            case constants_1.CompressionMethod.Zstd:
-                return BSD_TAR_ZSTD
-                    ? [
-                        'zstd -T0 --long=30 --force -o',
-                        cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
-                        constants_1.TarFilename
-                    ]
-                    : [
-                        '--use-compress-program',
-                        IS_WINDOWS ? '"zstd -T0 --long=30"' : 'zstdmt --long=30'
-                    ];
-            case constants_1.CompressionMethod.ZstdWithoutLong:
-                return BSD_TAR_ZSTD
-                    ? [
-                        'zstd -T0 --force -o',
-                        cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
-                        constants_1.TarFilename
-                    ]
-                    : ['--use-compress-program', IS_WINDOWS ? '"zstd -T0"' : 'zstdmt'];
-            default:
-                return ['-z'];
-        }
-    });
+async function getCompressionProgram(tarPath, compressionMethod) {
+    const cacheFileName = utils.getCacheFileName(compressionMethod);
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+        compressionMethod !== constants_1.CompressionMethod.Gzip &&
+        IS_WINDOWS;
+    switch (compressionMethod) {
+        case constants_1.CompressionMethod.Zstd:
+            return BSD_TAR_ZSTD
+                ? [
+                    'zstd -T0 --long=30 --force -o',
+                    cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
+                    constants_1.TarFilename
+                ]
+                : [
+                    '--use-compress-program',
+                    IS_WINDOWS ? '"zstd -T0 --long=30"' : 'zstdmt --long=30'
+                ];
+        case constants_1.CompressionMethod.ZstdWithoutLong:
+            return BSD_TAR_ZSTD
+                ? [
+                    'zstd -T0 --force -o',
+                    cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
+                    constants_1.TarFilename
+                ]
+                : ['--use-compress-program', IS_WINDOWS ? '"zstd -T0"' : 'zstdmt'];
+        default:
+            return ['-z'];
+    }
 }
 // Executes all commands as separate processes
-function execCommands(commands, cwd) {
-    return __awaiter(this, void 0, void 0, function* () {
-        for (const command of commands) {
-            try {
-                yield (0, exec_1.exec)(command, undefined, {
-                    cwd,
-                    env: Object.assign(Object.assign({}, process.env), { MSYS: 'winsymlinks:nativestrict' })
-                });
-            }
-            catch (error) {
-                throw new Error(`${command.split(' ')[0]} failed with error: ${error === null || error === void 0 ? void 0 : error.message}`);
-            }
+async function execCommands(commands, cwd) {
+    for (const command of commands) {
+        try {
+            await (0, exec_1.exec)(command, undefined, {
+                cwd,
+                env: { ...process.env, MSYS: 'winsymlinks:nativestrict' }
+            });
         }
-    });
+        catch (error) {
+            throw new Error(`${command.split(' ')[0]} failed with error: ${error?.message}`);
+        }
+    }
 }
 // List the contents of a tar
-function listTar(archivePath, compressionMethod) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const commands = yield getCommands(compressionMethod, 'list', archivePath);
-        core.debug(`::group::Archive contents`);
-        yield execCommands(commands);
-        core.debug(`::endgroup::`);
-    });
+async function listTar(archivePath, compressionMethod) {
+    const commands = await getCommands(compressionMethod, 'list', archivePath);
+    core.debug(`::group::Archive contents`);
+    await execCommands(commands);
+    core.debug(`::endgroup::`);
 }
 // Extract a tar
-function extractTar(archivePath_1, compressionMethod_1) {
-    return __awaiter(this, arguments, void 0, function* (archivePath, compressionMethod, extraTarArgs = []) {
-        // Create directory to extract tar into
-        const workingDirectory = getWorkingDirectory();
-        yield io.mkdirP(workingDirectory);
-        const commands = yield getCommands(compressionMethod, 'extract', archivePath, extraTarArgs);
-        yield execCommands(commands);
-    });
+async function extractTar(archivePath, compressionMethod, extraTarArgs = []) {
+    // Create directory to extract tar into
+    const workingDirectory = getWorkingDirectory();
+    await io.mkdirP(workingDirectory);
+    const commands = await getCommands(compressionMethod, 'extract', archivePath, extraTarArgs);
+    await execCommands(commands);
 }
 // Create a tar
-function createTar(archiveFolder_1, sourceDirectories_1, compressionMethod_1) {
-    return __awaiter(this, arguments, void 0, function* (archiveFolder, sourceDirectories, compressionMethod, extraTarArgs = []) {
-        // Write source directories to manifest.txt to avoid command length limits
-        (0, fs_1.writeFileSync)(path.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join('\n'));
-        const commands = yield getCommands(compressionMethod, 'create', undefined, extraTarArgs);
-        yield execCommands(commands, archiveFolder);
-    });
+async function createTar(archiveFolder, sourceDirectories, compressionMethod, extraTarArgs = []) {
+    // Write source directories to manifest.txt to avoid command length limits
+    (0, fs_1.writeFileSync)(path.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join('\n'));
+    const commands = await getCommands(compressionMethod, 'create', undefined, extraTarArgs);
+    await execCommands(commands, archiveFolder);
 }
 
 
@@ -81747,15 +81590,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.UploadProgress = void 0;
 exports.uploadCacheArchiveSDK = uploadCacheArchiveSDK;
@@ -81766,6 +81600,11 @@ const errors_1 = __nccwpck_require__(5965);
  * Class for tracking the upload state and displaying stats.
  */
 class UploadProgress {
+    contentLength;
+    sentBytes;
+    startTime;
+    displayedComplete;
+    timeoutHandle;
     constructor(contentLength) {
         this.contentLength = contentLength;
         this.sentBytes = 0;
@@ -81857,37 +81696,34 @@ exports.UploadProgress = UploadProgress;
  * @param options
  * @returns
  */
-function uploadCacheArchiveSDK(signedUploadURL, archivePath, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        const blobClient = new storage_blob_1.BlobClient(signedUploadURL);
-        const blockBlobClient = blobClient.getBlockBlobClient();
-        const uploadProgress = new UploadProgress((_a = options === null || options === void 0 ? void 0 : options.archiveSizeBytes) !== null && _a !== void 0 ? _a : 0);
-        // Specify data transfer options
-        const uploadOptions = {
-            blockSize: options === null || options === void 0 ? void 0 : options.uploadChunkSize,
-            concurrency: options === null || options === void 0 ? void 0 : options.uploadConcurrency, // maximum number of parallel transfer workers
-            maxSingleShotSize: 128 * 1024 * 1024, // 128 MiB initial transfer size
-            onProgress: uploadProgress.onProgress()
-        };
-        try {
-            uploadProgress.startDisplayTimer();
-            core.debug(`BlobClient: ${blobClient.name}:${blobClient.accountName}:${blobClient.containerName}`);
-            const response = yield blockBlobClient.uploadFile(archivePath, uploadOptions);
-            // TODO: better management of non-retryable errors
-            if (response._response.status >= 400) {
-                throw new errors_1.InvalidResponseError(`uploadCacheArchiveSDK: upload failed with status code ${response._response.status}`);
-            }
-            return response;
+async function uploadCacheArchiveSDK(signedUploadURL, archivePath, options) {
+    const blobClient = new storage_blob_1.BlobClient(signedUploadURL);
+    const blockBlobClient = blobClient.getBlockBlobClient();
+    const uploadProgress = new UploadProgress(options?.archiveSizeBytes ?? 0);
+    // Specify data transfer options
+    const uploadOptions = {
+        blockSize: options?.uploadChunkSize,
+        concurrency: options?.uploadConcurrency, // maximum number of parallel transfer workers
+        maxSingleShotSize: 128 * 1024 * 1024, // 128 MiB initial transfer size
+        onProgress: uploadProgress.onProgress()
+    };
+    try {
+        uploadProgress.startDisplayTimer();
+        core.debug(`BlobClient: ${blobClient.name}:${blobClient.accountName}:${blobClient.containerName}`);
+        const response = await blockBlobClient.uploadFile(archivePath, uploadOptions);
+        // TODO: better management of non-retryable errors
+        if (response._response.status >= 400) {
+            throw new errors_1.InvalidResponseError(`uploadCacheArchiveSDK: upload failed with status code ${response._response.status}`);
         }
-        catch (error) {
-            core.warning(`uploadCacheArchiveSDK: internal error uploading cache archive: ${error.message}`);
-            throw error;
-        }
-        finally {
-            uploadProgress.stopDisplayTimer();
-        }
-    });
+        return response;
+    }
+    catch (error) {
+        core.warning(`uploadCacheArchiveSDK: internal error uploading cache archive: ${error.message}`);
+        throw error;
+    }
+    finally {
+        uploadProgress.stopDisplayTimer();
+    }
 }
 
 
@@ -82064,15 +81900,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReserveCacheError = exports.ValidationError = void 0;
 exports.isFeatureAvailable = isFeatureAvailable;
@@ -82132,83 +81959,80 @@ function isFeatureAvailable() {
  * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-function restoreCache(paths_1, primaryKey_1, restoreKeys_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
-        var _a;
-        checkPaths(paths);
-        restoreKeys = restoreKeys || [];
-        const keys = [primaryKey, ...restoreKeys];
-        core.debug('Resolved Keys:');
-        core.debug(JSON.stringify(keys));
-        if (keys.length > 10) {
-            throw new ValidationError(`Key Validation Error: Keys are limited to a maximum of 10.`);
+async function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
+    checkPaths(paths);
+    restoreKeys = restoreKeys || [];
+    const keys = [primaryKey, ...restoreKeys];
+    core.debug('Resolved Keys:');
+    core.debug(JSON.stringify(keys));
+    if (keys.length > 10) {
+        throw new ValidationError(`Key Validation Error: Keys are limited to a maximum of 10.`);
+    }
+    for (const key of keys) {
+        checkKey(key);
+    }
+    const compressionMethod = await utils.getCompressionMethod();
+    let archivePath = '';
+    try {
+        // path are needed to compute version
+        const cacheEntry = await cacheHttpClient.getCacheEntry(keys, paths, {
+            compressionMethod,
+            enableCrossOsArchive
+        });
+        if (!cacheEntry?.archiveLocation) {
+            // Cache not found
+            return undefined;
         }
-        for (const key of keys) {
-            checkKey(key);
-        }
-        const compressionMethod = yield utils.getCompressionMethod();
-        let archivePath = '';
-        try {
-            // path are needed to compute version
-            const cacheEntry = yield cacheHttpClient.getCacheEntry(keys, paths, {
-                compressionMethod,
-                enableCrossOsArchive
-            });
-            if (!(cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.archiveLocation)) {
-                // Cache not found
-                return undefined;
-            }
-            if (options === null || options === void 0 ? void 0 : options.lookupOnly) {
-                core.info('Lookup only - skipping download');
-                return cacheEntry.cacheKey;
-            }
-            archivePath = path.join(yield utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
-            core.debug(`Archive Path: ${archivePath}`);
-            // Download the cache from the cache entry
-            const beforeDownload = Date.now();
-            yield cacheHttpClient.downloadCache(cacheEntry.archiveLocation, archivePath, options);
-            const downloadTimeMs = Date.now() - beforeDownload;
-            if (core.isDebug()) {
-                yield (0, tar_1.listTar)(archivePath, compressionMethod);
-            }
-            const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
-            core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
-            const beforeExtract = Date.now();
-            yield (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
-            const extractTimeMs = Date.now() - beforeExtract;
-            core.info('Cache restored successfully');
-            yield cacheHttpClient.reportCacheRestore({
-                cacheKey: cacheEntry.cacheKey,
-                cacheVersion: cacheEntry.cacheVersion,
-                scope: cacheEntry.scope,
-                size: archiveFileSize,
-                downloadConcurrency: (_a = options === null || options === void 0 ? void 0 : options.downloadConcurrency) !== null && _a !== void 0 ? _a : 8,
-                downloadTimeMs,
-                extractTimeMs
-            });
+        if (options?.lookupOnly) {
+            core.info('Lookup only - skipping download');
             return cacheEntry.cacheKey;
         }
+        archivePath = path.join(await utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
+        core.debug(`Archive Path: ${archivePath}`);
+        // Download the cache from the cache entry
+        const beforeDownload = Date.now();
+        await cacheHttpClient.downloadCache(cacheEntry.archiveLocation, archivePath, options);
+        const downloadTimeMs = Date.now() - beforeDownload;
+        if (core.isDebug()) {
+            await (0, tar_1.listTar)(archivePath, compressionMethod);
+        }
+        const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
+        core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
+        const beforeExtract = Date.now();
+        await (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
+        const extractTimeMs = Date.now() - beforeExtract;
+        core.info('Cache restored successfully');
+        await cacheHttpClient.reportCacheRestore({
+            cacheKey: cacheEntry.cacheKey,
+            cacheVersion: cacheEntry.cacheVersion,
+            scope: cacheEntry.scope,
+            size: archiveFileSize,
+            downloadConcurrency: options?.downloadConcurrency ?? 8,
+            downloadTimeMs,
+            extractTimeMs
+        });
+        return cacheEntry.cacheKey;
+    }
+    catch (error) {
+        const typedError = error;
+        if (typedError.name === ValidationError.name) {
+            throw error;
+        }
+        else {
+            // Supress all non-validation cache related errors because caching should be optional
+            core.warning(`Failed to restore: ${error.message}`);
+        }
+    }
+    finally {
+        // Try to delete the archive to save space
+        try {
+            await utils.unlinkFile(archivePath);
+        }
         catch (error) {
-            const typedError = error;
-            if (typedError.name === ValidationError.name) {
-                throw error;
-            }
-            else {
-                // Supress all non-validation cache related errors because caching should be optional
-                core.warning(`Failed to restore: ${error.message}`);
-            }
+            core.debug(`Failed to delete archive: ${error}`);
         }
-        finally {
-            // Try to delete the archive to save space
-            try {
-                yield utils.unlinkFile(archivePath);
-            }
-            catch (error) {
-                core.debug(`Failed to delete archive: ${error}`);
-            }
-        }
-        return undefined;
-    });
+    }
+    return undefined;
 }
 /**
  * Saves a list of files with the specified key
@@ -82219,98 +82043,94 @@ function restoreCache(paths_1, primaryKey_1, restoreKeys_1, options_1) {
  * @param options cache upload options
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
-function saveCache(paths_1, key_1, options_1) {
-    return __awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false) {
-        var _a, _b, _c, _d, _e, _f;
-        checkPaths(paths);
-        checkKey(key);
-        const compressionMethod = yield utils.getCompressionMethod();
-        const cachePaths = yield utils.resolvePaths(paths);
-        core.debug('Cache Paths:');
-        core.debug(`${JSON.stringify(cachePaths)}`);
-        if (cachePaths.length === 0) {
-            throw new Error(`Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.`);
+async function saveCache(paths, key, options, enableCrossOsArchive = false) {
+    checkPaths(paths);
+    checkKey(key);
+    const compressionMethod = await utils.getCompressionMethod();
+    const cachePaths = await utils.resolvePaths(paths);
+    core.debug('Cache Paths:');
+    core.debug(`${JSON.stringify(cachePaths)}`);
+    if (cachePaths.length === 0) {
+        throw new Error(`Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.`);
+    }
+    const archiveFolder = await utils.createTempDirectory();
+    const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+    core.debug(`Archive Path: ${archivePath}`);
+    try {
+        const beforeArchive = Date.now();
+        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod);
+        const archiveTimeMs = Date.now() - beforeArchive;
+        if (core.isDebug()) {
+            await (0, tar_1.listTar)(archivePath, compressionMethod);
         }
-        const archiveFolder = yield utils.createTempDirectory();
-        const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
-        core.debug(`Archive Path: ${archivePath}`);
+        const fileSizeLimit = 4.99 * 1024 * 1024 * 1024; // 4.99 per cache limit
+        const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
+        core.debug(`File Size: ${archiveFileSize}`);
+        // For GHES, this check will take place in ReserveCache API with enterprise file size limit
+        if (archiveFileSize > fileSizeLimit && !utils.isGhes()) {
+            throw new Error(`Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the 10GB limit, not saving cache.`);
+        }
+        core.debug('Reserving Cache');
+        const version = cacheHttpClient.getCacheVersion(paths, compressionMethod, enableCrossOsArchive);
+        const reserveCacheResponse = await cacheHttpClient.reserveCache(key, version, {
+            compressionMethod,
+            enableCrossOsArchive,
+            cacheSize: archiveFileSize,
+            uploadConcurrency: options?.uploadConcurrency
+        });
+        let uploadId;
+        let urls;
+        if (reserveCacheResponse?.result?.uploadId) {
+            uploadId = reserveCacheResponse?.result?.uploadId;
+            urls = reserveCacheResponse?.result?.urls;
+        }
+        else if (reserveCacheResponse?.statusCode === 400) {
+            throw new Error(reserveCacheResponse?.error?.message ??
+                `Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`);
+        }
+        else {
+            throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache. More details: ${reserveCacheResponse?.error?.message}`);
+        }
+        core.debug(`Saving Cache (ID: ${uploadId})`);
+        await cacheHttpClient.saveCache(key, version, uploadId, urls, archivePath, archiveTimeMs, options);
+    }
+    catch (error) {
+        const typedError = error;
+        if (typedError.name === ValidationError.name) {
+            throw error;
+        }
+        else if (typedError.name === ReserveCacheError.name) {
+            core.info(`Failed to save: ${typedError.message}`);
+        }
+        else {
+            core.warning(`Failed to save: ${typedError.message}`);
+        }
+    }
+    finally {
+        // Try to delete the archive to save space
         try {
-            const beforeArchive = Date.now();
-            yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod);
-            const archiveTimeMs = Date.now() - beforeArchive;
-            if (core.isDebug()) {
-                yield (0, tar_1.listTar)(archivePath, compressionMethod);
-            }
-            const fileSizeLimit = 4.99 * 1024 * 1024 * 1024; // 4.99 per cache limit
-            const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
-            core.debug(`File Size: ${archiveFileSize}`);
-            // For GHES, this check will take place in ReserveCache API with enterprise file size limit
-            if (archiveFileSize > fileSizeLimit && !utils.isGhes()) {
-                throw new Error(`Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the 10GB limit, not saving cache.`);
-            }
-            core.debug('Reserving Cache');
-            const version = cacheHttpClient.getCacheVersion(paths, compressionMethod, enableCrossOsArchive);
-            const reserveCacheResponse = yield cacheHttpClient.reserveCache(key, version, {
-                compressionMethod,
-                enableCrossOsArchive,
-                cacheSize: archiveFileSize,
-                uploadConcurrency: options === null || options === void 0 ? void 0 : options.uploadConcurrency
-            });
-            let uploadId;
-            let urls;
-            if ((_a = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.result) === null || _a === void 0 ? void 0 : _a.uploadId) {
-                uploadId = (_b = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.result) === null || _b === void 0 ? void 0 : _b.uploadId;
-                urls = (_c = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.result) === null || _c === void 0 ? void 0 : _c.urls;
-            }
-            else if ((reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.statusCode) === 400) {
-                throw new Error((_e = (_d = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _d === void 0 ? void 0 : _d.message) !== null && _e !== void 0 ? _e : `Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`);
-            }
-            else {
-                throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache. More details: ${(_f = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _f === void 0 ? void 0 : _f.message}`);
-            }
-            core.debug(`Saving Cache (ID: ${uploadId})`);
-            yield cacheHttpClient.saveCache(key, version, uploadId, urls, archivePath, archiveTimeMs, options);
+            await utils.unlinkFile(archivePath);
         }
         catch (error) {
-            const typedError = error;
-            if (typedError.name === ValidationError.name) {
-                throw error;
-            }
-            else if (typedError.name === ReserveCacheError.name) {
-                core.info(`Failed to save: ${typedError.message}`);
-            }
-            else {
-                core.warning(`Failed to save: ${typedError.message}`);
-            }
+            core.debug(`Failed to delete archive: ${error}`);
         }
-        finally {
-            // Try to delete the archive to save space
-            try {
-                yield utils.unlinkFile(archivePath);
-            }
-            catch (error) {
-                core.debug(`Failed to delete archive: ${error}`);
-            }
-        }
-        //Return a 0 for competibility
-        return 0;
-    });
+    }
+    //Return a 0 for competibility
+    return 0;
 }
 /**
  * Delete a list of caches with the specified keys
  * @param keys a list of keys for deleting the cache
  */
-function deleteCache(keys) {
-    return __awaiter(this, void 0, void 0, function* () {
-        core.debug('Deleting Cache');
-        core.debug(`Cache Keys: ${keys}`);
-        try {
-            yield cacheHttpClient.deleteCache(keys);
-        }
-        catch (error) {
-            core.warning(`Failed to delete: ${error.message}`);
-        }
-    });
+async function deleteCache(keys) {
+    core.debug('Deleting Cache');
+    core.debug(`Cache Keys: ${keys}`);
+    try {
+        await cacheHttpClient.deleteCache(keys);
+    }
+    catch (error) {
+        core.warning(`Failed to delete: ${error.message}`);
+    }
 }
 
 
@@ -82354,15 +82174,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCacheVersion = getCacheVersion;
 exports.getCacheEntry = getCacheEntry;
@@ -82432,90 +82243,76 @@ function getCacheVersion(paths, compressionMethod, enableCrossOsArchive = false)
     components.push(versionSalt);
     return crypto.createHash('sha256').update(components.join('|')).digest('hex');
 }
-function getCacheEntry(keys, paths, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const httpClient = createHttpClient();
-        const version = getCacheVersion(paths, options === null || options === void 0 ? void 0 : options.compressionMethod, options === null || options === void 0 ? void 0 : options.enableCrossOsArchive);
-        const resource = `cache?keys=${encodeURIComponent(keys.join(','))}&version=${version}`;
-        const response = yield (0, requestUtils_1.retryTypedResponse)('getCacheEntry', () => __awaiter(this, void 0, void 0, function* () { return httpClient.getJson(getCacheApiUrl(resource)); }));
-        // Cache not found
-        if (response.statusCode === 204) {
-            // List cache for primary key only if cache miss occurs
-            if (core.isDebug()) {
-                yield printCachesListForDiagnostics(keys[0], httpClient, version);
-            }
-            return null;
+async function getCacheEntry(keys, paths, options) {
+    const httpClient = createHttpClient();
+    const version = getCacheVersion(paths, options?.compressionMethod, options?.enableCrossOsArchive);
+    const resource = `cache?keys=${encodeURIComponent(keys.join(','))}&version=${version}`;
+    const response = await (0, requestUtils_1.retryTypedResponse)('getCacheEntry', async () => httpClient.getJson(getCacheApiUrl(resource)));
+    // Cache not found
+    if (response.statusCode === 204) {
+        // List cache for primary key only if cache miss occurs
+        if (core.isDebug()) {
+            await printCachesListForDiagnostics(keys[0], httpClient, version);
         }
-        if (!(0, requestUtils_1.isSuccessStatusCode)(response.statusCode)) {
-            throw new Error(`Cache service responded with ${response.statusCode}`);
-        }
-        const cacheResult = response.result;
-        const cacheDownloadUrl = cacheResult === null || cacheResult === void 0 ? void 0 : cacheResult.archiveLocation;
-        if (!cacheDownloadUrl) {
-            // Cache achiveLocation not found. This should never happen, and hence bail out.
-            throw new Error('Cache not found.');
-        }
-        core.setSecret(cacheDownloadUrl);
-        core.debug(`Cache Result:`);
-        core.debug(JSON.stringify(cacheResult));
-        return cacheResult;
-    });
+        return null;
+    }
+    if (!(0, requestUtils_1.isSuccessStatusCode)(response.statusCode)) {
+        throw new Error(`Cache service responded with ${response.statusCode}`);
+    }
+    const cacheResult = response.result;
+    const cacheDownloadUrl = cacheResult?.archiveLocation;
+    if (!cacheDownloadUrl) {
+        // Cache achiveLocation not found. This should never happen, and hence bail out.
+        throw new Error('Cache not found.');
+    }
+    core.setSecret(cacheDownloadUrl);
+    core.debug(`Cache Result:`);
+    core.debug(JSON.stringify(cacheResult));
+    return cacheResult;
 }
-function printCachesListForDiagnostics(key, httpClient, version) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const resource = `caches?key=${encodeURIComponent(key)}`;
-        const response = yield (0, requestUtils_1.retryTypedResponse)('listCache', () => __awaiter(this, void 0, void 0, function* () { return httpClient.getJson(getCacheApiUrl(resource)); }));
-        if (response.statusCode === 200) {
-            const cacheListResult = response.result;
-            const totalCount = cacheListResult === null || cacheListResult === void 0 ? void 0 : cacheListResult.totalCount;
-            if (totalCount && totalCount > 0) {
-                core.debug(`No matching cache found for cache key '${key}', version '${version} and scope ${process.env['GITHUB_REF']}. There exist one or more cache(s) with similar key but they have different version or scope. See more info on cache matching here: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key \nOther caches with similar key:`);
-                for (const cacheEntry of (cacheListResult === null || cacheListResult === void 0 ? void 0 : cacheListResult.artifactCaches) || []) {
-                    core.debug(`Cache Key: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.cacheKey}, Cache Version: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.cacheVersion}, Cache Scope: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.scope}, Cache Created: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.creationTime}`);
-                }
+async function printCachesListForDiagnostics(key, httpClient, version) {
+    const resource = `caches?key=${encodeURIComponent(key)}`;
+    const response = await (0, requestUtils_1.retryTypedResponse)('listCache', async () => httpClient.getJson(getCacheApiUrl(resource)));
+    if (response.statusCode === 200) {
+        const cacheListResult = response.result;
+        const totalCount = cacheListResult?.totalCount;
+        if (totalCount && totalCount > 0) {
+            core.debug(`No matching cache found for cache key '${key}', version '${version} and scope ${process.env['GITHUB_REF']}. There exist one or more cache(s) with similar key but they have different version or scope. See more info on cache matching here: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key \nOther caches with similar key:`);
+            for (const cacheEntry of cacheListResult?.artifactCaches || []) {
+                core.debug(`Cache Key: ${cacheEntry?.cacheKey}, Cache Version: ${cacheEntry?.cacheVersion}, Cache Scope: ${cacheEntry?.scope}, Cache Created: ${cacheEntry?.creationTime}`);
             }
         }
-    });
+    }
 }
-function downloadCache(archiveLocation, archivePath, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        const archiveUrl = new url_1.URL(archiveLocation);
-        const downloadOptions = (0, options_1.getDownloadOptions)(options);
-        if (process.env['PARALLEL_DOWNLOAD'] == 'false') {
-            //Use parallel download as default unless diasbled
-            yield (0, downloadUtils_1.downloadCacheHttpClient)(archiveLocation, archivePath);
-        }
-        else {
-            yield (0, downloadUtils_1.downloadCachMultiConnection)(archiveLocation, archivePath, (_a = options === null || options === void 0 ? void 0 : options.downloadConcurrency) !== null && _a !== void 0 ? _a : 8);
-        }
-    });
+async function downloadCache(archiveLocation, archivePath, options) {
+    const archiveUrl = new url_1.URL(archiveLocation);
+    const downloadOptions = (0, options_1.getDownloadOptions)(options);
+    if (process.env['PARALLEL_DOWNLOAD'] == 'false') {
+        //Use parallel download as default unless diasbled
+        await (0, downloadUtils_1.downloadCacheHttpClient)(archiveLocation, archivePath);
+    }
+    else {
+        await (0, downloadUtils_1.downloadCachMultiConnection)(archiveLocation, archivePath, options?.downloadConcurrency ?? 8);
+    }
 }
-function reportCacheRestore(report) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const httpClient = createHttpClient();
-        const response = yield (0, requestUtils_1.retryTypedResponse)('cacheRestoreReport', () => __awaiter(this, void 0, void 0, function* () { return httpClient.postJson(getCacheApiUrl('cacheRestoreReport'), report); }));
-        if (!(0, requestUtils_1.isSuccessStatusCode)(response.statusCode)) {
-            throw new Error(`Cache service responded with ${response.statusCode}`);
-        }
-    });
+async function reportCacheRestore(report) {
+    const httpClient = createHttpClient();
+    const response = await (0, requestUtils_1.retryTypedResponse)('cacheRestoreReport', async () => httpClient.postJson(getCacheApiUrl('cacheRestoreReport'), report));
+    if (!(0, requestUtils_1.isSuccessStatusCode)(response.statusCode)) {
+        throw new Error(`Cache service responded with ${response.statusCode}`);
+    }
 }
 // Reserve Cache
-function reserveCache(key, version, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        const httpClient = createHttpClient();
-        const reserveCacheRequest = {
-            key,
-            version,
-            cacheSize: options.cacheSize,
-            chunks: (_a = options.uploadConcurrency) !== null && _a !== void 0 ? _a : 4
-        };
-        const response = yield (0, requestUtils_1.retryTypedResponse)('reserveCache', () => __awaiter(this, void 0, void 0, function* () {
-            return httpClient.postJson(getCacheApiUrl('caches'), reserveCacheRequest);
-        }));
-        return response;
-    });
+async function reserveCache(key, version, options) {
+    const httpClient = createHttpClient();
+    const reserveCacheRequest = {
+        key,
+        version,
+        cacheSize: options.cacheSize,
+        chunks: options.uploadConcurrency ?? 4
+    };
+    const response = await (0, requestUtils_1.retryTypedResponse)('reserveCache', async () => httpClient.postJson(getCacheApiUrl('caches'), reserveCacheRequest));
+    return response;
 }
 function getContentRange(start, end) {
     // Format: `bytes start-end/filesize
@@ -82525,98 +82322,86 @@ function getContentRange(start, end) {
     // Content-Range: bytes 0-199/*
     return `bytes ${start}-${end}/*`;
 }
-function uploadChunk(httpClient, resourceUrl, openStream, start, end) {
-    return __awaiter(this, void 0, void 0, function* () {
-        core.debug(`Uploading chunk of size ${end -
-            start +
-            1} bytes at offset ${start} with content range: ${getContentRange(start, end)}`);
-        const additionalHeaders = {
-            'Content-Type': 'application/octet-stream',
-            'Content-Length': end - start + 1
-        };
-        const uploadChunkResponse = yield (0, requestUtils_1.retryHttpClientResponse)(`uploadChunk (start: ${start}, end: ${end})`, () => __awaiter(this, void 0, void 0, function* () {
-            return httpClient.sendStream('PUT', resourceUrl, openStream(), additionalHeaders);
+async function uploadChunk(httpClient, resourceUrl, openStream, start, end) {
+    core.debug(`Uploading chunk of size ${end -
+        start +
+        1} bytes at offset ${start} with content range: ${getContentRange(start, end)}`);
+    const additionalHeaders = {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': end - start + 1
+    };
+    const uploadChunkResponse = await (0, requestUtils_1.retryHttpClientResponse)(`uploadChunk (start: ${start}, end: ${end})`, async () => httpClient.sendStream('PUT', resourceUrl, openStream(), additionalHeaders));
+    core.debug(JSON.stringify(uploadChunkResponse.message.headers));
+    core.debug(JSON.stringify(await uploadChunkResponse.readBody()));
+    if (!(0, requestUtils_1.isSuccessStatusCode)(uploadChunkResponse.message.statusCode)) {
+        throw new Error(`Cache service responded with ${uploadChunkResponse.message.statusCode} during upload chunk.`);
+    }
+    return uploadChunkResponse.message.headers.etag;
+}
+async function uploadFile(httpClient, urls, archivePath, options) {
+    // Upload Chunks
+    const fileSize = utils.getArchiveFileSizeInBytes(archivePath);
+    const fd = fs.openSync(archivePath, 'r');
+    core.debug('Awaiting all uploads');
+    let offset = 0;
+    const maxChunkSize = Math.ceil(fileSize / urls.length);
+    try {
+        const eTags = await Promise.all(urls.map(async (url) => {
+            while (offset < fileSize) {
+                const chunkSize = Math.min(fileSize - offset, maxChunkSize);
+                const start = offset;
+                const end = offset + chunkSize - 1;
+                offset += chunkSize;
+                return await uploadChunk(httpClient, url, () => fs
+                    .createReadStream(archivePath, {
+                    fd,
+                    start,
+                    end,
+                    autoClose: false
+                })
+                    .on('error', error => {
+                    throw new Error(`Cache upload failed because file read failed with ${error.message}`);
+                }), start, end);
+            }
         }));
-        core.debug(JSON.stringify(uploadChunkResponse.message.headers));
-        core.debug(JSON.stringify(yield uploadChunkResponse.readBody()));
-        if (!(0, requestUtils_1.isSuccessStatusCode)(uploadChunkResponse.message.statusCode)) {
-            throw new Error(`Cache service responded with ${uploadChunkResponse.message.statusCode} during upload chunk.`);
-        }
-        return uploadChunkResponse.message.headers.etag;
-    });
+        return eTags;
+    }
+    finally {
+        fs.closeSync(fd);
+    }
 }
-function uploadFile(httpClient, urls, archivePath, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Upload Chunks
-        const fileSize = utils.getArchiveFileSizeInBytes(archivePath);
-        const fd = fs.openSync(archivePath, 'r');
-        core.debug('Awaiting all uploads');
-        let offset = 0;
-        const maxChunkSize = Math.ceil(fileSize / urls.length);
-        try {
-            const eTags = yield Promise.all(urls.map((url) => __awaiter(this, void 0, void 0, function* () {
-                while (offset < fileSize) {
-                    const chunkSize = Math.min(fileSize - offset, maxChunkSize);
-                    const start = offset;
-                    const end = offset + chunkSize - 1;
-                    offset += chunkSize;
-                    return yield uploadChunk(httpClient, url, () => fs
-                        .createReadStream(archivePath, {
-                        fd,
-                        start,
-                        end,
-                        autoClose: false
-                    })
-                        .on('error', error => {
-                        throw new Error(`Cache upload failed because file read failed with ${error.message}`);
-                    }), start, end);
-                }
-            })));
-            return eTags;
-        }
-        finally {
-            fs.closeSync(fd);
-        }
+async function saveCache(key, version, uploadId, urls, archivePath, archiveTimeMs, options) {
+    const httpClient = createHttpClient();
+    core.debug('Upload cache');
+    const uploadHttpClient = new http_client_1.HttpClient('actions/cache');
+    const beforeUpload = Date.now();
+    const eTags = await uploadFile(uploadHttpClient, urls, archivePath, options);
+    const uploadTimeMs = Date.now() - beforeUpload;
+    // Commit Cache
+    core.debug('Commiting cache');
+    const cacheSize = utils.getArchiveFileSizeInBytes(archivePath);
+    core.info(`Cache Size: ~${Math.round(cacheSize / (1024 * 1024))} MB (${cacheSize} B)`);
+    let i = 1;
+    const parts = eTags.map((eTag) => {
+        const part = { partNumber: i++, eTag };
+        return part;
     });
+    const commitCacheRequest = {
+        key, version, uploadId, cacheSize, parts, uploadTimeMs, archiveTimeMs
+    };
+    const commitCacheResponse = await (0, requestUtils_1.retryTypedResponse)('commitCache', async () => httpClient.postJson(getCacheApiUrl(`commitCache`), commitCacheRequest));
+    if (!(0, requestUtils_1.isSuccessStatusCode)(commitCacheResponse.statusCode)) {
+        throw new Error(`Cache service responded with ${commitCacheResponse.statusCode} during commit cache.`);
+    }
+    core.info('Cache saved successfully');
 }
-function saveCache(key, version, uploadId, urls, archivePath, archiveTimeMs, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const httpClient = createHttpClient();
-        core.debug('Upload cache');
-        const uploadHttpClient = new http_client_1.HttpClient('actions/cache');
-        const beforeUpload = Date.now();
-        const eTags = yield uploadFile(uploadHttpClient, urls, archivePath, options);
-        const uploadTimeMs = Date.now() - beforeUpload;
-        // Commit Cache
-        core.debug('Commiting cache');
-        const cacheSize = utils.getArchiveFileSizeInBytes(archivePath);
-        core.info(`Cache Size: ~${Math.round(cacheSize / (1024 * 1024))} MB (${cacheSize} B)`);
-        let i = 1;
-        const parts = eTags.map((eTag) => {
-            const part = { partNumber: i++, eTag };
-            return part;
-        });
-        const commitCacheRequest = {
-            key, version, uploadId, cacheSize, parts, uploadTimeMs, archiveTimeMs
-        };
-        const commitCacheResponse = yield (0, requestUtils_1.retryTypedResponse)('commitCache', () => __awaiter(this, void 0, void 0, function* () {
-            return httpClient.postJson(getCacheApiUrl(`commitCache`), commitCacheRequest);
-        }));
-        if (!(0, requestUtils_1.isSuccessStatusCode)(commitCacheResponse.statusCode)) {
-            throw new Error(`Cache service responded with ${commitCacheResponse.statusCode} during commit cache.`);
-        }
-        core.info('Cache saved successfully');
-    });
-}
-function deleteCache(keys) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const httpClient = createHttpClient();
-        const resource = `cache?keys=${encodeURIComponent(keys.join(','))}`;
-        const response = yield (0, requestUtils_1.retryHttpClientResponse)('deleteCache', () => __awaiter(this, void 0, void 0, function* () { return httpClient.del(getCacheApiUrl(resource)); }));
-        if (!(0, requestUtils_1.isSuccessStatusCode)(response.message.statusCode)) {
-            throw new Error(`Cache service responded with ${response.message.statusCode}`);
-        }
-    });
+async function deleteCache(keys) {
+    const httpClient = createHttpClient();
+    const resource = `cache?keys=${encodeURIComponent(keys.join(','))}`;
+    const response = await (0, requestUtils_1.retryHttpClientResponse)('deleteCache', async () => httpClient.del(getCacheApiUrl(resource)));
+    if (!(0, requestUtils_1.isSuccessStatusCode)(response.message.statusCode)) {
+        throw new Error(`Cache service responded with ${response.message.statusCode}`);
+    }
 }
 
 
@@ -82660,22 +82445,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createTempDirectory = createTempDirectory;
 exports.getArchiveFileSizeInBytes = getArchiveFileSizeInBytes;
@@ -82697,128 +82466,102 @@ const util = __importStar(__nccwpck_require__(9023));
 const uuid_1 = __nccwpck_require__(7723);
 const constants_1 = __nccwpck_require__(7897);
 // From https://github.com/actions/toolkit/blob/main/packages/tool-cache/src/tool-cache.ts#L23
-function createTempDirectory() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const IS_WINDOWS = process.platform === 'win32';
-        let tempDirectory = process.env['RUNNER_TEMP'] || '';
-        if (!tempDirectory) {
-            let baseLocation;
-            if (IS_WINDOWS) {
-                // On Windows use the USERPROFILE env variable
-                baseLocation = process.env['USERPROFILE'] || 'C:\\';
+async function createTempDirectory() {
+    const IS_WINDOWS = process.platform === 'win32';
+    let tempDirectory = process.env['RUNNER_TEMP'] || '';
+    if (!tempDirectory) {
+        let baseLocation;
+        if (IS_WINDOWS) {
+            // On Windows use the USERPROFILE env variable
+            baseLocation = process.env['USERPROFILE'] || 'C:\\';
+        }
+        else {
+            if (process.platform === 'darwin') {
+                baseLocation = '/Users';
             }
             else {
-                if (process.platform === 'darwin') {
-                    baseLocation = '/Users';
-                }
-                else {
-                    baseLocation = '/home';
-                }
+                baseLocation = '/home';
             }
-            tempDirectory = path.join(baseLocation, 'actions', 'temp');
         }
-        const dest = path.join(tempDirectory, (0, uuid_1.v4)());
-        yield io.mkdirP(dest);
-        return dest;
-    });
+        tempDirectory = path.join(baseLocation, 'actions', 'temp');
+    }
+    const dest = path.join(tempDirectory, (0, uuid_1.v4)());
+    await io.mkdirP(dest);
+    return dest;
 }
 function getArchiveFileSizeInBytes(filePath) {
     return fs.statSync(filePath).size;
 }
-function resolvePaths(patterns) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, e_1, _b, _c;
-        var _d;
-        const paths = [];
-        const workspace = (_d = process.env['GITHUB_WORKSPACE']) !== null && _d !== void 0 ? _d : process.cwd();
-        const globber = yield glob.create(patterns.join('\n'), {
-            implicitDescendants: false
-        });
-        try {
-            for (var _e = true, _f = __asyncValues(globber.globGenerator()), _g; _g = yield _f.next(), _a = _g.done, !_a; _e = true) {
-                _c = _g.value;
-                _e = false;
-                const file = _c;
-                const relativeFile = path
-                    .relative(workspace, file)
-                    .replace(new RegExp(`\\${path.sep}`, 'g'), '/');
-                core.debug(`Matched: ${relativeFile}`);
-                // Paths are made relative so the tar entries are all relative to the root of the workspace.
-                if (relativeFile === '') {
-                    // path.relative returns empty string if workspace and file are equal
-                    paths.push('.');
-                }
-                else {
-                    paths.push(`${relativeFile}`);
-                }
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (!_e && !_a && (_b = _f.return)) yield _b.call(_f);
-            }
-            finally { if (e_1) throw e_1.error; }
-        }
-        return paths;
+async function resolvePaths(patterns) {
+    const paths = [];
+    const workspace = process.env['GITHUB_WORKSPACE'] ?? process.cwd();
+    const globber = await glob.create(patterns.join('\n'), {
+        implicitDescendants: false
     });
-}
-function unlinkFile(filePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return util.promisify(fs.unlink)(filePath);
-    });
-}
-function getVersion(app_1) {
-    return __awaiter(this, arguments, void 0, function* (app, additionalArgs = []) {
-        let versionOutput = '';
-        additionalArgs.push('--version');
-        core.debug(`Checking ${app} ${additionalArgs.join(' ')}`);
-        try {
-            yield exec.exec(`${app}`, additionalArgs, {
-                ignoreReturnCode: true,
-                silent: true,
-                listeners: {
-                    stdout: (data) => (versionOutput += data.toString()),
-                    stderr: (data) => (versionOutput += data.toString())
-                }
-            });
-        }
-        catch (err) {
-            // @ts-ignore
-            core.debug(err.message);
-        }
-        versionOutput = versionOutput.trim();
-        core.debug(versionOutput);
-        return versionOutput;
-    });
-}
-// Use zstandard if possible to maximize cache performance
-function getCompressionMethod() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const versionOutput = yield getVersion('zstd', ['--quiet']);
-        const version = semver.clean(versionOutput);
-        core.debug(`zstd version: ${version}`);
-        if (versionOutput === '') {
-            return constants_1.CompressionMethod.Gzip;
+    for await (const file of globber.globGenerator()) {
+        const relativeFile = path
+            .relative(workspace, file)
+            .replace(new RegExp(`\\${path.sep}`, 'g'), '/');
+        core.debug(`Matched: ${relativeFile}`);
+        // Paths are made relative so the tar entries are all relative to the root of the workspace.
+        if (relativeFile === '') {
+            // path.relative returns empty string if workspace and file are equal
+            paths.push('.');
         }
         else {
-            return constants_1.CompressionMethod.ZstdWithoutLong;
+            paths.push(`${relativeFile}`);
         }
-    });
+    }
+    return paths;
+}
+async function unlinkFile(filePath) {
+    return util.promisify(fs.unlink)(filePath);
+}
+async function getVersion(app, additionalArgs = []) {
+    let versionOutput = '';
+    additionalArgs.push('--version');
+    core.debug(`Checking ${app} ${additionalArgs.join(' ')}`);
+    try {
+        await exec.exec(`${app}`, additionalArgs, {
+            ignoreReturnCode: true,
+            silent: true,
+            listeners: {
+                stdout: (data) => (versionOutput += data.toString()),
+                stderr: (data) => (versionOutput += data.toString())
+            }
+        });
+    }
+    catch (err) {
+        // @ts-ignore
+        core.debug(err.message);
+    }
+    versionOutput = versionOutput.trim();
+    core.debug(versionOutput);
+    return versionOutput;
+}
+// Use zstandard if possible to maximize cache performance
+async function getCompressionMethod() {
+    const versionOutput = await getVersion('zstd', ['--quiet']);
+    const version = semver.clean(versionOutput);
+    core.debug(`zstd version: ${version}`);
+    if (versionOutput === '') {
+        return constants_1.CompressionMethod.Gzip;
+    }
+    else {
+        return constants_1.CompressionMethod.ZstdWithoutLong;
+    }
 }
 function getCacheFileName(compressionMethod) {
     return compressionMethod === constants_1.CompressionMethod.Gzip
         ? constants_1.CacheFilename.Gzip
         : constants_1.CacheFilename.Zstd;
 }
-function getGnuTarPathOnWindows() {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (fs.existsSync(constants_1.GnuTarPathOnWindows)) {
-            return constants_1.GnuTarPathOnWindows;
-        }
-        const versionOutput = yield getVersion('tar');
-        return versionOutput.toLowerCase().includes('gnu tar') ? io.which('tar') : '';
-    });
+async function getGnuTarPathOnWindows() {
+    if (fs.existsSync(constants_1.GnuTarPathOnWindows)) {
+        return constants_1.GnuTarPathOnWindows;
+    }
+    const versionOutput = await getVersion('tar');
+    return versionOutput.toLowerCase().includes('gnu tar') ? io.which('tar') : '';
 }
 function assertDefined(name, value) {
     if (value === undefined) {
@@ -82918,15 +82661,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DownloadProgress = void 0;
 exports.downloadCachMultiConnection = downloadCachMultiConnection;
@@ -82946,24 +82680,30 @@ const requestUtils_1 = __nccwpck_require__(1636);
  * @param response the HTTP response
  * @param output the writable stream
  */
-function pipeResponseToStream(response, output, progress) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const pipeline = util.promisify(stream.pipeline);
-        yield pipeline(response.message, new stream.Transform({
-            transform(chunk, encoding, callback) {
-                if (progress) {
-                    progress.setReceivedBytes(progress.getTransferredBytes() + chunk.length);
-                }
-                this.push(chunk);
-                callback();
+async function pipeResponseToStream(response, output, progress) {
+    const pipeline = util.promisify(stream.pipeline);
+    await pipeline(response.message, new stream.Transform({
+        transform(chunk, encoding, callback) {
+            if (progress) {
+                progress.setReceivedBytes(progress.getTransferredBytes() + chunk.length);
             }
-        }), output);
-    });
+            this.push(chunk);
+            callback();
+        }
+    }), output);
 }
 /**
  * Class for tracking the download state and displaying stats.
  */
 class DownloadProgress {
+    contentLength;
+    segmentIndex;
+    segmentSize;
+    segmentOffset;
+    receivedBytes;
+    startTime;
+    displayedComplete;
+    timeoutHandle;
     constructor(contentLength) {
         this.contentLength = contentLength;
         this.segmentIndex = 0;
@@ -83060,55 +82800,49 @@ exports.DownloadProgress = DownloadProgress;
  * @param archivePath the local path where the cache is saved
  * @param connections number of connections to use
  */
-function downloadCachMultiConnection(archiveLocation, archivePath, connections) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let fileHandle;
-        let downloadProgress;
-        try {
-            fileHandle = yield fsPromises.open(archivePath, 'w+');
-            const httpClient = new http_client_1.HttpClient('actions/cache');
-            //Request 1 byte to get total content size
-            const metadataResponse = yield (0, requestUtils_1.retryHttpClientResponse)('downloadCache', () => __awaiter(this, void 0, void 0, function* () {
-                return httpClient.get(archiveLocation, {
-                    Range: 'bytes=0-1'
-                });
-            }));
-            const contentRange = metadataResponse.message.headers['content-range'];
-            if (!contentRange) {
-                console.log(yield metadataResponse.readBody());
-                throw new Error("Range request not supported by server");
-            }
-            const match = contentRange === null || contentRange === void 0 ? void 0 : contentRange.match(/bytes \d+-\d+\/(\d+)/);
-            if (!match) {
-                throw new Error("Content-Range header in server response not in correct format");
-            }
-            const totalLength = parseInt(match[1]);
-            yield fileHandle.truncate(totalLength);
-            yield fileHandle.sync();
-            downloadProgress = new DownloadProgress(totalLength);
-            downloadProgress.startDisplayTimer();
-            const segmentSize = Math.ceil(totalLength / connections);
-            const promises = [];
-            for (let i = 0; i < connections; i++) {
-                promises.push((() => __awaiter(this, void 0, void 0, function* () {
-                    const rangeStart = i * segmentSize;
-                    const rangeEnd = Math.min((i + 1) * segmentSize - 1, totalLength - 1);
-                    const downloadResponse = yield (0, requestUtils_1.retryHttpClientResponse)('downloadCache', () => __awaiter(this, void 0, void 0, function* () {
-                        return httpClient.get(archiveLocation, {
-                            Range: `bytes=${rangeStart}-${rangeEnd}`
-                        });
-                    }));
-                    const writeStream = fs.createWriteStream(archiveLocation, { fd: fileHandle.fd, autoClose: false, start: rangeStart });
-                    yield pipeResponseToStream(downloadResponse, writeStream, downloadProgress);
-                }))());
-            }
-            yield Promise.all(promises);
+async function downloadCachMultiConnection(archiveLocation, archivePath, connections) {
+    let fileHandle;
+    let downloadProgress;
+    try {
+        fileHandle = await fsPromises.open(archivePath, 'w+');
+        const httpClient = new http_client_1.HttpClient('actions/cache');
+        //Request 1 byte to get total content size
+        const metadataResponse = await (0, requestUtils_1.retryHttpClientResponse)('downloadCache', async () => httpClient.get(archiveLocation, {
+            Range: 'bytes=0-1'
+        }));
+        const contentRange = metadataResponse.message.headers['content-range'];
+        if (!contentRange) {
+            console.log(await metadataResponse.readBody());
+            throw new Error("Range request not supported by server");
         }
-        finally {
-            downloadProgress === null || downloadProgress === void 0 ? void 0 : downloadProgress.stopDisplayTimer();
-            yield (fileHandle === null || fileHandle === void 0 ? void 0 : fileHandle.close());
+        const match = contentRange?.match(/bytes \d+-\d+\/(\d+)/);
+        if (!match) {
+            throw new Error("Content-Range header in server response not in correct format");
         }
-    });
+        const totalLength = parseInt(match[1]);
+        await fileHandle.truncate(totalLength);
+        await fileHandle.sync();
+        downloadProgress = new DownloadProgress(totalLength);
+        downloadProgress.startDisplayTimer();
+        const segmentSize = Math.ceil(totalLength / connections);
+        const promises = [];
+        for (let i = 0; i < connections; i++) {
+            promises.push((async () => {
+                const rangeStart = i * segmentSize;
+                const rangeEnd = Math.min((i + 1) * segmentSize - 1, totalLength - 1);
+                const downloadResponse = await (0, requestUtils_1.retryHttpClientResponse)('downloadCache', async () => httpClient.get(archiveLocation, {
+                    Range: `bytes=${rangeStart}-${rangeEnd}`
+                }));
+                const writeStream = fs.createWriteStream(archiveLocation, { fd: fileHandle.fd, autoClose: false, start: rangeStart });
+                await pipeResponseToStream(downloadResponse, writeStream, downloadProgress);
+            })());
+        }
+        await Promise.all(promises);
+    }
+    finally {
+        downloadProgress?.stopDisplayTimer();
+        await fileHandle?.close();
+    }
 }
 /**
  * Download the cache using the Actions toolkit http-client
@@ -83116,42 +82850,40 @@ function downloadCachMultiConnection(archiveLocation, archivePath, connections) 
  * @param archiveLocation the URL for the cache
  * @param archivePath the local path where the cache is saved
  */
-function downloadCacheHttpClient(archiveLocation, archivePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const writeStream = fs.createWriteStream(archivePath);
-        const httpClient = new http_client_1.HttpClient('actions/cache');
-        const downloadResponse = yield (0, requestUtils_1.retryHttpClientResponse)('downloadCache', () => __awaiter(this, void 0, void 0, function* () { return httpClient.get(archiveLocation); }));
-        const contentLengthHeader = downloadResponse.message.headers['content-length'];
-        let downloadProgress;
-        if (contentLengthHeader) {
-            downloadProgress = new DownloadProgress(parseInt(contentLengthHeader));
-        }
-        // Abort download if no traffic received over the socket.
-        downloadResponse.message.socket.setTimeout(constants_1.SocketTimeout, () => {
-            downloadResponse.message.destroy();
-            core.debug(`Aborting download, socket timed out after ${constants_1.SocketTimeout} ms`);
-        });
-        try {
-            downloadProgress === null || downloadProgress === void 0 ? void 0 : downloadProgress.startDisplayTimer();
-            yield pipeResponseToStream(downloadResponse, writeStream, downloadProgress);
-        }
-        finally {
-            downloadProgress === null || downloadProgress === void 0 ? void 0 : downloadProgress.startDisplayTimer();
-        }
-        // Validate download size.
-        if (contentLengthHeader) {
-            const expectedLength = parseInt(contentLengthHeader);
-            const actualLength = utils.getArchiveFileSizeInBytes(archivePath);
-            if (actualLength !== expectedLength) {
-                throw new Error(`Incomplete download. Expected file size: ${expectedLength}, actual file size: ${actualLength}`);
-            }
-        }
-        else {
-            core.debug('Unable to validate download, no Content-Length header');
-        }
+async function downloadCacheHttpClient(archiveLocation, archivePath) {
+    const writeStream = fs.createWriteStream(archivePath);
+    const httpClient = new http_client_1.HttpClient('actions/cache');
+    const downloadResponse = await (0, requestUtils_1.retryHttpClientResponse)('downloadCache', async () => httpClient.get(archiveLocation));
+    const contentLengthHeader = downloadResponse.message.headers['content-length'];
+    let downloadProgress;
+    if (contentLengthHeader) {
+        downloadProgress = new DownloadProgress(parseInt(contentLengthHeader));
+    }
+    // Abort download if no traffic received over the socket.
+    downloadResponse.message.socket.setTimeout(constants_1.SocketTimeout, () => {
+        downloadResponse.message.destroy();
+        core.debug(`Aborting download, socket timed out after ${constants_1.SocketTimeout} ms`);
     });
+    try {
+        downloadProgress?.startDisplayTimer();
+        await pipeResponseToStream(downloadResponse, writeStream, downloadProgress);
+    }
+    finally {
+        downloadProgress?.startDisplayTimer();
+    }
+    // Validate download size.
+    if (contentLengthHeader) {
+        const expectedLength = parseInt(contentLengthHeader);
+        const actualLength = utils.getArchiveFileSizeInBytes(archivePath);
+        if (actualLength !== expectedLength) {
+            throw new Error(`Incomplete download. Expected file size: ${expectedLength}, actual file size: ${actualLength}`);
+        }
+    }
+    else {
+        core.debug('Unable to validate download, no Content-Length header');
+    }
 }
-const promiseWithTimeout = (timeoutMs, promise) => __awaiter(void 0, void 0, void 0, function* () {
+const promiseWithTimeout = async (timeoutMs, promise) => {
     let timeoutHandle;
     const timeoutPromise = new Promise(resolve => {
         timeoutHandle = setTimeout(() => resolve('timeout'), timeoutMs);
@@ -83160,7 +82892,7 @@ const promiseWithTimeout = (timeoutMs, promise) => __awaiter(void 0, void 0, voi
         clearTimeout(timeoutHandle);
         return result;
     });
-});
+};
 
 
 /***/ }),
@@ -83203,15 +82935,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isSuccessStatusCode = isSuccessStatusCode;
 exports.isServerErrorStatusCode = isServerErrorStatusCode;
@@ -83245,76 +82968,68 @@ function isRetryableStatusCode(statusCode) {
     ];
     return retryableStatusCodes.includes(statusCode);
 }
-function sleep(milliseconds) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(resolve => setTimeout(resolve, milliseconds));
-    });
+async function sleep(milliseconds) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
-function retry(name_1, method_1, getStatusCode_1) {
-    return __awaiter(this, arguments, void 0, function* (name, method, getStatusCode, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay, onError = undefined) {
-        let errorMessage = '';
-        let attempt = 1;
-        while (attempt <= maxAttempts) {
-            let response = undefined;
-            let statusCode = undefined;
-            let isRetryable = false;
-            try {
-                response = yield method();
-            }
-            catch (error) {
-                if (onError) {
-                    // @ts-ignore
-                    response = onError(error);
-                }
-                isRetryable = true;
-                // @ts-ignore
-                errorMessage = error.message;
-            }
-            if (response) {
-                statusCode = getStatusCode(response);
-                if (!isServerErrorStatusCode(statusCode)) {
-                    return response;
-                }
-            }
-            if (statusCode) {
-                isRetryable = isRetryableStatusCode(statusCode);
-                errorMessage = `Cache service responded with ${statusCode}`;
-            }
-            core.debug(`${name} - Attempt ${attempt} of ${maxAttempts} failed with error: ${errorMessage}`);
-            if (!isRetryable) {
-                core.debug(`${name} - Error is not retryable`);
-                break;
-            }
-            yield sleep(delay);
-            attempt++;
+async function retry(name, method, getStatusCode, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay, onError = undefined) {
+    let errorMessage = '';
+    let attempt = 1;
+    while (attempt <= maxAttempts) {
+        let response = undefined;
+        let statusCode = undefined;
+        let isRetryable = false;
+        try {
+            response = await method();
         }
-        throw Error(`${name} failed: ${errorMessage}`);
+        catch (error) {
+            if (onError) {
+                // @ts-ignore
+                response = onError(error);
+            }
+            isRetryable = true;
+            // @ts-ignore
+            errorMessage = error.message;
+        }
+        if (response) {
+            statusCode = getStatusCode(response);
+            if (!isServerErrorStatusCode(statusCode)) {
+                return response;
+            }
+        }
+        if (statusCode) {
+            isRetryable = isRetryableStatusCode(statusCode);
+            errorMessage = `Cache service responded with ${statusCode}`;
+        }
+        core.debug(`${name} - Attempt ${attempt} of ${maxAttempts} failed with error: ${errorMessage}`);
+        if (!isRetryable) {
+            core.debug(`${name} - Error is not retryable`);
+            break;
+        }
+        await sleep(delay);
+        attempt++;
+    }
+    throw Error(`${name} failed: ${errorMessage}`);
+}
+async function retryTypedResponse(name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
+    return await retry(name, method, (response) => response.statusCode, maxAttempts, delay, 
+    // If the error object contains the statusCode property, extract it and return
+    // an TypedResponse<T> so it can be processed by the retry logic.
+    (error) => {
+        if (error instanceof http_client_1.HttpClientError) {
+            return {
+                statusCode: error.statusCode,
+                result: null,
+                headers: {},
+                error
+            };
+        }
+        else {
+            return undefined;
+        }
     });
 }
-function retryTypedResponse(name_1, method_1) {
-    return __awaiter(this, arguments, void 0, function* (name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
-        return yield retry(name, method, (response) => response.statusCode, maxAttempts, delay, 
-        // If the error object contains the statusCode property, extract it and return
-        // an TypedResponse<T> so it can be processed by the retry logic.
-        (error) => {
-            if (error instanceof http_client_1.HttpClientError) {
-                return {
-                    statusCode: error.statusCode,
-                    result: null,
-                    headers: {},
-                    error
-                };
-            }
-            else {
-                return undefined;
-            }
-        });
-    });
-}
-function retryHttpClientResponse(name_1, method_1) {
-    return __awaiter(this, arguments, void 0, function* (name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
-        return yield retry(name, method, (response) => response.message.statusCode, maxAttempts, delay);
-    });
+async function retryHttpClientResponse(name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay = constants_1.DefaultRetryDelay) {
+    return await retry(name, method, (response) => response.message.statusCode, maxAttempts, delay);
 }
 
 
@@ -83358,15 +83073,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.listTar = listTar;
 exports.extractTar = extractTar;
@@ -83379,152 +83085,143 @@ const utils = __importStar(__nccwpck_require__(749));
 const constants_1 = __nccwpck_require__(7897);
 const IS_WINDOWS = process.platform === 'win32';
 // Returns tar path and type: BSD or GNU
-function getTarPath() {
-    return __awaiter(this, void 0, void 0, function* () {
-        switch (process.platform) {
-            case 'win32': {
-                const gnuTar = yield utils.getGnuTarPathOnWindows();
-                const systemTar = constants_1.SystemTarPathOnWindows;
-                if (gnuTar) {
-                    // Use GNUtar as default on windows
-                    return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
-                }
-                else if ((0, fs_1.existsSync)(systemTar)) {
-                    return { path: systemTar, type: constants_1.ArchiveToolType.BSD };
-                }
-                break;
+async function getTarPath() {
+    switch (process.platform) {
+        case 'win32': {
+            const gnuTar = await utils.getGnuTarPathOnWindows();
+            const systemTar = constants_1.SystemTarPathOnWindows;
+            if (gnuTar) {
+                // Use GNUtar as default on windows
+                return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
             }
-            case 'darwin': {
-                const gnuTar = yield io.which('gtar', false);
-                if (gnuTar) {
-                    // fix permission denied errors when extracting BSD tar archive with GNU tar - https://github.com/actions/cache/issues/527
-                    return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
-                }
-                else {
-                    return {
-                        path: yield io.which('tar', true),
-                        type: constants_1.ArchiveToolType.BSD
-                    };
-                }
+            else if ((0, fs_1.existsSync)(systemTar)) {
+                return { path: systemTar, type: constants_1.ArchiveToolType.BSD };
             }
-            default:
-                break;
+            break;
         }
-        // Default assumption is GNU tar is present in path
-        return {
-            path: yield io.which('tar', true),
-            type: constants_1.ArchiveToolType.GNU
-        };
-    });
+        case 'darwin': {
+            const gnuTar = await io.which('gtar', false);
+            if (gnuTar) {
+                // fix permission denied errors when extracting BSD tar archive with GNU tar - https://github.com/actions/cache/issues/527
+                return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
+            }
+            else {
+                return {
+                    path: await io.which('tar', true),
+                    type: constants_1.ArchiveToolType.BSD
+                };
+            }
+        }
+        default:
+            break;
+    }
+    // Default assumption is GNU tar is present in path
+    return {
+        path: await io.which('tar', true),
+        type: constants_1.ArchiveToolType.GNU
+    };
 }
 // Return arguments for tar as per tarPath, compressionMethod, method type and os
-function getTarArgs(tarPath_1, compressionMethod_1, type_1) {
-    return __awaiter(this, arguments, void 0, function* (tarPath, compressionMethod, type, archivePath = '') {
-        const args = [`"${tarPath.path}"`];
-        const cacheFileName = utils.getCacheFileName(compressionMethod);
-        const tarFile = 'cache.tar';
-        const workingDirectory = getWorkingDirectory();
-        // Speficic args for BSD tar on windows for workaround
-        const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
-            compressionMethod !== constants_1.CompressionMethod.Gzip &&
-            IS_WINDOWS;
-        // Method specific args
-        switch (type) {
-            case 'create':
-                args.push('--posix', '-cf', BSD_TAR_ZSTD
-                    ? tarFile
-                    : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--exclude', BSD_TAR_ZSTD
-                    ? tarFile
-                    : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--files-from', constants_1.ManifestFilename);
+async function getTarArgs(tarPath, compressionMethod, type, archivePath = '') {
+    const args = [`"${tarPath.path}"`];
+    const cacheFileName = utils.getCacheFileName(compressionMethod);
+    const tarFile = 'cache.tar';
+    const workingDirectory = getWorkingDirectory();
+    // Speficic args for BSD tar on windows for workaround
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+        compressionMethod !== constants_1.CompressionMethod.Gzip &&
+        IS_WINDOWS;
+    // Method specific args
+    switch (type) {
+        case 'create':
+            args.push('--posix', '-cf', BSD_TAR_ZSTD
+                ? tarFile
+                : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--exclude', BSD_TAR_ZSTD
+                ? tarFile
+                : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--files-from', constants_1.ManifestFilename);
+            break;
+        case 'extract':
+            args.push('-xf', BSD_TAR_ZSTD
+                ? tarFile
+                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'));
+            break;
+        case 'list':
+            args.push('-tf', BSD_TAR_ZSTD
+                ? tarFile
+                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P');
+            break;
+    }
+    // Platform specific args
+    if (tarPath.type === constants_1.ArchiveToolType.GNU) {
+        switch (process.platform) {
+            case 'win32':
+                args.push('--force-local');
                 break;
-            case 'extract':
-                args.push('-xf', BSD_TAR_ZSTD
-                    ? tarFile
-                    : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'));
-                break;
-            case 'list':
-                args.push('-tf', BSD_TAR_ZSTD
-                    ? tarFile
-                    : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P');
+            case 'darwin':
+                args.push('--delay-directory-restore');
                 break;
         }
-        // Platform specific args
-        if (tarPath.type === constants_1.ArchiveToolType.GNU) {
-            switch (process.platform) {
-                case 'win32':
-                    args.push('--force-local');
-                    break;
-                case 'darwin':
-                    args.push('--delay-directory-restore');
-                    break;
-            }
-        }
-        return args;
-    });
+    }
+    return args;
 }
 // Returns commands to run tar and compression program
-function getCommands(compressionMethod_1, type_1) {
-    return __awaiter(this, arguments, void 0, function* (compressionMethod, type, archivePath = '', extraTarArgs = []) {
-        let args;
-        const tarPath = yield getTarPath();
-        const tarArgs = yield getTarArgs(tarPath, compressionMethod, type, archivePath);
-        tarArgs.push(...extraTarArgs);
-        const compressionArgs = type !== 'create'
-            ? yield getDecompressionProgram(tarPath, compressionMethod, archivePath)
-            : yield getCompressionProgram(tarPath, compressionMethod);
-        const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
-            compressionMethod !== constants_1.CompressionMethod.Gzip &&
-            IS_WINDOWS;
-        if (BSD_TAR_ZSTD && type !== 'create') {
-            args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
-        }
-        else {
-            args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
-        }
-        if (BSD_TAR_ZSTD) {
-            return args;
-        }
-        return [args.join(' ')];
-    });
+async function getCommands(compressionMethod, type, archivePath = '', extraTarArgs = []) {
+    let args;
+    const tarPath = await getTarPath();
+    const tarArgs = await getTarArgs(tarPath, compressionMethod, type, archivePath);
+    tarArgs.push(...extraTarArgs);
+    const compressionArgs = type !== 'create'
+        ? await getDecompressionProgram(tarPath, compressionMethod, archivePath)
+        : await getCompressionProgram(tarPath, compressionMethod);
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+        compressionMethod !== constants_1.CompressionMethod.Gzip &&
+        IS_WINDOWS;
+    if (BSD_TAR_ZSTD && type !== 'create') {
+        args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
+    }
+    else {
+        args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
+    }
+    if (BSD_TAR_ZSTD) {
+        return args;
+    }
+    return [args.join(' ')];
 }
 function getWorkingDirectory() {
-    var _a;
-    return (_a = process.env['GITHUB_WORKSPACE']) !== null && _a !== void 0 ? _a : process.cwd();
+    return process.env['GITHUB_WORKSPACE'] ?? process.cwd();
 }
 // Common function for extractTar and listTar to get the compression method
-function getDecompressionProgram(tarPath, compressionMethod, archivePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // -d: Decompress.
-        // unzstd is equivalent to 'zstd -d'
-        // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
-        // Using 30 here because we also support 32-bit self-hosted runners.
-        const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
-            compressionMethod !== constants_1.CompressionMethod.Gzip &&
-            IS_WINDOWS;
-        switch (compressionMethod) {
-            case constants_1.CompressionMethod.Zstd:
-                return BSD_TAR_ZSTD
-                    ? [
-                        'zstd -d --long=30 --force -o',
-                        constants_1.TarFilename,
-                        archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
-                    ]
-                    : [
-                        '--use-compress-program',
-                        IS_WINDOWS ? '"zstd -d --long=30"' : 'unzstd --long=30'
-                    ];
-            case constants_1.CompressionMethod.ZstdWithoutLong:
-                return BSD_TAR_ZSTD
-                    ? [
-                        'zstd -d --force -o',
-                        constants_1.TarFilename,
-                        archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
-                    ]
-                    : ['--use-compress-program', IS_WINDOWS ? '"zstd -d"' : 'unzstd'];
-            default:
-                return ['-z'];
-        }
-    });
+async function getDecompressionProgram(tarPath, compressionMethod, archivePath) {
+    // -d: Decompress.
+    // unzstd is equivalent to 'zstd -d'
+    // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
+    // Using 30 here because we also support 32-bit self-hosted runners.
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+        compressionMethod !== constants_1.CompressionMethod.Gzip &&
+        IS_WINDOWS;
+    switch (compressionMethod) {
+        case constants_1.CompressionMethod.Zstd:
+            return BSD_TAR_ZSTD
+                ? [
+                    'zstd -d --long=30 --force -o',
+                    constants_1.TarFilename,
+                    archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
+                ]
+                : [
+                    '--use-compress-program',
+                    IS_WINDOWS ? '"zstd -d --long=30"' : 'unzstd --long=30'
+                ];
+        case constants_1.CompressionMethod.ZstdWithoutLong:
+            return BSD_TAR_ZSTD
+                ? [
+                    'zstd -d --force -o',
+                    constants_1.TarFilename,
+                    archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
+                ]
+                : ['--use-compress-program', IS_WINDOWS ? '"zstd -d"' : 'unzstd'];
+        default:
+            return ['-z'];
+    }
 }
 // Used for creating the archive
 // -T#: Compress using # working thread. If # is 0, attempt to detect and use the number of physical CPU cores.
@@ -83532,80 +83229,70 @@ function getDecompressionProgram(tarPath, compressionMethod, archivePath) {
 // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
 // Using 30 here because we also support 32-bit self-hosted runners.
 // Long range mode is added to zstd in v1.3.2 release, so we will not use --long in older version of zstd.
-function getCompressionProgram(tarPath, compressionMethod) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const cacheFileName = utils.getCacheFileName(compressionMethod);
-        const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
-            compressionMethod !== constants_1.CompressionMethod.Gzip &&
-            IS_WINDOWS;
-        switch (compressionMethod) {
-            case constants_1.CompressionMethod.Zstd:
-                return BSD_TAR_ZSTD
-                    ? [
-                        'zstd -T0 --long=30 --force -o',
-                        cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
-                        constants_1.TarFilename
-                    ]
-                    : [
-                        '--use-compress-program',
-                        IS_WINDOWS ? '"zstd -T0 --long=30"' : 'zstdmt --long=30'
-                    ];
-            case constants_1.CompressionMethod.ZstdWithoutLong:
-                return BSD_TAR_ZSTD
-                    ? [
-                        'zstd -T0 --force -o',
-                        cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
-                        constants_1.TarFilename
-                    ]
-                    : ['--use-compress-program', IS_WINDOWS ? '"zstd -T0"' : 'zstdmt'];
-            default:
-                return ['-z'];
-        }
-    });
+async function getCompressionProgram(tarPath, compressionMethod) {
+    const cacheFileName = utils.getCacheFileName(compressionMethod);
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+        compressionMethod !== constants_1.CompressionMethod.Gzip &&
+        IS_WINDOWS;
+    switch (compressionMethod) {
+        case constants_1.CompressionMethod.Zstd:
+            return BSD_TAR_ZSTD
+                ? [
+                    'zstd -T0 --long=30 --force -o',
+                    cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
+                    constants_1.TarFilename
+                ]
+                : [
+                    '--use-compress-program',
+                    IS_WINDOWS ? '"zstd -T0 --long=30"' : 'zstdmt --long=30'
+                ];
+        case constants_1.CompressionMethod.ZstdWithoutLong:
+            return BSD_TAR_ZSTD
+                ? [
+                    'zstd -T0 --force -o',
+                    cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
+                    constants_1.TarFilename
+                ]
+                : ['--use-compress-program', IS_WINDOWS ? '"zstd -T0"' : 'zstdmt'];
+        default:
+            return ['-z'];
+    }
 }
 // Executes all commands as separate processes
-function execCommands(commands, cwd) {
-    return __awaiter(this, void 0, void 0, function* () {
-        for (const command of commands) {
-            try {
-                yield (0, exec_1.exec)(command, undefined, {
-                    cwd,
-                    env: Object.assign(Object.assign({}, process.env), { MSYS: 'winsymlinks:nativestrict' })
-                });
-            }
-            catch (error) {
-                throw new Error(
-                // @ts-ignore
-                `${command.split(' ')[0]} failed with error: ${error === null || error === void 0 ? void 0 : error.message}`);
-            }
+async function execCommands(commands, cwd) {
+    for (const command of commands) {
+        try {
+            await (0, exec_1.exec)(command, undefined, {
+                cwd,
+                env: { ...process.env, MSYS: 'winsymlinks:nativestrict' }
+            });
         }
-    });
+        catch (error) {
+            throw new Error(
+            // @ts-ignore
+            `${command.split(' ')[0]} failed with error: ${error?.message}`);
+        }
+    }
 }
 // List the contents of a tar
-function listTar(archivePath, compressionMethod) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const commands = yield getCommands(compressionMethod, 'list', archivePath);
-        yield execCommands(commands);
-    });
+async function listTar(archivePath, compressionMethod) {
+    const commands = await getCommands(compressionMethod, 'list', archivePath);
+    await execCommands(commands);
 }
 // Extract a tar
-function extractTar(archivePath_1, compressionMethod_1) {
-    return __awaiter(this, arguments, void 0, function* (archivePath, compressionMethod, extraTarArgs = []) {
-        // Create directory to extract tar into
-        const workingDirectory = getWorkingDirectory();
-        yield io.mkdirP(workingDirectory);
-        const commands = yield getCommands(compressionMethod, 'extract', archivePath, extraTarArgs);
-        yield execCommands(commands);
-    });
+async function extractTar(archivePath, compressionMethod, extraTarArgs = []) {
+    // Create directory to extract tar into
+    const workingDirectory = getWorkingDirectory();
+    await io.mkdirP(workingDirectory);
+    const commands = await getCommands(compressionMethod, 'extract', archivePath, extraTarArgs);
+    await execCommands(commands);
 }
 // Create a tar
-function createTar(archiveFolder, sourceDirectories, compressionMethod) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Write source directories to manifest.txt to avoid command length limits
-        (0, fs_1.writeFileSync)(path.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join('\n'));
-        const commands = yield getCommands(compressionMethod, 'create');
-        yield execCommands(commands, archiveFolder);
-    });
+async function createTar(archiveFolder, sourceDirectories, compressionMethod) {
+    // Write source directories to manifest.txt to avoid command length limits
+    (0, fs_1.writeFileSync)(path.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join('\n'));
+    const commands = await getCommands(compressionMethod, 'create');
+    await execCommands(commands, archiveFolder);
 }
 
 
@@ -83844,9 +83531,9 @@ exports.restorePrefixesFirstMatch = utils.getInputAsArray(constants_1.Inputs.Res
 exports.restorePrefixesAllMatches = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesAllMatches);
 exports.skipRestoreOnHitPrimaryKey = utils.getInputAsBool(constants_1.Inputs.SkipRestoreOnHitPrimaryKey);
 exports.failOn = (function () {
-    var _a;
-    const failOnRaw = (_a = new RegExp("^(primary|first-match)\\.(miss|not-restored)$")
-        .exec(core.getInput(constants_1.Inputs.FailOn))) === null || _a === void 0 ? void 0 : _a.slice(1);
+    const failOnRaw = new RegExp("^(primary|first-match)\\.(miss|not-restored)$")
+        .exec(core.getInput(constants_1.Inputs.FailOn))
+        ?.slice(1);
     if (failOnRaw === undefined || failOnRaw.length != 2) {
         return;
     }
@@ -83970,15 +83657,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.restoreImpl = restoreImpl;
 exports.restoreOnlyRun = restoreOnlyRun;
@@ -83990,138 +83668,129 @@ const stateProvider_1 = __nccwpck_require__(2879);
 const utils = __importStar(__nccwpck_require__(9603));
 const install = __importStar(__nccwpck_require__(1930));
 const restore = __importStar(__nccwpck_require__(8107));
-function restoreImpl(stateProvider, earlyExit) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f, _g;
-        try {
-            if (!utils.isCacheFeatureAvailable()) {
-                return;
-            }
-            // Validate inputs, this can cause task failure
-            if (!utils.isValidEvent()) {
-                utils.logWarning(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
-            }
-            yield install.installSQLite3();
-            let restoredKey;
-            let lookedUpPrimaryKey;
-            const restoredKeys = [];
-            const errorNot = (message) => new Error(`
+async function restoreImpl(stateProvider, earlyExit) {
+    try {
+        if (!utils.isCacheFeatureAvailable()) {
+            return;
+        }
+        // Validate inputs, this can cause task failure
+        if (!utils.isValidEvent()) {
+            utils.logWarning(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
+        }
+        await install.installSQLite3();
+        let restoredKey;
+        let lookedUpPrimaryKey;
+        const restoredKeys = [];
+        const errorNot = (message) => new Error(`
                 No cache with the given key ${message}.
                 Exiting as the input "${constants_1.Inputs.FailOn}" is set.
                 `);
-            const errorNotFound = errorNot("was found");
-            const errorNotRestored = errorNot("could be restored");
-            let hitPrimaryKey = false;
-            {
-                const primaryKey = inputs.primaryKey;
-                stateProvider.setState(constants_1.State.CachePrimaryKey, primaryKey);
-                utils.info(`Searching for a cache with the key "${primaryKey}".`);
-                lookedUpPrimaryKey = yield utils.restoreCache({
-                    primaryKey,
-                    restoreKeys: [],
-                    lookupOnly: true
-                });
-                if (!lookedUpPrimaryKey) {
-                    if (((_a = inputs.failOn) === null || _a === void 0 ? void 0 : _a.keyType) == "primary" &&
-                        ((_b = inputs.failOn) === null || _b === void 0 ? void 0 : _b.result) == "miss") {
-                        throw errorNotFound;
-                    }
-                    else {
-                        utils.info(`Could not find a cache with the given "${constants_1.Inputs.PrimaryKey}" and "${constants_1.Inputs.Paths}".`);
-                    }
-                }
-                else if (utils.isExactKeyMatch(primaryKey, lookedUpPrimaryKey)) {
-                    utils.info(`Found a cache with the given "${constants_1.Inputs.PrimaryKey}".`);
-                    hitPrimaryKey = true;
-                    if (!inputs.skipRestoreOnHitPrimaryKey) {
-                        restoredKey = yield restore.restoreCache(primaryKey);
-                        if (restoredKey) {
-                            restoredKeys.push(...[restoredKey]);
-                        }
-                        else if (((_c = inputs.failOn) === null || _c === void 0 ? void 0 : _c.keyType) == "primary" &&
-                            ((_d = inputs.failOn) === null || _d === void 0 ? void 0 : _d.result) == "not-restored") {
-                            throw errorNotRestored;
-                        }
-                    }
-                }
-            }
-            let hitFirstMatch = false;
-            if (inputs.restorePrefixesFirstMatch.length > 0 &&
-                !lookedUpPrimaryKey) {
-                utils.info(`
-                Searching for a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}":
-                ${JSON.stringify(inputs.restorePrefixesFirstMatch)}
-                `);
-                const lookedUpFirstMatch = yield utils.restoreCache({
-                    primaryKey: "dummy-primary-key-9238748923658961076458761340578645781643059823761298348927349233",
-                    restoreKeys: inputs.restorePrefixesFirstMatch,
-                    lookupOnly: true
-                });
-                if (!lookedUpFirstMatch) {
-                    if (((_e = inputs.failOn) === null || _e === void 0 ? void 0 : _e.keyType) == "first-match" &&
-                        inputs.failOn.result == "miss") {
-                        throw errorNotFound;
-                    }
-                    else {
-                        utils.info(`Could not find a cache.`);
-                    }
+        const errorNotFound = errorNot("was found");
+        const errorNotRestored = errorNot("could be restored");
+        let hitPrimaryKey = false;
+        {
+            const primaryKey = inputs.primaryKey;
+            stateProvider.setState(constants_1.State.CachePrimaryKey, primaryKey);
+            utils.info(`Searching for a cache with the key "${primaryKey}".`);
+            lookedUpPrimaryKey = await utils.restoreCache({
+                primaryKey,
+                restoreKeys: [],
+                lookupOnly: true
+            });
+            if (!lookedUpPrimaryKey) {
+                if (inputs.failOn?.keyType == "primary" &&
+                    inputs.failOn?.result == "miss") {
+                    throw errorNotFound;
                 }
                 else {
-                    utils.info(`Found a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}".`);
-                    hitFirstMatch = true;
-                    restoredKey = yield restore.restoreCache(lookedUpFirstMatch);
+                    utils.info(`Could not find a cache with the given "${constants_1.Inputs.PrimaryKey}" and "${constants_1.Inputs.Paths}".`);
+                }
+            }
+            else if (utils.isExactKeyMatch(primaryKey, lookedUpPrimaryKey)) {
+                utils.info(`Found a cache with the given "${constants_1.Inputs.PrimaryKey}".`);
+                hitPrimaryKey = true;
+                if (!inputs.skipRestoreOnHitPrimaryKey) {
+                    restoredKey = await restore.restoreCache(primaryKey);
                     if (restoredKey) {
                         restoredKeys.push(...[restoredKey]);
                     }
-                    else if (((_f = inputs.failOn) === null || _f === void 0 ? void 0 : _f.keyType) == "first-match" &&
-                        ((_g = inputs.failOn) === null || _g === void 0 ? void 0 : _g.result) == "not-restored") {
+                    else if (inputs.failOn?.keyType == "primary" &&
+                        inputs.failOn?.result == "not-restored") {
                         throw errorNotRestored;
                     }
                 }
             }
-            if (!lookedUpPrimaryKey) {
-                restoredKeys.push(...(yield restore.restoreAllMatches()));
-            }
-            restoredKey !== null && restoredKey !== void 0 ? restoredKey : (restoredKey = "");
-            // Store the matched cache key in states
-            stateProvider.setState(constants_1.State.CacheRestoredKey, restoredKey);
-            core.setOutput(constants_1.Outputs.HitPrimaryKey, hitPrimaryKey);
-            core.setOutput(constants_1.Outputs.HitFirstMatch, hitFirstMatch);
-            core.setOutput(constants_1.Outputs.Hit, hitPrimaryKey || hitFirstMatch);
-            core.setOutput(constants_1.Outputs.RestoredKey, restoredKey);
-            core.setOutput(constants_1.Outputs.RestoredKeys, restoredKeys);
-            return restoredKey;
         }
-        catch (error) {
-            core.setFailed(error.message);
-            if (earlyExit) {
-                process.exit(1);
+        let hitFirstMatch = false;
+        if (inputs.restorePrefixesFirstMatch.length > 0 &&
+            !lookedUpPrimaryKey) {
+            utils.info(`
+                Searching for a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}":
+                ${JSON.stringify(inputs.restorePrefixesFirstMatch)}
+                `);
+            const lookedUpFirstMatch = await utils.restoreCache({
+                primaryKey: "dummy-primary-key-9238748923658961076458761340578645781643059823761298348927349233",
+                restoreKeys: inputs.restorePrefixesFirstMatch,
+                lookupOnly: true
+            });
+            if (!lookedUpFirstMatch) {
+                if (inputs.failOn?.keyType == "first-match" &&
+                    inputs.failOn.result == "miss") {
+                    throw errorNotFound;
+                }
+                else {
+                    utils.info(`Could not find a cache.`);
+                }
+            }
+            else {
+                utils.info(`Found a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}".`);
+                hitFirstMatch = true;
+                restoredKey = await restore.restoreCache(lookedUpFirstMatch);
+                if (restoredKey) {
+                    restoredKeys.push(...[restoredKey]);
+                }
+                else if (inputs.failOn?.keyType == "first-match" &&
+                    inputs.failOn?.result == "not-restored") {
+                    throw errorNotRestored;
+                }
             }
         }
-    });
-}
-function run(stateProvider, earlyExit) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield restoreImpl(stateProvider, earlyExit);
-        // node will stay alive if any promises are not resolved,
-        // which is a possibility if HTTP requests are dangling
-        // due to retries or timeouts. We know that if we got here
-        // that all promises that we care about have successfully
-        // resolved, so simply exit with success.
+        if (!lookedUpPrimaryKey) {
+            restoredKeys.push(...(await restore.restoreAllMatches()));
+        }
+        restoredKey ??= "";
+        // Store the matched cache key in states
+        stateProvider.setState(constants_1.State.CacheRestoredKey, restoredKey);
+        core.setOutput(constants_1.Outputs.HitPrimaryKey, hitPrimaryKey);
+        core.setOutput(constants_1.Outputs.HitFirstMatch, hitFirstMatch);
+        core.setOutput(constants_1.Outputs.Hit, hitPrimaryKey || hitFirstMatch);
+        core.setOutput(constants_1.Outputs.RestoredKey, restoredKey);
+        core.setOutput(constants_1.Outputs.RestoredKeys, restoredKeys);
+        return restoredKey;
+    }
+    catch (error) {
+        core.setFailed(error.message);
         if (earlyExit) {
-            process.exit(0);
+            process.exit(1);
         }
-    });
+    }
 }
-function restoreOnlyRun(earlyExit) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield run(new stateProvider_1.NullStateProvider(), earlyExit);
-    });
+async function run(stateProvider, earlyExit) {
+    await restoreImpl(stateProvider, earlyExit);
+    // node will stay alive if any promises are not resolved,
+    // which is a possibility if HTTP requests are dangling
+    // due to retries or timeouts. We know that if we got here
+    // that all promises that we care about have successfully
+    // resolved, so simply exit with success.
+    if (earlyExit) {
+        process.exit(0);
+    }
 }
-function restoreRun(earlyExit) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield run(new stateProvider_1.StateProvider(), earlyExit);
-    });
+async function restoreOnlyRun(earlyExit) {
+    await run(new stateProvider_1.NullStateProvider(), earlyExit);
+}
+async function restoreRun(earlyExit) {
+    await run(new stateProvider_1.StateProvider(), earlyExit);
 }
 
 
@@ -84170,12 +83839,6 @@ exports.NullStateProvider = exports.StateProvider = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const constants_1 = __nccwpck_require__(7242);
 class StateProviderBase {
-    constructor() {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
-        this.setState = (key, value) => { };
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        this.getState = (key) => "";
-    }
     getCacheState() {
         const cacheKey = this.getState(constants_1.State.CacheRestoredKey);
         if (cacheKey) {
@@ -84184,28 +83847,26 @@ class StateProviderBase {
         }
         return undefined;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
+    setState = (key, value) => { };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getState = (key) => "";
 }
 class StateProvider extends StateProviderBase {
-    constructor() {
-        super(...arguments);
-        this.setState = core.saveState;
-        this.getState = core.getState;
-    }
+    setState = core.saveState;
+    getState = core.getState;
 }
 exports.StateProvider = StateProvider;
 class NullStateProvider extends StateProviderBase {
-    constructor() {
-        super(...arguments);
-        this.stateToOutputMap = new Map([
-            [constants_1.State.CacheRestoredKey, constants_1.Outputs.RestoredKey],
-            [constants_1.State.CachePrimaryKey, constants_1.Outputs.PrimaryKey]
-        ]);
-        this.setState = (key, value) => {
-            core.setOutput(this.stateToOutputMap.get(key), value);
-        };
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        this.getState = (key) => "";
-    }
+    stateToOutputMap = new Map([
+        [constants_1.State.CacheRestoredKey, constants_1.Outputs.RestoredKey],
+        [constants_1.State.CachePrimaryKey, constants_1.Outputs.PrimaryKey]
+    ]);
+    setState = (key, value) => {
+        core.setOutput(this.stateToOutputMap.get(key), value);
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getState = (key) => "";
 }
 exports.NullStateProvider = NullStateProvider;
 
@@ -84531,15 +84192,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -84609,70 +84261,64 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
     logWarning("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
     return false;
 }
-function prepareExcludeFromFile(forRestore) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // The exact number of ../ is derived from tar errors like here
-        // https://github.com/nix-community/cache-nix-action/issues/9#issue-1831764494
-        // https://github.com/nix-community/cache-nix-action/issues/48#issue-2611829659
-        const excludePaths = (forRestore
-            ? fs
-                .readdirSync("/nix/store")
-                .map(x => `../../../../../nix/store/${x}`)
-            : [])
-            .concat(fs
-            .readdirSync("/nix/var/nix")
-            .filter(x => x != "db")
-            .map(x => `../../../../../nix/var/nix/${x}`))
-            .concat(fs
-            .readdirSync("/nix/var/nix/db")
-            .filter(x => x != "db.sqlite")
-            .map(x => `../../../../../nix/var/nix/db/${x}`));
-        const tmp = yield cacheBackend_1.cacheUtils.createTempDirectory();
-        const excludeFromFile = `${tmp}/paths`;
-        fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
-        const extraTarArgs = ["--exclude-from", excludeFromFile];
-        return extraTarArgs;
-    });
+async function prepareExcludeFromFile(forRestore) {
+    // The exact number of ../ is derived from tar errors like here
+    // https://github.com/nix-community/cache-nix-action/issues/9#issue-1831764494
+    // https://github.com/nix-community/cache-nix-action/issues/48#issue-2611829659
+    const excludePaths = (forRestore
+        ? fs
+            .readdirSync("/nix/store")
+            .map(x => `../../../../../nix/store/${x}`)
+        : [])
+        .concat(fs
+        .readdirSync("/nix/var/nix")
+        .filter(x => x != "db")
+        .map(x => `../../../../../nix/var/nix/${x}`))
+        .concat(fs
+        .readdirSync("/nix/var/nix/db")
+        .filter(x => x != "db.sqlite")
+        .map(x => `../../../../../nix/var/nix/db/${x}`));
+    const tmp = await cacheBackend_1.cacheUtils.createTempDirectory();
+    const excludeFromFile = `${tmp}/paths`;
+    fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
+    const extraTarArgs = ["--exclude-from", excludeFromFile];
+    return extraTarArgs;
 }
-function restoreCache(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ primaryKey, restoreKeys, lookupOnly }) {
-        let extraTarArgs = [];
-        if (inputs.nix && !lookupOnly) {
-            extraTarArgs = yield prepareExcludeFromFile(true);
-            (0, exports.info)(`::group::Logs produced while restoring a cache.`);
-        }
-        // The "restoreCache" implementation is selected at runtime.
-        // The options are in the "cache" module.
-        const key = yield cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, extraTarArgs);
-        if (inputs.nix && !lookupOnly) {
-            (0, exports.info)(`::endgroup::`);
-        }
-        return key;
-    });
+async function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
+    let extraTarArgs = [];
+    if (inputs.nix && !lookupOnly) {
+        extraTarArgs = await prepareExcludeFromFile(true);
+        (0, exports.info)(`::group::Logs produced while restoring a cache.`);
+    }
+    // The "restoreCache" implementation is selected at runtime.
+    // The options are in the "cache" module.
+    const key = await cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, extraTarArgs);
+    if (inputs.nix && !lookupOnly) {
+        (0, exports.info)(`::endgroup::`);
+    }
+    return key;
 }
-function getCachesByPrefixes(_a) {
-    return __awaiter(this, arguments, void 0, function* ({ prefixes, anyRef }) {
-        const caches = [];
-        const octokit = github.getOctokit(inputs.token);
-        for (let i = 0; i < prefixes.length; i += 1) {
-            const key = prefixes[i];
-            for (let page = 1; page <= 500; page += 1) {
-                const { data: cachesRequest } = yield octokit.rest.actions.getActionsCacheList({
-                    owner: github.context.repo.owner,
-                    repo: github.context.repo.repo,
-                    key,
-                    per_page: 100,
-                    page,
-                    ref: anyRef ? undefined : github.context.ref
-                });
-                if (cachesRequest.actions_caches.length == 0) {
-                    break;
-                }
-                caches.push(...cachesRequest.actions_caches);
+async function getCachesByPrefixes({ prefixes, anyRef }) {
+    const caches = [];
+    const octokit = github.getOctokit(inputs.token);
+    for (let i = 0; i < prefixes.length; i += 1) {
+        const key = prefixes[i];
+        for (let page = 1; page <= 500; page += 1) {
+            const { data: cachesRequest } = await octokit.rest.actions.getActionsCacheList({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                key,
+                per_page: 100,
+                page,
+                ref: anyRef ? undefined : github.context.ref
+            });
+            if (cachesRequest.actions_caches.length == 0) {
+                break;
             }
+            caches.push(...cachesRequest.actions_caches);
         }
-        return caches;
-    });
+    }
+    return caches;
 }
 const mkMessageWrongValue = (input, value) => `Wrong value for the input "${input}": ${value}`;
 exports.mkMessageWrongValue = mkMessageWrongValue;
@@ -84689,26 +84335,24 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 }
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
-function run(command_1) {
-    return __awaiter(this, arguments, void 0, function* (command, enableCommandOutput = false) {
-        let stdout = "";
-        let stderr = "";
-        const options = {
-            listeners: {
-                stdout: (data) => {
-                    stdout += data.toString();
-                },
-                stderr: (data) => {
-                    stderr += data.toString();
-                }
+async function run(command, enableCommandOutput = false) {
+    let stdout = "";
+    let stderr = "";
+    const options = {
+        listeners: {
+            stdout: (data) => {
+                stdout += data.toString();
             },
-            outStream: enableCommandOutput
-                ? undefined
-                : fs.createWriteStream(os_1.devNull)
-        };
-        const result = yield exec.exec("bash", ["-c", command], options);
-        return { stdout, stderr, result };
-    });
+            stderr: (data) => {
+                stderr += data.toString();
+            }
+        },
+        outStream: enableCommandOutput
+            ? undefined
+            : fs.createWriteStream(os_1.devNull)
+    };
+    const result = await exec.exec("bash", ["-c", command], options);
+    return { stdout, stderr, result };
 }
 
 
@@ -84823,36 +84467,37 @@ function parseNixGcMax(name, options) {
     if (chars.length == 0) {
         return undefined;
     }
-    let result = 0;
+    let result = 0n;
+    let invalidNumber = -1n;
     for (let i = 0; i < chars.length; i++) {
         const char = chars[i];
         const digit = parseInt(char);
         if (!isNaN(digit)) {
-            result = result * 10 + digit;
+            result = result * 10n + BigInt(digit);
         }
         else {
             if (i == chars.length - 1) {
                 switch (char) {
                     case "K":
-                        result <<= 10;
+                        result <<= 10n;
                         break;
                     case "M":
-                        result <<= 20;
+                        result <<= 20n;
                         break;
                     case "G":
-                        result <<= 30;
+                        result <<= 30n;
                         break;
                     default:
-                        result = NaN;
+                        result = invalidNumber;
                 }
             }
             else {
-                result = NaN;
+                result = invalidNumber;
                 break;
             }
         }
     }
-    return isNaN(result) ? undefined : { input, value: result };
+    return result === invalidNumber ? undefined : { input, value: result };
 }
 function getInputAsInt(name, options) {
     const value = parseInt(core.getInput(name, options));
@@ -84907,32 +84552,21 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.installSQLite3 = installSQLite3;
 const io_1 = __nccwpck_require__(4994);
 const inputs = __importStar(__nccwpck_require__(8422));
 const utils = __importStar(__nccwpck_require__(9603));
-function installSQLite3() {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (inputs.nix && inputs.isMacos) {
-            try {
-                yield (0, io_1.which)("sqlite3", true);
-            }
-            catch (error) {
-                utils.info("No SQLite 3 found. Installing it.");
-                yield utils.run(`brew install sqlite3`);
-            }
+async function installSQLite3() {
+    if (inputs.nix && inputs.isMacos) {
+        try {
+            await (0, io_1.which)("sqlite3", true);
         }
-    });
+        catch (error) {
+            utils.info("No SQLite 3 found. Installing it.");
+            await utils.run(`brew install sqlite3`);
+        }
+    }
 }
 
 
@@ -84976,15 +84610,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -84994,16 +84619,14 @@ const fs_1 = __nccwpck_require__(9896);
 const handlebars_1 = __importDefault(__nccwpck_require__(8508));
 const merge_1 = __nccwpck_require__(3031);
 const utils = __importStar(__nccwpck_require__(9603));
-function mergeStoreDatabases(tempDir, dbPath1, dbPath2, dbPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if ((0, fs_1.existsSync)(dbPath)) {
-            (0, fs_1.unlinkSync)(dbPath);
-        }
-        const mergeSqlFile = `${tempDir}/merge.sql`;
-        const template = handlebars_1.default.compile(merge_1.mergeSqlTemplate);
-        (0, fs_1.writeFileSync)(mergeSqlFile, template({ dbPath1, dbPath2 }));
-        yield utils.run(`sqlite3 ${dbPath} < ${mergeSqlFile}`);
-    });
+async function mergeStoreDatabases(tempDir, dbPath1, dbPath2, dbPath) {
+    if ((0, fs_1.existsSync)(dbPath)) {
+        (0, fs_1.unlinkSync)(dbPath);
+    }
+    const mergeSqlFile = `${tempDir}/merge.sql`;
+    const template = handlebars_1.default.compile(merge_1.mergeSqlTemplate);
+    (0, fs_1.writeFileSync)(mergeSqlFile, template({ dbPath1, dbPath2 }));
+    await utils.run(`sqlite3 ${dbPath} < ${mergeSqlFile}`);
 }
 
 
@@ -85047,15 +84670,6 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.restoreCache = restoreCache;
 exports.restoreAllMatches = restoreAllMatches;
@@ -85065,76 +84679,72 @@ const inputs = __importStar(__nccwpck_require__(8422));
 const utils = __importStar(__nccwpck_require__(9603));
 const cacheBackend_1 = __nccwpck_require__(2455);
 const mergeStoreDatabases_1 = __nccwpck_require__(80);
-function restoreCache(key, ref) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const tempDir = yield cacheBackend_1.cacheUtils.createTempDirectory();
-        const dbPath = "/nix/var/nix/db/db.sqlite";
-        const dbPath1 = `${tempDir}/old.sqlite`;
-        const dbPath2 = `${tempDir}/new.sqlite`;
+async function restoreCache(key, ref) {
+    const tempDir = await cacheBackend_1.cacheUtils.createTempDirectory();
+    const dbPath = "/nix/var/nix/db/db.sqlite";
+    const dbPath1 = `${tempDir}/old.sqlite`;
+    const dbPath2 = `${tempDir}/new.sqlite`;
+    if (inputs.nix) {
+        utils.info(`Copying "${dbPath}" to "${dbPath1}".`);
+        (0, fs_1.copyFileSync)(dbPath, dbPath1);
+    }
+    utils.info(`Restoring a cache with the key "${key}"${ref ? ` and scoped to "${ref}"` : ""}.`);
+    const cacheKey = await utils.restoreCache({
+        primaryKey: key,
+        restoreKeys: [],
+        lookupOnly: false
+    });
+    if (cacheKey) {
+        utils.info(`Finished restoring the cache.`);
         if (inputs.nix) {
-            utils.info(`Copying "${dbPath}" to "${dbPath1}".`);
-            (0, fs_1.copyFileSync)(dbPath, dbPath1);
-        }
-        utils.info(`Restoring a cache with the key "${key}"${ref ? ` and scoped to "${ref}"` : ""}.`);
-        const cacheKey = yield utils.restoreCache({
-            primaryKey: key,
-            restoreKeys: [],
-            lookupOnly: false
-        });
-        if (cacheKey) {
-            utils.info(`Finished restoring the cache.`);
-            if (inputs.nix) {
-                utils.info(`Copying "${dbPath}" to "${dbPath2}".`);
-                (0, fs_1.copyFileSync)(dbPath, dbPath2);
-                utils.info(`
+            utils.info(`Copying "${dbPath}" to "${dbPath2}".`);
+            (0, fs_1.copyFileSync)(dbPath, dbPath2);
+            utils.info(`
                 Merging store databases "${dbPath1}" and "${dbPath2}"
                 into "${dbPath}".
                 `);
-                yield (0, mergeStoreDatabases_1.mergeStoreDatabases)(tempDir, dbPath1, dbPath2, dbPath);
-                utils.info(`Checking the store database.`);
-                yield utils.run(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
-                utils.info(`The store database is consistent.`);
-            }
-            return cacheKey;
+            await (0, mergeStoreDatabases_1.mergeStoreDatabases)(tempDir, dbPath1, dbPath2, dbPath);
+            utils.info(`Checking the store database.`);
+            await utils.run(`sqlite3 "${dbPath}" 'PRAGMA integrity_check;'`);
+            utils.info(`The store database is consistent.`);
         }
-        else {
-            utils.info(`Failed to restore the cache.`);
-        }
-    });
+        return cacheKey;
+    }
+    else {
+        utils.info(`Failed to restore the cache.`);
+    }
 }
-function restoreAllMatches() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const restoredCaches = [];
-        if (inputs.restorePrefixesAllMatches.length == 0) {
-            return restoredCaches;
-        }
-        utils.info(`
+async function restoreAllMatches() {
+    const restoredCaches = [];
+    if (inputs.restorePrefixesAllMatches.length == 0) {
+        return restoredCaches;
+    }
+    utils.info(`
         Restoring cache(s) using the "${constants_1.Inputs.RestorePrefixesAllMatches}":
         ${utils.stringify(inputs.restorePrefixesAllMatches)}
         `);
-        const caches = yield utils.getCachesByPrefixes({
-            prefixes: inputs.restorePrefixesAllMatches,
-            anyRef: true
-        });
-        utils.info(caches.length > 0
-            ? `
+    const caches = await utils.getCachesByPrefixes({
+        prefixes: inputs.restorePrefixesAllMatches,
+        anyRef: true
+    });
+    utils.info(caches.length > 0
+        ? `
             Found ${caches.length} cache(s):
             ${utils.stringify(caches)}
             `
-            : "Found no cache(s).");
-        for (const cache of caches) {
-            if (cache.key) {
-                const cacheKey = yield restoreCache(cache.key, cache.ref);
-                if (cacheKey) {
-                    restoredCaches.push(...[cacheKey]);
-                }
+        : "Found no cache(s).");
+    for (const cache of caches) {
+        if (cache.key) {
+            const cacheKey = await restoreCache(cache.key, cache.ref);
+            if (cacheKey) {
+                restoredCaches.push(...[cacheKey]);
             }
         }
-        if (caches.length > 0) {
-            utils.info(`Finished restoring cache(s).`);
-        }
-        return restoredCaches;
-    });
+    }
+    if (caches.length > 0) {
+        utils.info(`Finished restoring cache(s).`);
+    }
+    return restoredCaches;
 }
 
 
