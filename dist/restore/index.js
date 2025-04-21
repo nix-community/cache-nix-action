@@ -78897,6 +78897,7 @@ const utils = __importStar(__nccwpck_require__(9225));
 const cacheHttpClient = __importStar(__nccwpck_require__(8913));
 const cacheTwirpClient = __importStar(__nccwpck_require__(433));
 const config_1 = __nccwpck_require__(1088);
+const options_1 = __nccwpck_require__(4338);
 const tar_1 = __nccwpck_require__(7627);
 const constants_1 = __nccwpck_require__(6741);
 class ValidationError extends Error {
@@ -78947,16 +78948,16 @@ function isFeatureAvailable() {
  * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-async function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
+async function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     const cacheServiceVersion = (0, config_1.getCacheServiceVersion)();
     core.debug(`Cache service version: ${cacheServiceVersion}`);
     checkPaths(paths);
     switch (cacheServiceVersion) {
         case 'v2':
-            return await restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, extraTarArgs);
+            return await restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, tarCommandModifiers);
         case 'v1':
         default:
-            return await restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, extraTarArgs);
+            return await restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsArchive, tarCommandModifiers);
     }
 }
 /**
@@ -78969,7 +78970,7 @@ async function restoreCache(paths, primaryKey, restoreKeys, options, enableCross
  * @param enableCrossOsArchive an optional boolean enabled to restore on Windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-async function restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
+async function restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     restoreKeys = restoreKeys || [];
     const keys = [primaryKey, ...restoreKeys];
     core.debug('Resolved Keys:');
@@ -79001,11 +79002,11 @@ async function restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCro
         // Download the cache from the cache entry
         await cacheHttpClient.downloadCache(cacheEntry.archiveLocation, archivePath, options);
         if (core.isDebug()) {
-            await (0, tar_1.listTar)(archivePath, compressionMethod);
+            await (0, tar_1.listTar)(archivePath, compressionMethod, tarCommandModifiers);
         }
         const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
         core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
-        await (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
+        await (0, tar_1.extractTar)(archivePath, compressionMethod, tarCommandModifiers);
         core.info('Cache restored successfully');
         return cacheEntry.cacheKey;
     }
@@ -79040,7 +79041,7 @@ async function restoreCacheV1(paths, primaryKey, restoreKeys, options, enableCro
  * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-async function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
+async function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     // Override UploadOptions to force the use of Azure
     options = {
         ...options,
@@ -79067,7 +79068,7 @@ async function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCro
         };
         const response = await twirpClient.GetCacheEntryDownloadURL(request);
         if (!response.ok) {
-            core.debug(`Cache not found for keys: ${keys.join(', ')}`);
+            core.debug(`Cache not found for version ${request.version} of keys: ${keys.join(', ')}`);
             return undefined;
         }
         core.info(`Cache hit for: ${response.matchedKey}`);
@@ -79082,9 +79083,9 @@ async function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCro
         const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
         core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
         if (core.isDebug()) {
-            await (0, tar_1.listTar)(archivePath, compressionMethod);
+            await (0, tar_1.listTar)(archivePath, compressionMethod, tarCommandModifiers);
         }
-        await (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
+        await (0, tar_1.extractTar)(archivePath, compressionMethod, tarCommandModifiers);
         core.info('Cache restored successfully');
         return response.matchedKey;
     }
@@ -79119,17 +79120,17 @@ async function restoreCacheV2(paths, primaryKey, restoreKeys, options, enableCro
  * @param options cache upload options
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
-async function saveCache(paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
+async function saveCache(paths, key, options, enableCrossOsArchive = false, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     const cacheServiceVersion = (0, config_1.getCacheServiceVersion)();
     core.debug(`Cache service version: ${cacheServiceVersion}`);
     checkPaths(paths);
     checkKey(key);
     switch (cacheServiceVersion) {
         case 'v2':
-            return await saveCacheV2(paths, key, options, enableCrossOsArchive, extraTarArgs);
+            return await saveCacheV2(paths, key, options, enableCrossOsArchive, tarCommandModifiers);
         case 'v1':
         default:
-            return await saveCacheV1(paths, key, options, enableCrossOsArchive, extraTarArgs);
+            return await saveCacheV1(paths, key, options, enableCrossOsArchive, tarCommandModifiers);
     }
 }
 /**
@@ -79141,7 +79142,7 @@ async function saveCache(paths, key, options, enableCrossOsArchive = false, extr
  * @param enableCrossOsArchive
  * @returns
  */
-async function saveCacheV1(paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
+async function saveCacheV1(paths, key, options, enableCrossOsArchive = false, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     const compressionMethod = await utils.getCompressionMethod();
     let cacheId = -1;
     const cachePaths = await utils.resolvePaths(paths);
@@ -79154,9 +79155,9 @@ async function saveCacheV1(paths, key, options, enableCrossOsArchive = false, ex
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
     core.debug(`Archive Path: ${archivePath}`);
     try {
-        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, extraTarArgs);
+        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, tarCommandModifiers);
         if (core.isDebug()) {
-            await (0, tar_1.listTar)(archivePath, compressionMethod);
+            await (0, tar_1.listTar)(archivePath, compressionMethod, tarCommandModifiers);
         }
         const fileSizeLimit = 10 * 1024 * 1024 * 1024; // 10GB per repo limit
         const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
@@ -79216,7 +79217,7 @@ async function saveCacheV1(paths, key, options, enableCrossOsArchive = false, ex
  * @param enableCrossOsArchive an optional boolean enabled to save cache on windows which could be restored on any platform
  * @returns
  */
-async function saveCacheV2(paths, key, options, enableCrossOsArchive = false, extraTarArgs = []) {
+async function saveCacheV2(paths, key, options, enableCrossOsArchive = false, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     // Override UploadOptions to force the use of Azure
     // ...options goes first because we want to override the default values
     // set in UploadOptions with these specific figures
@@ -79239,9 +79240,9 @@ async function saveCacheV2(paths, key, options, enableCrossOsArchive = false, ex
     const archivePath = path.join(archiveFolder, utils.getCacheFileName(compressionMethod));
     core.debug(`Archive Path: ${archivePath}`);
     try {
-        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, extraTarArgs);
+        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, tarCommandModifiers);
         if (core.isDebug()) {
-            await (0, tar_1.listTar)(archivePath, compressionMethod);
+            await (0, tar_1.listTar)(archivePath, compressionMethod, tarCommandModifiers);
         }
         const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
         core.debug(`File Size: ${archiveFileSize}`);
@@ -80970,6 +80971,7 @@ const cacheUtils_1 = __nccwpck_require__(9225);
 const auth_1 = __nccwpck_require__(4552);
 const http_client_1 = __nccwpck_require__(4844);
 const cache_twirp_client_1 = __nccwpck_require__(888);
+const util_1 = __nccwpck_require__(8634);
 /**
  * This class is a wrapper around the CacheServiceClientJSON class generated by Twirp.
  *
@@ -81028,6 +81030,7 @@ class CacheServiceClient {
                 (0, core_1.debug)(`[Response] - ${response.message.statusCode}`);
                 (0, core_1.debug)(`Headers: ${JSON.stringify(response.message.headers, null, 2)}`);
                 const body = JSON.parse(rawBody);
+                (0, util_1.maskSecretUrls)(body);
                 (0, core_1.debug)(`Body: ${JSON.stringify(body, null, 2)}`);
                 if (this.isSuccessStatusCode(statusCode)) {
                     return { response, body };
@@ -81206,6 +81209,86 @@ function getUserAgentString() {
 
 /***/ }),
 
+/***/ 8634:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.maskSigUrl = maskSigUrl;
+exports.maskSecretUrls = maskSecretUrls;
+const core_1 = __nccwpck_require__(7484);
+/**
+ * Masks the `sig` parameter in a URL and sets it as a secret.
+ *
+ * @param url - The URL containing the signature parameter to mask
+ * @remarks
+ * This function attempts to parse the provided URL and identify the 'sig' query parameter.
+ * If found, it registers both the raw and URL-encoded signature values as secrets using
+ * the Actions `setSecret` API, which prevents them from being displayed in logs.
+ *
+ * The function handles errors gracefully if URL parsing fails, logging them as debug messages.
+ *
+ * @example
+ * ```typescript
+ * // Mask a signature in an Azure SAS token URL
+ * maskSigUrl('https://example.blob.core.windows.net/container/file.txt?sig=abc123&se=2023-01-01');
+ * ```
+ */
+function maskSigUrl(url) {
+    if (!url)
+        return;
+    try {
+        const parsedUrl = new URL(url);
+        const signature = parsedUrl.searchParams.get('sig');
+        if (signature) {
+            (0, core_1.setSecret)(signature);
+            (0, core_1.setSecret)(encodeURIComponent(signature));
+        }
+    }
+    catch (error) {
+        (0, core_1.debug)(`Failed to parse URL: ${url} ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+/**
+ * Masks sensitive information in URLs containing signature parameters.
+ * Currently supports masking 'sig' parameters in the 'signed_upload_url'
+ * and 'signed_download_url' properties of the provided object.
+ *
+ * @param body - The object should contain a signature
+ * @remarks
+ * This function extracts URLs from the object properties and calls maskSigUrl
+ * on each one to redact sensitive signature information. The function doesn't
+ * modify the original object; it only marks the signatures as secrets for
+ * logging purposes.
+ *
+ * @example
+ * ```typescript
+ * const responseBody = {
+ *   signed_upload_url: 'https://blob.core.windows.net/?sig=abc123',
+ *   signed_download_url: 'https://blob.core/windows.net/?sig=def456'
+ * };
+ * maskSecretUrls(responseBody);
+ * ```
+ */
+function maskSecretUrls(body) {
+    if (typeof body !== 'object' || body === null) {
+        (0, core_1.debug)('body is not an object or is null');
+        return;
+    }
+    if ('signed_upload_url' in body &&
+        typeof body.signed_upload_url === 'string') {
+        maskSigUrl(body.signed_upload_url);
+    }
+    if ('signed_download_url' in body &&
+        typeof body.signed_download_url === 'string') {
+        maskSigUrl(body.signed_download_url);
+    }
+}
+
+
+/***/ }),
+
 /***/ 7627:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -81294,7 +81377,7 @@ async function getTarPath() {
     };
 }
 // Return arguments for tar as per tarPath, compressionMethod, method type and os
-async function getTarArgs(tarPath, compressionMethod, type, archivePath = '', extraTarArgs) {
+async function getTarArgs(tarPath, compressionMethod, type, archivePath = '', tarCommandModifiers) {
     const args = [`"${tarPath.path}"`];
     const cacheFileName = utils.getCacheFileName(compressionMethod);
     const tarFile = 'cache.tar';
@@ -81304,25 +81387,27 @@ async function getTarArgs(tarPath, compressionMethod, type, archivePath = '', ex
         compressionMethod !== constants_1.CompressionMethod.Gzip &&
         IS_WINDOWS;
     // Method specific args
-    // --exclude-from is a positional argument
-    // It affects and therefore should go before --files-from
     switch (type) {
         case 'create':
             args.push('--posix', '-cf', BSD_TAR_ZSTD
                 ? tarFile
                 : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--exclude', BSD_TAR_ZSTD
                 ? tarFile
-                : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), ...extraTarArgs, '--files-from', constants_1.ManifestFilename);
+                : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), 
+            // `createArgs` may contain --exclude-from
+            // which is a positional argument.
+            // It affects and therefore should go before `--files-from`
+            ...tarCommandModifiers.createArgs, '--files-from', constants_1.ManifestFilename);
             break;
         case 'extract':
             args.push('-xf', BSD_TAR_ZSTD
                 ? tarFile
-                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), ...extraTarArgs);
+                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), ...tarCommandModifiers.extractArgs);
             break;
         case 'list':
             args.push('-tf', BSD_TAR_ZSTD
                 ? tarFile
-                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', ...extraTarArgs);
+                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', ...tarCommandModifiers.listArgs);
             break;
     }
     // Platform specific args
@@ -81339,10 +81424,10 @@ async function getTarArgs(tarPath, compressionMethod, type, archivePath = '', ex
     return args;
 }
 // Returns commands to run tar and compression program
-async function getCommands(compressionMethod, type, archivePath = '', extraTarArgs = []) {
+async function getCommands(compressionMethod, type, archivePath = '', tarCommandModifiers) {
     let args;
     const tarPath = await getTarPath();
-    const tarArgs = await getTarArgs(tarPath, compressionMethod, type, archivePath, extraTarArgs);
+    const tarArgs = await getTarArgs(tarPath, compressionMethod, type, archivePath, tarCommandModifiers);
     const compressionArgs = type !== 'create'
         ? await getDecompressionProgram(tarPath, compressionMethod, archivePath)
         : await getCompressionProgram(tarPath, compressionMethod);
@@ -81353,7 +81438,16 @@ async function getCommands(compressionMethod, type, archivePath = '', extraTarAr
         args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
     }
     else {
-        args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
+        let sudo = [];
+        switch (process.platform) {
+            case 'linux':
+            case 'darwin':
+                sudo = tarCommandModifiers.useSudo ? ['sudo'] : [];
+                break;
+            default:
+                sudo = [];
+        }
+        args = [[...sudo, ...tarArgs].join(' '), [...compressionArgs].join(' ')];
     }
     if (BSD_TAR_ZSTD) {
         return args;
@@ -81446,25 +81540,25 @@ async function execCommands(commands, cwd) {
     }
 }
 // List the contents of a tar
-async function listTar(archivePath, compressionMethod) {
-    const commands = await getCommands(compressionMethod, 'list', archivePath);
+async function listTar(archivePath, compressionMethod, tarCommandModifiers) {
+    const commands = await getCommands(compressionMethod, 'list', archivePath, tarCommandModifiers);
     core.debug(`::group::Archive contents`);
     await execCommands(commands);
     core.debug(`::endgroup::`);
 }
 // Extract a tar
-async function extractTar(archivePath, compressionMethod, extraTarArgs = []) {
+async function extractTar(archivePath, compressionMethod, tarCommandModifiers) {
     // Create directory to extract tar into
     const workingDirectory = getWorkingDirectory();
     await io.mkdirP(workingDirectory);
-    const commands = await getCommands(compressionMethod, 'extract', archivePath, extraTarArgs);
+    const commands = await getCommands(compressionMethod, 'extract', archivePath, tarCommandModifiers);
     await execCommands(commands);
 }
 // Create a tar
-async function createTar(archiveFolder, sourceDirectories, compressionMethod, extraTarArgs = []) {
+async function createTar(archiveFolder, sourceDirectories, compressionMethod, tarCommandModifiers) {
     // Write source directories to manifest.txt to avoid command length limits
     (0, fs_1.writeFileSync)(path.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join('\n'));
-    const commands = await getCommands(compressionMethod, 'create', undefined, extraTarArgs);
+    const commands = await getCommands(compressionMethod, 'create', undefined, tarCommandModifiers);
     await execCommands(commands, archiveFolder);
 }
 
@@ -81687,9 +81781,20 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TarCommandModifiers = void 0;
 exports.getUploadOptions = getUploadOptions;
 exports.getDownloadOptions = getDownloadOptions;
 const core = __importStar(__nccwpck_require__(7484));
+/**
+ * Options to control tar extraction
+ */
+class TarCommandModifiers {
+    listArgs = [];
+    createArgs = [];
+    extractArgs = [];
+    useSudo = false;
+}
+exports.TarCommandModifiers = TarCommandModifiers;
 /**
  * Returns a copy of the upload options with defaults filled in.
  *
@@ -81830,6 +81935,7 @@ const path = __importStar(__nccwpck_require__(6928));
 const utils = __importStar(__nccwpck_require__(749));
 const cacheHttpClient = __importStar(__nccwpck_require__(5381));
 const tar_1 = __nccwpck_require__(7343);
+const options_1 = __nccwpck_require__(3974);
 class ValidationError extends Error {
     constructor(message) {
         super(message);
@@ -81878,7 +81984,7 @@ function isFeatureAvailable() {
  * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-async function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, extraTarArgs = []) {
+async function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     checkPaths(paths);
     restoreKeys = restoreKeys || [];
     const keys = [primaryKey, ...restoreKeys];
@@ -81913,12 +82019,12 @@ async function restoreCache(paths, primaryKey, restoreKeys, options, enableCross
         await cacheHttpClient.downloadCache(cacheEntry.archiveLocation, archivePath, options);
         const downloadTimeMs = Date.now() - beforeDownload;
         if (core.isDebug()) {
-            await (0, tar_1.listTar)(archivePath, compressionMethod);
+            await (0, tar_1.listTar)(archivePath, compressionMethod, tarCommandModifiers);
         }
         const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
         core.info(`Cache Size: ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B)`);
         const beforeExtract = Date.now();
-        await (0, tar_1.extractTar)(archivePath, compressionMethod, extraTarArgs);
+        await (0, tar_1.extractTar)(archivePath, compressionMethod, tarCommandModifiers);
         const extractTimeMs = Date.now() - beforeExtract;
         core.info('Cache restored successfully');
         await cacheHttpClient.reportCacheRestore({
@@ -81962,7 +82068,7 @@ async function restoreCache(paths, primaryKey, restoreKeys, options, enableCross
  * @param options cache upload options
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
-async function saveCache(paths, key, options, enableCrossOsArchive = false) {
+async function saveCache(paths, key, options, enableCrossOsArchive = false, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     checkPaths(paths);
     checkKey(key);
     const compressionMethod = await utils.getCompressionMethod();
@@ -81977,10 +82083,10 @@ async function saveCache(paths, key, options, enableCrossOsArchive = false) {
     core.debug(`Archive Path: ${archivePath}`);
     try {
         const beforeArchive = Date.now();
-        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod);
+        await (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod, tarCommandModifiers);
         const archiveTimeMs = Date.now() - beforeArchive;
         if (core.isDebug()) {
-            await (0, tar_1.listTar)(archivePath, compressionMethod);
+            await (0, tar_1.listTar)(archivePath, compressionMethod, tarCommandModifiers);
         }
         const fileSizeLimit = 4.99 * 1024 * 1024 * 1024; // 4.99 per cache limit
         const archiveFileSize = utils.getArchiveFileSizeInBytes(archivePath);
@@ -83002,6 +83108,7 @@ const fs_1 = __nccwpck_require__(9896);
 const path = __importStar(__nccwpck_require__(6928));
 const utils = __importStar(__nccwpck_require__(749));
 const constants_1 = __nccwpck_require__(7897);
+const options_1 = __nccwpck_require__(3974);
 const IS_WINDOWS = process.platform === 'win32';
 // Returns tar path and type: BSD or GNU
 async function getTarPath() {
@@ -83041,7 +83148,7 @@ async function getTarPath() {
     };
 }
 // Return arguments for tar as per tarPath, compressionMethod, method type and os
-async function getTarArgs(tarPath, compressionMethod, type, archivePath = '') {
+async function getTarArgs(tarPath, compressionMethod, type, archivePath = '', tarCommandModifiers) {
     const args = [`"${tarPath.path}"`];
     const cacheFileName = utils.getCacheFileName(compressionMethod);
     const tarFile = 'cache.tar';
@@ -83051,23 +83158,29 @@ async function getTarArgs(tarPath, compressionMethod, type, archivePath = '') {
         compressionMethod !== constants_1.CompressionMethod.Gzip &&
         IS_WINDOWS;
     // Method specific args
+    // --exclude-from is a positional argument
+    // It affects and therefore should go before --files-from
     switch (type) {
         case 'create':
             args.push('--posix', '-cf', BSD_TAR_ZSTD
                 ? tarFile
                 : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--exclude', BSD_TAR_ZSTD
                 ? tarFile
-                : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '--files-from', constants_1.ManifestFilename);
+                : cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), 
+            // `createArgs` may contain --exclude-from
+            // which is a positional argument.
+            // It affects and therefore should go before `--files-from`
+            ...tarCommandModifiers.createArgs, '--files-from', constants_1.ManifestFilename);
             break;
         case 'extract':
             args.push('-xf', BSD_TAR_ZSTD
                 ? tarFile
-                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'));
+                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), ...tarCommandModifiers.extractArgs);
             break;
         case 'list':
             args.push('-tf', BSD_TAR_ZSTD
                 ? tarFile
-                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P');
+                : archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/'), '-P', ...tarCommandModifiers.listArgs);
             break;
     }
     // Platform specific args
@@ -83084,11 +83197,10 @@ async function getTarArgs(tarPath, compressionMethod, type, archivePath = '') {
     return args;
 }
 // Returns commands to run tar and compression program
-async function getCommands(compressionMethod, type, archivePath = '', extraTarArgs = []) {
+async function getCommands(compressionMethod, type, archivePath = '', tarCommandModifiers) {
     let args;
     const tarPath = await getTarPath();
-    const tarArgs = await getTarArgs(tarPath, compressionMethod, type, archivePath);
-    tarArgs.push(...extraTarArgs);
+    const tarArgs = await getTarArgs(tarPath, compressionMethod, type, archivePath, tarCommandModifiers);
     const compressionArgs = type !== 'create'
         ? await getDecompressionProgram(tarPath, compressionMethod, archivePath)
         : await getCompressionProgram(tarPath, compressionMethod);
@@ -83099,7 +83211,16 @@ async function getCommands(compressionMethod, type, archivePath = '', extraTarAr
         args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
     }
     else {
-        args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
+        let sudo = [];
+        switch (process.platform) {
+            case 'linux':
+            case 'darwin':
+                sudo = tarCommandModifiers.useSudo ? ['sudo'] : [];
+                break;
+            default:
+                sudo = [];
+        }
+        args = [[...sudo, ...tarArgs].join(' '), [...compressionArgs].join(' ')];
     }
     if (BSD_TAR_ZSTD) {
         return args;
@@ -83194,23 +83315,23 @@ async function execCommands(commands, cwd) {
     }
 }
 // List the contents of a tar
-async function listTar(archivePath, compressionMethod) {
-    const commands = await getCommands(compressionMethod, 'list', archivePath);
+async function listTar(archivePath, compressionMethod, tarCommandModifiers) {
+    const commands = await getCommands(compressionMethod, 'list', archivePath, tarCommandModifiers);
     await execCommands(commands);
 }
 // Extract a tar
-async function extractTar(archivePath, compressionMethod, extraTarArgs = []) {
+async function extractTar(archivePath, compressionMethod, tarCommandModifiers) {
     // Create directory to extract tar into
     const workingDirectory = getWorkingDirectory();
     await io.mkdirP(workingDirectory);
-    const commands = await getCommands(compressionMethod, 'extract', archivePath, extraTarArgs);
+    const commands = await getCommands(compressionMethod, 'extract', archivePath, tarCommandModifiers);
     await execCommands(commands);
 }
 // Create a tar
-async function createTar(archiveFolder, sourceDirectories, compressionMethod) {
+async function createTar(archiveFolder, sourceDirectories, compressionMethod, tarCommandModifiers = new options_1.TarCommandModifiers()) {
     // Write source directories to manifest.txt to avoid command length limits
     (0, fs_1.writeFileSync)(path.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join('\n'));
-    const commands = await getCommands(compressionMethod, 'create');
+    const commands = await getCommands(compressionMethod, 'create', undefined, tarCommandModifiers);
     await execCommands(commands, archiveFolder);
 }
 
@@ -83268,9 +83389,20 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.TarCommandModifiers = void 0;
 exports.getUploadOptions = getUploadOptions;
 exports.getDownloadOptions = getDownloadOptions;
 const core = __importStar(__nccwpck_require__(7484));
+/**
+ * Options to control tar extraction
+ */
+class TarCommandModifiers {
+    listArgs = [];
+    createArgs = [];
+    extractArgs = [];
+    useSudo = false;
+}
+exports.TarCommandModifiers = TarCommandModifiers;
 /**
  * Returns a copy of the upload options with defaults filled in.
  *
@@ -84136,6 +84268,7 @@ const os_1 = __nccwpck_require__(857);
 const constants_1 = __nccwpck_require__(7242);
 const inputs = __importStar(__nccwpck_require__(8422));
 const cacheBackend_1 = __nccwpck_require__(2455);
+const options_1 = __nccwpck_require__(4338);
 const myDedent = dedent_1.default.withOptions({});
 const info = (message) => core.info(myDedent(message));
 exports.info = info;
@@ -84200,18 +84333,17 @@ async function prepareExcludeFromFile(forRestore) {
     const tmp = await cacheBackend_1.cacheUtils.createTempDirectory();
     const excludeFromFile = `${tmp}/paths`;
     fs.writeFileSync(excludeFromFile, excludePaths.join("\n"));
-    const extraTarArgs = ["--exclude-from", excludeFromFile];
-    return extraTarArgs;
+    return ["--exclude-from", excludeFromFile];
 }
 async function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
-    let extraTarArgs = [];
+    let tarCommandModifiers = new options_1.TarCommandModifiers();
     if (inputs.nix && !lookupOnly) {
-        extraTarArgs = await prepareExcludeFromFile(true);
+        tarCommandModifiers.extractArgs = await prepareExcludeFromFile(true);
         (0, exports.info)(`::group::Logs produced while restoring a cache.`);
     }
     // The "restoreCache" implementation is selected at runtime.
     // The options are in the "cache" module.
-    const key = await cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, extraTarArgs);
+    const key = await cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, tarCommandModifiers);
     if (inputs.nix && !lookupOnly) {
         (0, exports.info)(`::endgroup::`);
     }
@@ -95962,7 +96094,7 @@ module.exports["default"] = exports.default;
 /***/ ((module) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"@actions/cache","version":"4.0.2","preview":true,"description":"Actions cache lib","keywords":["github","actions","cache"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/cache","license":"MIT","main":"lib/cache.js","types":"lib/cache.d.ts","directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/cache"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"echo \\"Error: run tests from root\\" && exit 1","tsc":"tsc"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^1.11.1","@actions/exec":"^1.0.1","@actions/glob":"^0.1.0","@actions/http-client":"^2.1.1","@actions/io":"^1.0.1","@azure/abort-controller":"^1.1.0","@azure/ms-rest-js":"^2.6.0","@azure/storage-blob":"^12.13.0","@protobuf-ts/plugin":"^2.9.4","semver":"^6.3.1"},"devDependencies":{"@types/semver":"^6.0.0","typescript":"^5.2.2"}}');
+module.exports = /*#__PURE__*/JSON.parse('{"name":"@actions/cache","version":"4.0.3","preview":true,"description":"Actions cache lib","keywords":["github","actions","cache"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/cache","license":"MIT","main":"lib/cache.js","types":"lib/cache.d.ts","directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/cache"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"echo \\"Error: run tests from root\\" && exit 1","tsc":"tsc"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^1.11.1","@actions/exec":"^1.0.1","@actions/glob":"^0.1.0","@actions/http-client":"^2.1.1","@actions/io":"^1.0.1","@azure/abort-controller":"^1.1.0","@azure/ms-rest-js":"^2.6.0","@azure/storage-blob":"^12.13.0","@protobuf-ts/plugin":"^2.9.4","semver":"^6.3.1"},"devDependencies":{"@types/node":"^22.13.9","@types/semver":"^6.0.0","typescript":"^5.2.2"}}');
 
 /***/ })
 
