@@ -83617,6 +83617,7 @@ exports.paths = (exports.nix
         // if they rely on internal Nix store database information
         // such as `id`s.
         "~/.cache/nix",
+        // TODO remove as ~root expands to /root on Linux, and there's no /root/.cache
         "~root/.cache/nix"
     ]
     : []).concat((function () {
@@ -83936,9 +83937,29 @@ exports.mergeSqlTemplate = `
 -- Get tables from store databases
 -- =====
 
-attach database '{{ dbPath1 }}' as store1;
+attach database 'tmp/store1/nix/var/nix/db/db.sqlite' as store1;
 
-attach database '{{ dbPath2 }}' as store2;
+attach database 'tmp/store2/nix/var/nix/db/db.sqlite' as store2;
+
+create table if not exists store1.SchemaMigrations (
+    migration text primary key not null
+);
+
+create table if not exists store2.SchemaMigrations (
+    migration text primary key not null
+);
+
+drop table if exists SchemaMigrations1;
+
+create table SchemaMigrations1 as
+select *
+from store1.SchemaMigrations;
+
+drop table if exists SchemaMigrations2;
+
+create table SchemaMigrations2 as
+select *
+from store2.SchemaMigrations;
 
 drop table if exists ValidPaths1;
 
@@ -83991,8 +84012,7 @@ create table if not exists store1.Realisations (
     drvPath text not null,
     outputName text not null, -- symbolic output id, usually "out"
     outputPath integer not null,
-    signatures text, -- space-separated list
-    foreign key (outputPath) references store1.ValidPaths(id) on delete cascade
+    signatures text -- space-separated list
 );
 
 
@@ -84001,25 +84021,21 @@ create table if not exists store2.Realisations (
     drvPath text not null,
     outputName text not null, -- symbolic output id, usually "out"
     outputPath integer not null,
-    signatures text, -- space-separated list
-    foreign key (outputPath) references store2.ValidPaths(id) on delete cascade
+    signatures text -- space-separated list
 );
 
 
 create table if not exists store1.RealisationsRefs (
     referrer integer not null,
-    realisationReference integer,
-    foreign key (referrer) references store1.Realisations(id) on delete cascade,
-    foreign key (realisationReference) references store1.Realisations(id) on delete restrict
+    realisationReference integer
 );
 
 
 create table if not exists store2.RealisationsRefs (
     referrer integer not null,
-    realisationReference integer,
-    foreign key (referrer) references store2.Realisations(id) on delete cascade,
-    foreign key (realisationReference) references store2.Realisations(id) on delete restrict
+    realisationReference integer
 );
+
 
 
 drop table if exists Realisations1;
@@ -84055,7 +84071,17 @@ detach database store1;
 detach database store2;
 
 -- =====
--- Create a table for combined valid paths from both stores
+-- Create a table for combined SchemaMigrations
+-- =====
+
+drop table if exists SchemaMigrations;
+
+create table SchemaMigrations (
+    migration text primary key not null
+);
+
+-- =====
+-- Create a table for combined ValidPaths
 -- =====
 
 drop table if exists ValidPaths;
@@ -84074,7 +84100,7 @@ create table ValidPaths
 );
 
 -- =====
--- Create a table for combined refs from both stores
+-- Create a table for combined Refs
 -- =====
 
 drop table if exists Refs;
@@ -84089,7 +84115,7 @@ create table Refs
 );
 
 -- =====
--- Create a table for combined derivation outputs from both stores
+-- Create a table for combined DerivationOutputs
 -- =====
 
 drop table if exists DerivationOutputs;
@@ -84104,7 +84130,7 @@ create table DerivationOutputs
 );
 
 -- =====
--- Create a table for combined derivation realisations from both stores
+-- Create a table for combined Realisations
 -- =====
 
 drop table if exists Realisations;
@@ -84119,7 +84145,7 @@ create table Realisations (
 );
 
 -- =====
--- Create a table for combined derivation realisation refs from both stores
+-- Create a table for combined RealisationsRefs
 -- =====
 
 drop table if exists RealisationsRefs;
@@ -84132,7 +84158,21 @@ create table RealisationsRefs (
 );
 
 -- =====
--- Insert paths from both stores
+-- Combine SchemaMigrations
+-- =====
+
+insert into SchemaMigrations (migration)
+select migration
+from SchemaMigrations1;
+
+insert into SchemaMigrations (migration)
+select migration
+from SchemaMigrations2
+where true
+on conflict do nothing;
+
+-- =====
+-- Combine ValidPaths
 -- =====
 
 insert into ValidPaths
@@ -84142,7 +84182,7 @@ from ValidPaths1;
 -- Don't insert id as it'll be auto-generated.
 insert into ValidPaths (path, hash, registrationTime, deriver, narSize, ultimate, sigs, ca)
 select path, hash, registrationTime, deriver, narSize, ultimate, sigs, ca
-from ValidPaths2
+from ValidPaths2 where true
 on conflict (path) do nothing;
 
 -- =====
@@ -84161,16 +84201,12 @@ select ValidPaths_.idNew, ValidPaths2_.idOld from
         on ValidPaths2_.path = ValidPaths_.path;
 
 -- =====
--- Insert Refs from the first store
+-- Combine Refs
 -- =====
 
 insert into Refs
 select *
 from Refs1;
-
--- =====
--- Calculate updated refs for the second store
--- =====
 
 insert into Refs (referrer, reference)
 select
@@ -84185,16 +84221,12 @@ from
 on conflict (referrer, reference) do nothing;
 
 -- =====
--- Insert derivation outputs from the first store
+-- Combine DerivationOutputs
 -- =====
 
 insert into DerivationOutputs
 select *
 from DerivationOutputs1;
-
--- =====
--- Insert updated derivation outputs from the second store
--- =====
 
 insert into DerivationOutputs (drv, id, path)
 select 
@@ -84207,7 +84239,7 @@ from (select drv as drvOld, id, path from DerivationOutputs2) as DerivationOutpu
 on conflict (drv, id) do nothing;
 
 -- =====
--- Update Realisations
+-- Combine Realisations
 -- =====
 
 -- If you take the path in "ValidPaths" where the "id" is "outputPath"
@@ -84236,24 +84268,36 @@ from Realisations1;
 -- Since we'll have to remap "id"-s in the "RealisationsRefs"
 -- we need to replace "idOld"-s in "RealisationsUnique" with indices from "Realisations2".
 
-insert into RealisationsUnique (drvPath, outputName, outputPath, signatures)
-select drvPath, outputName, ValidPathsIdMap_.idNew as outputPath, signatures from
-(select id as idOld, drvPath, outputName, outputPath, signatures) as Realisations2_
-    join (select idNew, idOld from ValidPathsIdMap) as ValidPathsIdMap_
-        on Realisations2_.outputPath = ValidPathsIdMap_.idOld
+insert into RealisationsUnique (drvPath, outputName, outputPath, signatures, idOld)
+select drvPath, outputName, ValidPathsIdMap_.idNew as outputPath, signatures, Realisations2_.outputPath as idOld from (
+    (select id as idOld, drvPath, outputName, outputPath, signatures from Realisations2) as Realisations2_
+        join (select idNew, idOld from ValidPathsIdMap) as ValidPathsIdMap_
+            on Realisations2_.outputPath = ValidPathsIdMap_.idOld
+)
+where true
 on conflict(drvPath, outputName, outputPath) do
-    update set idOld = Realisations2_.idOld;
+    update set idOld = excluded.idOld;
 
 insert into Realisations (id, drvPath, outputName, outputPath, signatures)
 select id, drvPath, outputName, outputPath, signatures
 from RealisationsUnique;
 
 -- =====
--- Update RealisationsRefs
+-- Combine RealisationsRefs
 -- =====
 
-insert into RealisationsRefs
-select * from RealisationsRefs1;
+drop table if exists RealisationsRefsUnique;
+
+create table RealisationsRefsUnique (
+    referrer integer not null,
+    realisationReference integer,
+    
+    unique(referrer, realisationReference)
+);
+
+insert into RealisationsRefsUnique (referrer, realisationReference)
+select referrer, realisationReference
+from RealisationsRefs1;
 
 drop view if exists RealisationsUniqueIdMap;
 
@@ -84261,7 +84305,7 @@ create view RealisationsUniqueIdMap as
 select id as idNew, idOld
 from RealisationsUnique;
 
-insert into RealisationsRefs (referrer, realisationReference)
+insert into RealisationsRefsUnique (referrer, realisationReference)
 select
     referrerMap.idNew as referrer,
     realisationReferenceMap.idNew as realisationReference
@@ -84273,12 +84317,13 @@ from
         on realisationReferenceMap.idOld = RealisationsRefs2.realisationReference
 on conflict (referrer, realisationReference) do nothing;
 
+insert into RealisationsRefs (referrer, realisationReference)
+select referrer, realisationReference
+from RealisationsRefsUnique;
+
 -- =====
 -- Create additional things
 -- =====
-
--- TODO put some value here?
-create table SchemaMigrations (migration text primary key not null);
 
 create index IndexReferrer on Refs (referrer);
 create index IndexReference on Refs (reference);
@@ -84317,6 +84362,7 @@ drop table Realisations2;
 drop table RealisationsRefs1;
 drop table RealisationsRefs2;
 drop table RealisationsUnique;
+drop table RealisationsRefsUnique;
 
 -- =====
 -- Drop unnecessary views
