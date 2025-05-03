@@ -12,11 +12,13 @@ create table ValidPaths1 as
 select *
 from store1.ValidPaths;
 
+
 drop table if exists ValidPaths2;
 
 create table ValidPaths2 as
 select *
 from store2.ValidPaths;
+
 
 drop table if exists Refs1;
 
@@ -24,11 +26,13 @@ create table Refs1 as
 select *
 from store1.Refs;
 
+
 drop table if exists Refs2;
 
 create table Refs2 as
 select *
 from store2.Refs;
+
 
 drop table if exists DerivationOutputs1;
 
@@ -36,11 +40,81 @@ create table DerivationOutputs1 as
 select *
 from store1.DerivationOutputs;
 
+
 drop table if exists DerivationOutputs2;
 
 create table DerivationOutputs2 as
 select *
 from store2.DerivationOutputs;
+
+
+-- =====
+-- Copy realisations tables
+-- =====
+
+create table if not exists store1.Realisations (
+    id integer primary key autoincrement not null,
+    drvPath text not null,
+    outputName text not null, -- symbolic output id, usually "out"
+    outputPath integer not null,
+    signatures text, -- space-separated list
+    foreign key (outputPath) references store1.ValidPaths(id) on delete cascade
+);
+
+
+create table if not exists store2.Realisations (
+    id integer primary key autoincrement not null,
+    drvPath text not null,
+    outputName text not null, -- symbolic output id, usually "out"
+    outputPath integer not null,
+    signatures text, -- space-separated list
+    foreign key (outputPath) references store2.ValidPaths(id) on delete cascade
+);
+
+
+create table if not exists store1.RealisationsRefs (
+    referrer integer not null,
+    realisationReference integer,
+    foreign key (referrer) references store1.Realisations(id) on delete cascade,
+    foreign key (realisationReference) references store1.Realisations(id) on delete restrict
+);
+
+
+create table if not exists store2.RealisationsRefs (
+    referrer integer not null,
+    realisationReference integer,
+    foreign key (referrer) references store2.Realisations(id) on delete cascade,
+    foreign key (realisationReference) references store2.Realisations(id) on delete restrict
+);
+
+
+drop table if exists Realisations1;
+
+create table Realisations1 as
+select *
+from store1.Realisations;
+
+
+drop table if exists Realisations2;
+
+create table Realisations2 as
+select *
+from store2.Realisations;
+
+
+drop table if exists RealisationsRefs1;
+
+create table RealisationsRefs1 as
+select *
+from store1.RealisationsRefs;
+
+
+drop table if exists RealisationsRefs2;
+
+create table RealisationsRefs2 as
+select *
+from store2.RealisationsRefs;
+
 
 detach database store1;
 
@@ -96,6 +170,34 @@ create table DerivationOutputs
 );
 
 -- =====
+-- Create a table for combined derivation realisations from both stores
+-- =====
+
+drop table if exists Realisations;
+
+create table Realisations (
+    id integer primary key autoincrement not null,
+    drvPath text not null,
+    outputName text not null, -- symbolic output id, usually "out"
+    outputPath integer not null,
+    signatures text, -- space-separated list
+    foreign key (outputPath) references ValidPaths(id) on delete cascade
+);
+
+-- =====
+-- Create a table for combined derivation realisation refs from both stores
+-- =====
+
+drop table if exists RealisationsRefs;
+
+create table RealisationsRefs (
+    referrer integer not null,
+    realisationReference integer,
+    foreign key (referrer) references Realisations(id) on delete cascade,
+    foreign key (realisationReference) references Realisations(id) on delete restrict
+);
+
+-- =====
 -- Insert paths from both stores
 -- =====
 
@@ -103,21 +205,29 @@ insert into ValidPaths
 select *
 from ValidPaths1;
 
--- don't insert id as it'll be auto-generated
+-- Don't insert id as it'll be auto-generated.
 insert into ValidPaths (path, hash, registrationTime, deriver, narSize, ultimate, sigs, ca)
-select path,
-       hash,
-       registrationTime,
-       deriver,
-       narSize,
-       ultimate,
-       sigs,
-       ca
+select path, hash, registrationTime, deriver, narSize, ultimate, sigs, ca
 from ValidPaths2
-where path not in (select path from ValidPaths);
+on conflict (path) do nothing;
 
 -- =====
--- Insert refs from the first store
+-- Calculate updated ValidPaths ids for the second store
+-- =====
+
+drop view if exists ValidPathsIdMap;
+
+-- "path" is unique, so we can use it
+-- to calculate the mapping between the new and old ids
+
+create view ValidPathsIdMap as
+select ValidPaths_.idNew, ValidPaths2_.idOld from
+(select id as idOld, path from ValidPaths2) as ValidPaths2_
+    join (select id as idNew, path from ValidPaths) as ValidPaths_
+        on ValidPaths2_.path = ValidPaths_.path;
+
+-- =====
+-- Insert Refs from the first store
 -- =====
 
 insert into Refs
@@ -128,68 +238,17 @@ from Refs1;
 -- Calculate updated refs for the second store
 -- =====
 
--- referrer | path
-drop view if exists ReferrerPath;
-
-create view ReferrerPath as
-select distinct referrer, path
-from Refs2
-         join (select path, id from ValidPaths2) as ValidPaths2_ on Refs2.referrer = ValidPaths2_.id;
-
--- referrer | new referrer
-drop view if exists ReferrerId;
-
-create view ReferrerId as
-select referrer, referrerNew
-from ReferrerPath
-         join (select path, id as referrerNew from ValidPaths) as ValidPaths_ on ReferrerPath.path = ValidPaths_.path;
-
--- reference | path
-drop view if exists ReferencePath;
-
-create view ReferencePath as
-select distinct reference, path
-from Refs2
-         join (select path, id from ValidPaths2) as ValidPaths2_ on Refs2.reference = ValidPaths2_.id;
-
--- reference | new reference
-drop view if exists ReferenceId;
-
-create view ReferenceId as
-select reference, referenceNew
-from ReferencePath
-         join (select path, id as referenceNew from ValidPaths) as ValidPaths_ on ReferencePath.path = ValidPaths_.path;
-
--- referrer | new referrer | reference
-drop view if exists ReferrerReferrerIdReference;
-
-create view ReferrerReferrerIdReference as
-select distinct Refs2.referrer, ReferrerId.referrerNew, reference
-from Refs2
-         join ReferrerId on Refs2.referrer = ReferrerId.referrer;
-
--- referrer | new referrer | reference | new reference
-drop view if exists ReferrerReferrerIdReferenceReferenceId;
-
-create view ReferrerReferrerIdReferenceReferenceId as
-select distinct referrer, referrerNew, ReferrerReferrerIdReference.reference, referenceNew
-from ReferrerReferrerIdReference
-         join ReferenceId on ReferrerReferrerIdReference.reference = ReferenceId.reference;
-
--- new referrer | new reference
-drop view if exists Refs2Updated;
-
-create view Refs2Updated as
-select distinct referrerNew as referrer, referenceNew as reference
-from ReferrerReferrerIdReferenceReferenceId;
-
--- =====
--- Insert updated refs from the second store
--- =====
-
-insert or ignore into Refs
-select *
-from Refs2Updated;
+insert into Refs (referrer, reference)
+select
+    referrerIdMap.idNew as referrer,
+    referenceIdMap.idNew as reference
+from
+    Refs2
+    join ValidPathsIdMap as referrerIdMap
+        on referrerIdMap.idOld = Refs2.referrer
+    join ValidPathsIdMap as referenceIdMap
+        on referenceIdMap.idOld = Refs2.reference
+on conflict (referrer, reference) do nothing;
 
 -- =====
 -- Insert derivation outputs from the first store
@@ -200,69 +259,134 @@ select *
 from DerivationOutputs1;
 
 -- =====
--- Calculate updated derivation outputs for the second store
--- =====
-
--- drv | id | path | drvPath
-drop view if exists DerivationIdPaths;
-
-create view DerivationIdPaths as
-select drv, DerivationOutputs2.id, DerivationOutputs2.path, ValidPaths2_.path as drvPath
-from DerivationOutputs2
-         join (select id, path from ValidPaths2) as ValidPaths2_  on ValidPaths2_.id = drv;
-
--- new drv | id | path
-drop view if exists DerivationOutputs2Updated;
-
-create view DerivationOutputs2Updated as
-select ValidPaths_.drvNew as drv, id, DerivationIdPaths_.path
-from (select id, path, drvPath from DerivationIdPaths) as DerivationIdPaths_
-         join (select id as drvNew, path from ValidPaths) as ValidPaths_
-              on DerivationIdPaths_.drvPath = ValidPaths_.path;
-
--- =====
 -- Insert updated derivation outputs from the second store
 -- =====
 
-insert or ignore into DerivationOutputs
-select *
-from DerivationOutputs2Updated;
+insert into DerivationOutputs (drv, id, path)
+select 
+    ValidPathsIdMap_.drvNew as drv,
+    DerivationOutputs2_.id as id,
+    DerivationOutputs2_.path as path
+from (select drv as drvOld, id, path from DerivationOutputs2) as DerivationOutputs2_
+    join (select idNew as drvNew, idOld as drvOld from ValidPathsIdMap) as ValidPathsIdMap_
+        on DerivationOutputs2_.drvOld = ValidPathsIdMap_.drvOld
+on conflict (drv, id) do nothing;
+
+-- =====
+-- Update Realisations
+-- =====
+
+-- If you take the path in "ValidPaths" where the "id" is "outputPath"
+-- and then get the "outputName" subdirectory of that path
+-- the ca-hash (?) of that subdirectory will be "drvPath".
+
+drop table if exists RealisationsUnique;
+
+create table if not exists RealisationsUnique (
+    id integer primary key autoincrement not null,
+    drvPath text not null,
+    outputName text not null, -- symbolic output id, usually "out"
+    outputPath integer not null,
+    signatures text, -- space-separated list
+    
+    idOld integer not null,
+    
+    unique(drvPath, outputName, outputPath)
+);
+
+insert into RealisationsUnique (id, drvPath, outputName, outputPath, signatures, idOld)
+select id, drvPath, outputName, outputPath, signatures, id as idOld
+from Realisations1;
+
+-- We keep the "signatures" from the first store (there's no strong reason to do so, though).
+-- Since we'll have to remap "id"-s in the "RealisationsRefs"
+-- we need to replace "idOld"-s in "RealisationsUnique" with indices from "Realisations2".
+
+insert into RealisationsUnique (drvPath, outputName, outputPath, signatures)
+select drvPath, outputName, ValidPathsIdMap_.idNew as outputPath, signatures from
+(select id as idOld, drvPath, outputName, outputPath, signatures) as Realisations2_
+    join (select idNew, idOld from ValidPathsIdMap) as ValidPathsIdMap_
+        on Realisations2_.outputPath = ValidPathsIdMap_.idOld
+on conflict(drvPath, outputName, outputPath) do
+    update set idOld = Realisations2_.idOld;
+
+insert into Realisations (id, drvPath, outputName, outputPath, signatures)
+select id, drvPath, outputName, outputPath, signatures
+from RealisationsUnique;
+
+-- =====
+-- Update RealisationsRefs
+-- =====
+
+insert into RealisationsRefs
+select * from RealisationsRefs1;
+
+drop view if exists RealisationsUniqueIdMap;
+
+create view RealisationsUniqueIdMap as
+select id as idNew, idOld
+from RealisationsUnique;
+
+insert into RealisationsRefs (referrer, realisationReference)
+select
+    referrerMap.idNew as referrer,
+    realisationReferenceMap.idNew as realisationReference
+from 
+    RealisationsRefs2
+    join RealisationsUniqueIdMap as referrerMap
+        on referrerMap.idOld = RealisationsRefs2.referrer
+    join RealisationsUniqueIdMap as realisationReferenceMap
+        on realisationReferenceMap.idOld = RealisationsRefs2.realisationReference
+on conflict (referrer, realisationReference) do nothing;
 
 -- =====
 -- Create additional things
 -- =====
 
+-- TODO put some value here?
+create table SchemaMigrations (migration text primary key not null);
+
 create index IndexReferrer on Refs (referrer);
 create index IndexReference on Refs (reference);
+create index IndexDerivationOutputs on DerivationOutputs (path);
+create index IndexRealisations on Realisations(drvPath, outputName);
+create index IndexRealisationsRefsRealisationReference on RealisationsRefs(realisationReference);
+create index IndexRealisationsRefs on RealisationsRefs(referrer);
+create index IndexRealisationsRefsOnOutputPath on Realisations(outputPath);
+
 create trigger DeleteSelfRefs
     before delete
     on ValidPaths
 begin
     delete from Refs where referrer = old.id and reference = old.id;
 end;
-create index IndexDerivationOutputs on DerivationOutputs (path);
+
+create trigger DeleteSelfRefsViaRealisations before delete on ValidPaths
+  begin
+    delete from RealisationsRefs where realisationReference in (
+      select id from Realisations where outputPath = old.id
+    );
+end;
 
 -- =====
--- Drop old tables
+-- Drop unnecessary tables
 -- =====
 
 drop table ValidPaths1;
 drop table ValidPaths2;
-drop table DerivationOutputs1;
-drop table DerivationOutputs2;
 drop table Refs1;
 drop table Refs2;
+drop table DerivationOutputs1;
+drop table DerivationOutputs2;
+drop table Realisations1;
+drop table Realisations2;
+drop table RealisationsRefs1;
+drop table RealisationsRefs2;
+drop table RealisationsUnique;
 
 -- =====
--- Drop old views
+-- Drop unnecessary views
 -- =====
 
-drop view DerivationOutputs2Updated;
-drop view DerivationIdPaths;
-drop view ReferencePath;
-drop view ReferenceId;
-drop view ReferrerPath;
-drop view ReferrerId;
-drop view ReferrerReferrerIdReference;
-drop view ReferrerReferrerIdReferenceReferenceId;
-drop view Refs2Updated;
+drop view ValidPathsIdMap;
+drop view RealisationsUniqueIdMap;
