@@ -75233,7 +75233,6 @@ exports.paths = (exports.nix
         // if they rely on internal Nix store database information
         // such as `id`s.
         "~/.cache/nix",
-        // TODO remove as ~root expands to /root on Linux, and there's no /root/.cache
         "~root/.cache/nix"
     ]
     : []).concat((function () {
