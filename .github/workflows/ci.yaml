@@ -22,6 +22,7 @@ env:
     trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
     keep-env-derivations = true
     keep-outputs = true
+  nix_conf_ca_derivations: |
     extra-experimental-features = ca-derivations
 
 jobs:
@@ -40,6 +41,8 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v30
         with:
+          # We don't enable ca-derivations here
+          # because we have later jobs where ca-derivations is enabled.
           nix_conf: ${{ env.nix_conf }}
 
       - name: Restore and save Nix store and npm cache
@@ -124,8 +127,17 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v30
         with:
-          nix_conf: ${{ env.nix_conf }}
-
+          # Make caches with ca-derivations enabled on some machines
+          # to test merging stores where the feature is enabled for one store and disabled for another.
+          # Don't enable it on some machines at all
+          # to test merging stores with that feature disabled.
+          nix_conf: |
+            ${{ env.nix_conf }}
+            ${{ (
+                  (matrix.id == 1 && matrix.os == 'ubuntu-22.04') || 
+                  (matrix.id == 2 && matrix.os == 'ubuntu-24.04')
+                ) && env.nix_conf_ca_derivations || ''
+            }}
       - name: Restore Nix store - ${{ matrix.id }}
         id: restore
         uses: ./restore
@@ -193,7 +205,11 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v30
         with:
-          nix_conf: ${{ env.nix_conf }}
+          # We enable ca-derivations only on macos-15
+          # to test more different cases.
+          nix_conf: |
+            ${{ env.nix_conf }}
+            ${{ matrix.os == 'macos-15' && env.nix_conf_ca_derivations || '' }}
 
       - uses: ./.
         with:
