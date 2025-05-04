@@ -85,9 +85,10 @@ See [Caching Approaches](#caching-approaches).
 
 ```yaml
 - uses: nixbuild/nix-quick-install-action@v30
-  nix_conf: |
-    keep-env-derivations = true
-    keep-outputs = true
+  with:
+    nix_conf: |
+      keep-env-derivations = true
+      keep-outputs = true
 
 - name: Restore and save Nix store
   uses: nix-community/cache-nix-action@v6
