@@ -83937,9 +83937,9 @@ exports.mergeSqlTemplate = `
 -- Get tables from store databases
 -- =====
 
-attach database 'tmp/store1/nix/var/nix/db/db.sqlite' as store1;
+attach database '{{ dbPath1 }}' as store1;
 
-attach database 'tmp/store2/nix/var/nix/db/db.sqlite' as store2;
+attach database '{{ dbPath2 }}' as store2;
 
 create table if not exists store1.SchemaMigrations (
     migration text primary key not null
