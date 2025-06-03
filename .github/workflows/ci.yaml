@@ -98,8 +98,8 @@ jobs:
       - name: Save flake attributes from garbage collection
         run: nix profile install .#saveFromGC
 
-  test-runs-if-dependencies-are-missing:
-    name: Test runs if dependencies are missing
+  test-missing-dependencies:
+    name: "Test: runs even if dependencies are missing"
     needs: build
     strategy:
       matrix:
@@ -120,6 +120,11 @@ jobs:
       - uses: nixbuild/nix-quick-install-action@v30
         with:
           nix_conf: ${{ env.nix_conf }}
+
+      - name: Restore Nix store
+        uses: ./.
+        with:
+          primary-key: test-missing-dependencies-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
 
   # Make `individual` caches
   # Restore `individual` or `common` caches
