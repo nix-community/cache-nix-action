@@ -76,11 +76,7 @@ jobs:
 
       - name: Configure git
         run: |
-          ${{
-            github.head_ref
-              && format('gh pr checkout {0}', github.event.pull_request.number) 
-              || format('git pull --rebase origin {0}', github.ref_name) 
-          }}
+          ${{ env.rebase }}
 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -150,11 +146,7 @@ jobs:
 
       - name: Rebase
         run: |
-          ${{
-            github.head_ref
-              && format('gh pr checkout {0}', github.event.pull_request.number) 
-              || format('git pull --rebase origin {0}', github.ref_name) 
-          }}
+          ${{ env.rebase }}
 
       - uses: nixbuild/nix-quick-install-action@v30
         with:
@@ -228,11 +220,7 @@ jobs:
 
       - name: Rebase
         run: |
-          ${{
-              github.head_ref
-                && format('gh pr checkout {0}', github.event.pull_request.number) 
-                || format('git pull --rebase origin {0}', github.ref_name) 
-            }}
+          ${{ env.rebase }}
 
       - uses: nixbuild/nix-quick-install-action@v30
         with:
@@ -307,11 +295,7 @@ jobs:
 
       - name: Rebase
         run: |
-          ${{
-              github.head_ref
-                && format('gh pr checkout {0}', github.event.pull_request.number) 
-                || format('git pull --rebase origin {0}', github.ref_name) 
-            }}
+          ${{ env.rebase }}
 
       - uses: nixbuild/nix-quick-install-action@v30
         with:
@@ -373,11 +357,7 @@ jobs:
 
       - name: Rebase
         run: |
-          ${{
-            github.head_ref
-              && format('gh pr checkout {0}', github.event.pull_request.number) 
-              || format('git pull --rebase origin {0}', github.ref_name) 
-          }}
+          ${{ env.rebase }}
 
       - uses: nixbuild/nix-quick-install-action@v30
         with:
