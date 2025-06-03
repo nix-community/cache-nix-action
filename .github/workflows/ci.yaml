@@ -108,6 +108,13 @@ jobs:
           - ubuntu-24.04
     runs-on: ${{ matrix.os }}
     steps:
+      # Does remove on Linux
+      # 
+      # Doesn't remove on macOS
+      # rm: /usr/bin/sqlite3: Read-only file system
+      # 
+      # The runner filesystem may change in the future
+      # so I'll keep macOS in the matrix.
       - run: sudo rm -rf $(which sqlite3)
 
       - name: Checkout this repo
