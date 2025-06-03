@@ -22,8 +22,16 @@ env:
     trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
     keep-env-derivations = true
     keep-outputs = true
+
   nix_conf_ca_derivations: |
     extra-experimental-features = ca-derivations
+
+  rebase: |
+    ${{
+      github.head_ref
+        && format('gh pr checkout {0}', github.event.pull_request.number) 
+        || format('git pull --rebase origin {0}', github.ref_name) 
+    }}
 
 jobs:
   # Build the action
@@ -93,6 +101,29 @@ jobs:
 
       - name: Save flake attributes from garbage collection
         run: nix profile install .#saveFromGC
+
+  test-runs-if-dependencies-are-missing:
+    name: Test runs if dependencies are missing
+    needs: build
+    strategy:
+      matrix:
+        os:
+          - macos-15
+          - ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: sudo rm -rf $(which sqlite3)
+
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Rebase
+        run: |
+          ${{ env.rebase }}
+
+      - uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: ${{ env.nix_conf }}
 
   # Make `individual` caches
   # Restore `individual` or `common` caches
