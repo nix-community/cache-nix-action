@@ -39,7 +39,7 @@ jobs:
         with:
           submodules: true
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v32
         with:
           # We don't enable ca-derivations here
           # because we have later jobs where ca-derivations is enabled.
@@ -125,7 +125,7 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v32
         with:
           # Make caches with ca-derivations enabled on some machines
           # to test merging stores where the feature is enabled for one store and disabled for another.
@@ -203,7 +203,7 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v32
         with:
           # We enable ca-derivations only on macos-15
           # to test more different cases.
@@ -282,7 +282,7 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v32
         with:
           nix_conf: ${{ env.nix_conf }}
 
@@ -348,7 +348,7 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v32
         with:
           nix_conf: ${{ env.nix_conf }}
 
