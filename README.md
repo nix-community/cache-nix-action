@@ -61,10 +61,11 @@ This action is based on [actions/cache](https://github.com/actions/cache).
   - [Purge old caches](#purge-old-caches)
   - [Merge caches](#merge-caches)
 - The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)). [Workarounds](https://github.com/marketplace?query=disk):
-  - Any platform: 
-    - [hugoalh/disk-space-optimizer-ghaction](https://github.com/hugoalh/disk-space-optimizer-ghaction)    
+  - Ubuntu, macOS, Windows:
+    - [hugoalh/disk-space-optimizer-ghaction](https://github.com/hugoalh/disk-space-optimizer-ghaction)
+  - Ubuntu, macOS:
     - [wimpysworld/nothing-but-nix](https://github.com/wimpysworld/nothing-but-nix)
-  - Ubuntu: 
+  - Ubuntu:
     - [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space)
     - [endersonmenezes/free-disk-space](https://github.com/endersonmenezes/free-disk-space)
     - [easimon/maximize-build-space](https://github.com/easimon/maximize-build-space)
@@ -75,7 +76,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
     - [laverdet/remove-bloatware](https://github.com/laverdet/remove-bloatware)
     - [xd009642/ci-hoover](https://github.com/xd009642/ci-hoover)
     - [justinthelaw/maximize-github-runner-space](https://github.com/justinthelaw/maximize-github-runner-space)
-  - macOS: 
+  - macOS:
     - [comment](https://github.com/easimon/maximize-build-space/issues/7#issuecomment-1063681606)
 - Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
   - Workaround: provide caches for PRs on default or base branches.
