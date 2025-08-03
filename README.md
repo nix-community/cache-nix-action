@@ -446,7 +446,6 @@ These distances affect the restore and save speed.
 
 **Cons**:
 
-- Works only on GitHub Enterprise Server as of Feb 19, 2025 ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
 - Collects telemetry ([link](https://github.com/DeterminateSystems/magic-nix-cache#telemetry))
 - May trigger rate limit errors ([link](https://github.com/DeterminateSystems/magic-nix-cache#usage-notes)).
 - Follows the GitHub Actions Cache semantics ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
