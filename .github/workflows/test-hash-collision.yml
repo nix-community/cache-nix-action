@@ -15,7 +15,7 @@ jobs:
       installable-nix2: nixpkgs-nix2#nixVersions.nix_2_26
     steps:
       - name: Checkout this repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v30
         with:
