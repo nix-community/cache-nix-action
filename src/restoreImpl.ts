@@ -94,7 +94,8 @@ export async function restoreImpl(
 
         if (
             inputs.restorePrefixesFirstMatch.length > 0 &&
-            !lookedUpPrimaryKey
+            // We may have got an unexpected primary key match by prefix.
+            !hitPrimaryKey
         ) {
             utils.info(
                 `
