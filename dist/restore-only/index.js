@@ -83774,7 +83774,8 @@ async function restoreImpl(stateProvider, earlyExit) {
         }
         let hitFirstMatch = false;
         if (inputs.restorePrefixesFirstMatch.length > 0 &&
-            !lookedUpPrimaryKey) {
+            // We may have got an unexpected primary key match by prefix.
+            !hitPrimaryKey) {
             utils.info(`
                 Searching for a cache using the "${constants_1.Inputs.RestorePrefixesFirstMatch}":
                 ${JSON.stringify(inputs.restorePrefixesFirstMatch)}
