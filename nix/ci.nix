@@ -36,12 +36,13 @@ let
 
   name = choose "" ''with BuildJet backend'';
   # https://stackoverflow.com/a/71158878
-  git_pull = ''''${{
-            github.head_ref
-              && format('gh pr checkout {0}', github.event.pull_request.number) 
-              || format('git pull --rebase origin {0}', github.ref_name) 
-          }}'';
-          
+  git_pull = ''
+    ''${{
+                github.head_ref
+                  && format('gh pr checkout {0}', github.event.pull_request.number) 
+                  || format('git pull --rebase origin {0}', github.ref_name) 
+              }}'';
+
   nix-quick-install-action = ''
     - uses: nixbuild/nix-quick-install-action@v29
   '';
@@ -95,7 +96,7 @@ in
 
         - name: Configure git
           run: |
-            ${ git_pull }
+            ${git_pull}
 
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -125,7 +126,7 @@ in
       strategy:
         matrix:
           os:
-            - macos-13
+            - macos-14
             - macos-14
             - ubuntu-22.04
             - ubuntu-24.04
@@ -139,7 +140,7 @@ in
 
         - name: Rebase
           run: |
-            ${ git_pull }
+            ${git_pull}
 
         ${indent 6 nix-quick-install-action}
 
@@ -200,7 +201,7 @@ in
           strategy:
             matrix:
               os:
-                - macos-13
+                - macos-14
                 - macos-14
                 - ubuntu-22.04
                 - ubuntu-24.04
@@ -211,7 +212,7 @@ in
 
             - name: Rebase
               run: |
-                ${ git_pull }
+                ${git_pull}
 
             ${indent 4 nix-quick-install-action}
 
@@ -288,7 +289,7 @@ in
             - true
             - false
           os:
-            - macos-13
+            - macos-14
             - macos-14
             - ubuntu-22.04
             - ubuntu-24.04
@@ -299,7 +300,7 @@ in
 
         - name: Rebase
           run: |
-            ${ git_pull }
+            ${git_pull}
 
         ${indent 6 nix-quick-install-action}
 
