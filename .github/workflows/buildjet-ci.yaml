@@ -21,7 +21,7 @@ jobs:
         with:
           submodules: true
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v34
 
       - name: Restore and save Nix store
         uses: ./.
@@ -100,7 +100,7 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v34
 
       - name: Restore Nix store - ${{ matrix.id }}
         id: restore
@@ -167,7 +167,7 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v34
 
       - name: Restore and save Nix store
         uses: ./.
@@ -243,7 +243,7 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v34
 
       - name: Restore Nix store
         uses: ./restore
@@ -311,7 +311,7 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: nixbuild/nix-quick-install-action@v30
+      - uses: nixbuild/nix-quick-install-action@v34
 
       - name: Restore and save Nix store
         if: matrix.do-cache
