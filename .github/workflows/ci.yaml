@@ -22,8 +22,16 @@ env:
     trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
     keep-env-derivations = true
     keep-outputs = true
+
   nix_conf_ca_derivations: |
     extra-experimental-features = ca-derivations
+
+  rebase: |
+    ${{
+      github.head_ref
+        && format('gh pr checkout {0}', github.event.pull_request.number) 
+        || format('git pull --rebase origin {0}', github.ref_name) 
+    }}
 
 jobs:
   # Build the action
@@ -68,11 +76,7 @@ jobs:
 
       - name: Configure git
         run: |
-          ${{
-            github.head_ref
-              && format('gh pr checkout {0}', github.event.pull_request.number) 
-              || format('git pull --rebase origin {0}', github.ref_name) 
-          }}
+          ${{ env.rebase }}
 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -93,6 +97,41 @@ jobs:
 
       - name: Save flake attributes from garbage collection
         run: nix profile install .#saveFromGC
+
+  test-missing-dependencies:
+    name: "Test: runs even if dependencies are missing"
+    needs: build
+    strategy:
+      matrix:
+        os:
+          - macos-15
+          - ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Does remove on Linux
+      # 
+      # Doesn't remove on macOS
+      # rm: /usr/bin/sqlite3: Read-only file system
+      # 
+      # The runner filesystem may change in the future
+      # so I'll keep macOS in the matrix.
+      - run: sudo rm -rf $(which sqlite3)
+
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Rebase
+        run: |
+          ${{ env.rebase }}
+
+      - uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: ${{ env.nix_conf }}
+
+      - name: Restore Nix store
+        uses: ./.
+        with:
+          primary-key: test-missing-dependencies-${{ matrix.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
 
   # Make `individual` caches
   # Restore `individual` or `common` caches
@@ -119,11 +158,7 @@ jobs:
 
       - name: Rebase
         run: |
-          ${{
-            github.head_ref
-              && format('gh pr checkout {0}', github.event.pull_request.number) 
-              || format('git pull --rebase origin {0}', github.ref_name) 
-          }}
+          ${{ env.rebase }}
 
       - uses: nixbuild/nix-quick-install-action@v34
         with:
@@ -197,11 +232,7 @@ jobs:
 
       - name: Rebase
         run: |
-          ${{
-              github.head_ref
-                && format('gh pr checkout {0}', github.event.pull_request.number) 
-                || format('git pull --rebase origin {0}', github.ref_name) 
-            }}
+          ${{ env.rebase }}
 
       - uses: nixbuild/nix-quick-install-action@v34
         with:
@@ -276,11 +307,7 @@ jobs:
 
       - name: Rebase
         run: |
-          ${{
-              github.head_ref
-                && format('gh pr checkout {0}', github.event.pull_request.number) 
-                || format('git pull --rebase origin {0}', github.ref_name) 
-            }}
+          ${{ env.rebase }}
 
       - uses: nixbuild/nix-quick-install-action@v34
         with:
@@ -342,11 +369,7 @@ jobs:
 
       - name: Rebase
         run: |
-          ${{
-            github.head_ref
-              && format('gh pr checkout {0}', github.event.pull_request.number) 
-              || format('git pull --rebase origin {0}', github.ref_name) 
-          }}
+          ${{ env.rebase }}
 
       - uses: nixbuild/nix-quick-install-action@v34
         with:
