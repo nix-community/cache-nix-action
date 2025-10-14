@@ -28,7 +28,6 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
    > [!NOTE]
    > For a cache to be restored in the current step, `paths` used to create that cache must be the same as the `paths` specified in the current step.
-
    1. The `cache-nix-action` tries to restore a cache whose key is the same as the specified one (inputs: `primary-key`, `paths`).
 
    1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in a given list of key prefixes (inputs: `restore-prefixes-first-match`, `paths`).
@@ -38,7 +37,6 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 1. Other job steps run.
 
 1. `Post Restore` phase:
-
    1. The `cache-nix-action` purges caches whose keys are the same as the primary key and that were created or last accessed more than a given time ago (inputs: `purge`, `purge-created`, `purge-last-accessed`, `purge-primary-key`).
 
    1. When there's no cache whose key is the same as the primary key, the `cache-nix-action` collects garbage in the Nix store and saves a new cache (inputs: `save`, `gc-max-store-size`, `gc-max-store-size-linux`, `gc-max-store-size-macos`).
@@ -515,7 +513,6 @@ See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-bin
     - [restoreImpl.ts](./src/restoreImpl.ts)
     - [saveImpl.ts](./src/saveImpl.ts)
 - Improve docs.
-
   - Edit [action.nix](./action.nix).
   - Update `action.yml`-s and `README.md`-s:
 
