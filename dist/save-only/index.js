@@ -87409,7 +87409,9 @@ function createDedent(options) {
   function dedent(strings, ...values) {
     const raw = typeof strings === "string" ? [strings] : strings.raw;
     const {
-      escapeSpecialCharacters = Array.isArray(strings)
+      alignValues = false,
+      escapeSpecialCharacters = Array.isArray(strings),
+      trimWhitespace = true
     } = options;
 
     // first, perform interpolation
@@ -87422,8 +87424,10 @@ function createDedent(options) {
       }
       result += next;
       if (i < values.length) {
+        const value = alignValues ? alignValue(values[i], result) : values[i];
+
         // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-        result += values[i];
+        result += value;
       }
     }
 
@@ -87451,13 +87455,32 @@ function createDedent(options) {
     }
 
     // dedent eats leading and trailing whitespace too
-    result = result.trim();
+    if (trimWhitespace) {
+      result = result.trim();
+    }
+
+    // handle escaped newlines at the end to ensure they don't get stripped too
     if (escapeSpecialCharacters) {
-      // handle escaped newlines at the end to ensure they don't get stripped too
       result = result.replace(/\\n/g, "\n");
     }
     return result;
   }
+}
+
+/**
+ * Adjusts the indentation of a multi-line interpolated value to match the current line.
+ */
+function alignValue(value, precedingText) {
+  if (typeof value !== "string" || !value.includes("\n")) {
+    return value;
+  }
+  const currentLine = precedingText.slice(precedingText.lastIndexOf("\n") + 1);
+  const indentMatch = currentLine.match(/^(\s+)/);
+  if (indentMatch) {
+    const indent = indentMatch[1];
+    return value.replace(/\n/g, `\n${indent}`);
+  }
+  return value;
 }
 module.exports = exports.default;
 module.exports["default"] = exports.default;
