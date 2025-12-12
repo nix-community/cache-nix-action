@@ -68,7 +68,7 @@ in
         contents: write
         actions: write
       steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v6
           with:
             submodules: true
 
@@ -136,7 +136,7 @@ in
       runs-on: ''${{ matrix.os }}
       steps:
         - name: Checkout this repo
-          uses: actions/checkout@v4
+          uses: actions/checkout@v6
 
         - name: Rebase
           run: |
@@ -208,7 +208,7 @@ in
           runs-on: ''${{ matrix.os }}
           steps:
             - name: Checkout this repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Rebase
               run: |
@@ -296,7 +296,7 @@ in
       runs-on: ''${{ matrix.os }}
       steps:
         - name: Checkout this repo
-          uses: actions/checkout@v4
+          uses: actions/checkout@v6
 
         - name: Rebase
           run: |
