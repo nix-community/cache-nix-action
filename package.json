@@ -29,7 +29,7 @@
     "@actions/cache": "file:deps/actions/toolkit/packages/cache",
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
-    "@actions/github": "^6.0.0",
+    "@actions/github": "^6.0.1",
     "@actions/io": "^1.1.3",
     "@buildjet/cache": "file:deps/buildjet/toolkit/packages/cache",
     "dedent": "^1.7.0",
