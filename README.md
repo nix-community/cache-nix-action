@@ -499,31 +499,38 @@ See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-bin
 
 ## Contribute
 
-- Clone the repository.
+### Clone the repository
+
+```console
+git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
+```
+
+### Create issues
+
+- Report errors, suggest improvements in [issues](https://github.com/nix-community/cache-nix-action/issues).
+
+### Improve the code
+
+- Read about [JavaScript actions](https://docs.github.com/en/actions/creating-actions/about-custom-actions?learn=create_actions&learnProduct=actions#javascript-actions)
+- See main files:
+  - [restoreImpl.ts](./src/restoreImpl.ts)
+  - [saveImpl.ts](./src/saveImpl.ts)
+- Improve them and other files.
+
+### Improve action description
+
+- Edit [action.nix](./action.nix).
+- Update `action.yml`-s and `README.md`-s:
 
   ```console
-  git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
+  nix run .#write
   ```
 
-- Improve README.
-- Report errors, suggest improvements in issues.
-- Improve code.
-  - Read about [JavaScript actions](https://docs.github.com/en/actions/creating-actions/about-custom-actions?learn=create_actions&learnProduct=actions#javascript-actions)
-  - See main files:
-    - [restoreImpl.ts](./src/restoreImpl.ts)
-    - [saveImpl.ts](./src/saveImpl.ts)
-- Improve docs.
-  - Edit [action.nix](./action.nix).
-  - Update `action.yml`-s and `README.md`-s:
+### Update dependencies
 
-    ```console
-    nix run .#write
-    ```
-
-- Update deps:
-  - Update the `actions-toolkit` branch that contains a patched version of [actions/toolkit](https://github.com/actions/toolkit).
-  - Update the `buildjet-toolkit` branch that contains a patched version of [BuildJet/toolkit](https://github.com/BuildJet/toolkit) synchronized with [actions/toolkit](https://github.com/actions/toolkit).
-  - Update submodules for the mentioned branches on the `main` branch.
+- Update the `actions-toolkit` branch that contains a patched version of [actions/toolkit](https://github.com/actions/toolkit).
+- Update the `buildjet-toolkit` branch that contains a patched version of [BuildJet/toolkit](https://github.com/BuildJet/toolkit) synchronized with [actions/toolkit](https://github.com/actions/toolkit).
+- Update submodules for the mentioned branches on the `main` branch.
 
 # Cache action (legacy description updated for the cache-nix-action)
 
