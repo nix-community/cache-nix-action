@@ -532,6 +532,12 @@ git clone --recurse-submodules https://github.com/nix-community/cache-nix-action
 - Update the `buildjet-toolkit` branch that contains a patched version of [BuildJet/toolkit](https://github.com/BuildJet/toolkit) synchronized with [actions/toolkit](https://github.com/actions/toolkit).
 - Update submodules for the mentioned branches on the `main` branch.
 
+Example:
+
+- `cd` into the toolkit directory
+- commit changes
+- `git push origin <branch>`
+
 # Cache action (legacy description updated for the cache-nix-action)
 
 This action allows caching dependencies and build outputs to improve workflow execution time.
