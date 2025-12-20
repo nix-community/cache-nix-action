@@ -265,6 +265,9 @@ Disadvantages:
 
 ## Save Nix store paths from garbage collection
 
+> [!WARNING]
+> We don't guarantee that [`saveFromGC.nix`](./saveFromGC.nix) will be available or won't have breaking changes in future.
+
 ### Issues
 
 - [issue](https://github.com/NixOS/nix/issues/4250)
