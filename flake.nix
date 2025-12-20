@@ -156,7 +156,7 @@
               nodejs
               pkgs.mdsh
             ];
-            commands.scripts = [
+            commandGroups.scripts = [
               {
                 prefix = "nix run .#";
                 packages = {
