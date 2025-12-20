@@ -123,8 +123,9 @@ outputs:
       - Keys of restored caches.
       - Example: `["key1", "key2"]`.
 runs:
-  using: "node24"
+  using: "node20"
   main: "../dist/restore-only/index.js"
+
 branding:
   icon: "archive"
   color: "gray-dark"

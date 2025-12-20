@@ -114,8 +114,9 @@ inputs:
     default: ${{ github.token }}
 
 runs:
-  using: "node24"
+  using: "node20"
   main: "../dist/save-only/index.js"
+
 branding:
   icon: "archive"
   color: "gray-dark"

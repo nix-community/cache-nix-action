@@ -356,15 +356,15 @@ cat $(nix build .#saveFromGC --no-link --print-out-paths)/bin/save-from-gc
 closure
 /nix/store/pj0rhk7zkfx82xsighf72v8x4rqldzgi-source
 /nix/store/01x5k4nlxcpyd85nnr0b9gm89rm8ff4x-source
-/nix/store/97hxap05brgklr57xh7qaab6s833rfg0-source
+/nix/store/f3phg71mppsdj69cb63xllf1nnigzr2s-source
 /nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
 
 derivations
-/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1
-/nix/store/54zp3xb1qgzy14pd7hi9spjxss437jwr-nix-shell
+/nix/store/2bcv91i8fahqghn8dmyr791iaycbsjdd-hello-2.12.2
+/nix/store/vb1fjr733z2hmwf3kfh72ja8wny59ssr-nix-shell
 
 paths
-/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1/bin/hello
+/nix/store/2bcv91i8fahqghn8dmyr791iaycbsjdd-hello-2.12.2/bin/hello
 ```
 
 Add the installable to the default profile.
@@ -376,7 +376,7 @@ nix profile list | grep save-from-gc
 ```
 
 ```console
-Store paths:        /nix/store/bgd1sgyc8wy1i3msh0p2g1yl0iywp7ys-save-from-gc
+Store paths:        /nix/store/mrp80d8sp6dzzhw4s8xm6gq4zz4cdz6d-save-from-gc
 ```
 
 Or, build the installable and see the garbage collection roots that won't let it be garbage collected.
@@ -396,7 +396,7 @@ Output (edited):
 ```console
 ...
 <...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
-<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/bgd1sgyc8wy1i3msh0p2g1yl0iywp7ys-save-from-gc
+<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/mrp80d8sp6dzzhw4s8xm6gq4zz4cdz6d-save-from-gc
 ```
 
 <!-- `$ nix profile remove examples/saveFromGC; rm result` -->
@@ -580,8 +580,8 @@ Read more about the change & access the migration guide: [reference to the annou
 
 ### v5
 
-* Updated to node 24
-* Requires a minimum Actions Runner version of `2.327.1`
+- Updated to node 24
+- Requires a minimum Actions Runner version of `2.327.1`
 
 ### v4
 
