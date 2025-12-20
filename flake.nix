@@ -1,9 +1,9 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/02032da4af073d0f6110540c8677f16d4be0117f";
+    nixpkgs.url = "github:NixOS/nixpkgs/def3da69945bbe338c373fddad5a1bb49cf199ce";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
-      inputs.nixpkgs-lib.url = "github:NixOS/nixpkgs/02032da4af073d0f6110540c8677f16d4be0117f?dir=lib";
+      inputs.nixpkgs-lib.url = "github:NixOS/nixpkgs/def3da69945bbe338c373fddad5a1bb49cf199ce?dir=lib";
     };
     systems.url = "github:nix-systems/default";
     devshell = {
@@ -53,7 +53,7 @@
               '';
             };
 
-          nodejs = pkgs.nodejs_23;
+          nodejs = pkgs.nodejs_25;
         in
         {
           packages = mkShellApps {

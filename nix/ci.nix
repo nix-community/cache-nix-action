@@ -54,7 +54,7 @@ in
     workflow_dispatch:
 
   env:
-    pin_nixpkgs: nix registry pin nixpkgs github:NixOS/nixpkgs/807c549feabce7eddbf259dbdcec9e0600a0660d
+    pin_nixpkgs: nix registry pin nixpkgs github:NixOS/nixpkgs/def3da69945bbe338c373fddad5a1bb49cf199ce
     # required for gh
     GITHUB_TOKEN: ''${{ secrets.GITHUB_TOKEN }}
 
