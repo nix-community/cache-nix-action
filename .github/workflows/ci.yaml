@@ -326,9 +326,9 @@ jobs:
   #
   compare-run-times:
     name: Job with caching
-    needs:
-      - merge-similar-caches
-      - merge-similar-caches-check
+    # needs:
+    #   - merge-similar-caches
+    #   - merge-similar-caches-check
     permissions:
       actions: write
     strategy:
