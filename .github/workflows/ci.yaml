@@ -358,6 +358,7 @@ jobs:
       - uses: wimpysworld/nothing-but-nix@6af122a9403f936ef689e44cc013ae3f3e2f1c3b
         with:
           hatchet-protocol: "holster"
+          nix-permission-edict: true
 
       - uses: nixbuild/nix-quick-install-action@v34
         with:
