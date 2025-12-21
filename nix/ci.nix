@@ -336,11 +336,19 @@ in
           run: |
             ${git_pull}
 
-        # v6 - https://github.com/wimpysworld/nothing-but-nix/releases/tag/v6
-        - uses: wimpysworld/nothing-but-nix@6af122a9403f936ef689e44cc013ae3f3e2f1c3b
-          with:
-            hatchet-protocol: 'holster'
-
+        # adapted from https://github.com/nodejs/node/pull/54658
+        - name: Cleanup
+          run: |
+            echo "::group::Free space before cleanup"
+            df -h
+            echo "::endgroup::"
+            echo "::group::Cleaned Files"
+            sudo rm -rfv ''${{ runner.os == 'Linux' && '/usr/local/lib/android' || '/Users/runner/Library/Android/sdk' }}
+            echo "::endgroup::"
+            echo "::group::Free space after cleanup"
+            df -h
+            echo "::endgroup::"
+        
         - uses: nixbuild/nix-quick-install-action@v34
           with:
             nix_conf: ''${{ env.nix_conf }}
