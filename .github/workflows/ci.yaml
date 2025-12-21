@@ -211,7 +211,8 @@ jobs:
             ${{ env.nix_conf }}
             ${{ matrix.os == 'macos-15' && env.nix_conf_ca_derivations || '' }}
 
-      - uses: ./.
+      - name: Restore and save Nix store
+        uses: ./.
         with:
           primary-key: similar-cache-${{ matrix.os }}-common-${{ hashFiles('.github/workflows/ci.yaml') }}
           # if no hit on the primary key, restore individual caches that match `ci.yaml`
@@ -284,7 +285,11 @@ jobs:
 
       - uses: nixbuild/nix-quick-install-action@v34
         with:
-          nix_conf: ${{ env.nix_conf }}
+          # We enable ca-derivations only on macos-15
+          # to test more different cases.
+          nix_conf: |
+            ${{ env.nix_conf }}
+            ${{ matrix.os == 'macos-15' && env.nix_conf_ca_derivations || '' }}
 
       - name: Restore Nix store
         uses: ./restore
@@ -318,6 +323,7 @@ jobs:
       - name: Run node
         run: node --version
 
+  #
   compare-run-times:
     name: Job with caching
     needs:
@@ -352,7 +358,13 @@ jobs:
         with:
           nix_conf: ${{ env.nix_conf }}
 
-      - if: matrix.do-cache
+      # v6 - https://github.com/wimpysworld/nothing-but-nix/releases/tag/v6
+      - uses: wimpysworld/nothing-but-nix@6af122a9403f936ef689e44cc013ae3f3e2f1c3b
+        with:
+          hatchet-protocol: "holster"
+
+      - name: Restore and save Nix store
+        if: matrix.do-cache
         uses: ./.
         with:
           # save a new cache every time ci file changes
@@ -368,45 +380,58 @@ jobs:
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
           # and collect garbage in the Nix store until it reaches this size in bytes
-          gc-max-store-size: 0M
+          gc-max-store-size: 0
 
       # Uncomment to debug this job
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - run: nix profile list
+      - name: Show profile
+        run: nix profile list
 
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
 
-      - run: nix registry list
+      - name: List registry
+        run: nix registry list
 
       - name: Save nixpkgs from garbage collection
         # About nixpkgs#path
         # https://github.com/NixOS/nixpkgs/issues/270292
-        run: nix profile install $(nix eval nixpkgs#path)
+        run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
 
-      - run: nix profile list
+      - name: Show profile
+        run: nix profile list
 
-      - run: nix profile install nixpkgs#hello
+      - name: Install nixpkgs#hello
+        run: nix profile install nixpkgs#hello
 
-      - run: nix profile install nixpkgs#cachix
+      - name: Install nixpkgs#cachix
+        run: nix profile install nixpkgs#cachix
 
-      - run: nix profile install nixpkgs#nixpkgs-fmt
+      - name: Install nixpkgs#nixpkgs-fmt
+        run: nix profile install nixpkgs#nixpkgs-fmt
 
-      - run: nix profile install nixpkgs#alejandra
+      - name: Install nixpkgs#alejandra
+        run: nix profile install nixpkgs#alejandra
 
-      - run: nix profile install nixpkgs#nixd
+      - name: Install nixpkgs#nixd
+        run: nix profile install nixpkgs#nixd
 
-      - run: nix profile install nixpkgs#ghc
+      - name: Install nixpkgs#ghc
+        run: nix profile install nixpkgs#ghc
 
-      - run: nix profile install nixpkgs#haskell-language-server
+      - name: Install nixpkgs#haskell-language-server
+        run: nix profile install nixpkgs#haskell-language-server
 
-      - run: nix profile install nixpkgs#purescript
+      - name: Install nixpkgs#purescript
+        run: nix profile install nixpkgs#purescript
 
-      - run: nix profile install nixpkgs#nodejs
+      - name: Install nixpkgs#nodejs
+        run: nix profile install nixpkgs#nodejs
 
-      - run: nix profile list
+      - name: Show profile
+        run: nix profile list
 
   test-collision-produce:
     needs: build
