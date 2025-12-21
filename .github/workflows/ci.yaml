@@ -354,14 +354,14 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: nixbuild/nix-quick-install-action@v34
-        with:
-          nix_conf: ${{ env.nix_conf }}
-
       # v6 - https://github.com/wimpysworld/nothing-but-nix/releases/tag/v6
       - uses: wimpysworld/nothing-but-nix@6af122a9403f936ef689e44cc013ae3f3e2f1c3b
         with:
           hatchet-protocol: "holster"
+
+      - uses: nixbuild/nix-quick-install-action@v34
+        with:
+          nix_conf: ${{ env.nix_conf }}
 
       - name: Restore and save Nix store
         if: matrix.do-cache
