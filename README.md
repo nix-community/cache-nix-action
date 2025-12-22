@@ -62,9 +62,10 @@ This action is based on [actions/cache](https://github.com/actions/cache).
   - Ubuntu, macOS, Windows:
     - [hugoalh/disk-space-optimizer-ghaction](https://github.com/hugoalh/disk-space-optimizer-ghaction)
   - Ubuntu, macOS:
-    - [wimpysworld/nothing-but-nix](https://github.com/wimpysworld/nothing-but-nix)
+    - [`nodejs/node` PR](https://github.com/nodejs/node/pull/54658/files#diff-60e66ca8b630611c89b474be16a0c987928cfce83f77968025815c302ad731fe) ([example](https://github.com/nix-community/cache-nix-action/blob/21c2dba637f3bdce2f39e4b39a383c806e0cce13/.github/workflows/ci.yaml#L357-L368))
   - Ubuntu:
     - [jlumbroso/free-disk-space](https://github.com/jlumbroso/free-disk-space)
+    - [wimpysworld/nothing-but-nix](https://github.com/wimpysworld/nothing-but-nix) (see [issue](https://github.com/wimpysworld/nothing-but-nix/issues/33))
     - [endersonmenezes/free-disk-space](https://github.com/endersonmenezes/free-disk-space)
     - [easimon/maximize-build-space](https://github.com/easimon/maximize-build-space)
     - [AdityaGarg8/remove-unwanted-software](https://github.com/AdityaGarg8/remove-unwanted-software),[gmij/max-build-space](https://github.com/gmij/max-build-space)
