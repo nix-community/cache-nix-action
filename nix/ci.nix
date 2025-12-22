@@ -43,9 +43,7 @@ let
                   || format('git pull --rebase origin {0}', github.ref_name) 
               }}'';
 
-  nix-quick-install-action = ''
-    - uses: nixbuild/nix-quick-install-action@v29
-  '';
+  install-nix-action = ''- uses: cachix/install-nix-action@v31.9.0'';
 in
 ''
   name: Nix CI ${name}
@@ -58,12 +56,12 @@ in
     # required for gh
     GITHUB_TOKEN: ''${{ secrets.GITHUB_TOKEN }}
     
-    nix_conf: |
+    extra_nix_config: |
       substituters = https://cache.nixos.org/ https://nix-community.cachix.org https://cache.iog.io
       trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
       keep-env-derivations = true
       keep-outputs = true
-    nix_conf_ca_derivations: |
+    nix_config_ca_derivations: |
       extra-experimental-features = ca-derivations
 
   jobs:
@@ -80,11 +78,11 @@ in
           with:
             submodules: true
 
-        - uses: nixbuild/nix-quick-install-action@v34
+        ${install-nix-action}
           with:
             # We don't enable ca-derivations here
             # because we have later jobs where ca-derivations is enabled.
-            nix_conf: ''${{ env.nix_conf }}
+            extra_nix_config: ''${{ env.extra_nix_config }}
 
         - name: Restore and save Nix store and npm cache
           uses: ./.
@@ -159,18 +157,18 @@ in
           run: |
             ${git_pull}
 
-        - uses: nixbuild/nix-quick-install-action@v34
+        ${install-nix-action}
           with:
             # Make caches with ca-derivations enabled on some machines
             # to test merging stores where the feature is enabled for one store and disabled for another.
             # Don't enable it on some machines at all
             # to test merging stores with that feature disabled.
-            nix_conf: |
-              ''${{ env.nix_conf }}
+            extra_nix_config: |
+              ''${{ env.extra_nix_config }}
               ''${{ (
                     (matrix.id == 1 && matrix.os == 'ubuntu-22.04') || 
                     (matrix.id == 2 && matrix.os == 'ubuntu-24.04')
-                  ) && env.nix_conf_ca_derivations || '''
+                  ) && env.nix_config_ca_derivations || '''
               }}
         - name: Restore Nix store - ''${{ matrix.id }}
           id: restore
@@ -244,13 +242,13 @@ in
               run: |
                 ${git_pull}
 
-            - uses: nixbuild/nix-quick-install-action@v34
+            ${install-nix-action}
               with:
                 # We enable ca-derivations only on macos-15
                 # to test more different cases.
-                nix_conf: |
-                  ''${{ env.nix_conf }}
-                  ''${{ matrix.os == 'macos-15' && env.nix_conf_ca_derivations || ''' }}
+                extra_nix_config: |
+                  ''${{ env.extra_nix_config }}
+                  ''${{ matrix.os == 'macos-15' && env.nix_config_ca_derivations || ''' }}
 
             - name: Restore${choose "" " and save"} Nix store
               uses: ./${if check then "restore" else "."}
@@ -349,9 +347,9 @@ in
             df -h
             echo "::endgroup::"
         
-        - uses: nixbuild/nix-quick-install-action@v34
+        ${install-nix-action}
           with:
-            nix_conf: ''${{ env.nix_conf }}
+            extra_nix_config: ''${{ env.extra_nix_config }}
 
         - name: Restore and save Nix store
           if: matrix.do-cache
