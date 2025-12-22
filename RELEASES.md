@@ -1,5 +1,37 @@
 # Releases
 
+## Changelog
+
+### 5.0.1
+
+- Update `@azure/storage-blob` to `^12.29.1` via `@actions/cache@5.0.1` [#1685](https://github.com/actions/cache/pull/1685)
+
+### 5.0.0
+
+> [!IMPORTANT]
+> `actions/cache@v5` runs on the Node.js 24 runtime and requires a minimum Actions Runner version of `2.327.1`.
+> If you are using self-hosted runners, ensure they are updated before upgrading.
+
+### 4.3.0
+
+- Bump `@actions/cache` to [v4.1.0](https://github.com/actions/toolkit/pull/2132)
+
+### 4.2.4
+
+- Bump `@actions/cache` to v4.0.5
+
+### 4.2.3
+
+- Bump `@actions/cache` to v4.0.3 (obfuscates SAS token in debug logs for cache entries)
+
+### 4.2.2
+
+- Bump `@actions/cache` to v4.0.2
+
+### 4.2.1
+
+- Bump `@actions/cache` to v4.0.1
+
 ### 4.2.0
 
 TLDR; The cache backend service has been rewritten from the ground up for improved performance and reliability. [actions/cache](https://github.com/actions/cache) now integrates with the new cache service (v2) APIs.
