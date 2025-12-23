@@ -33,7 +33,8 @@ jobs:
         with:
           # We don't enable ca-derivations here
           # because we have later jobs where ca-derivations is enabled.
-          extra_nix_config: ${{ env.extra_nix_config }}
+          extra_nix_config: |
+            ${{ env.extra_nix_config }}
 
       - name: Restore and save Nix store and npm cache
         uses: ./.
@@ -368,7 +369,8 @@ jobs:
 
       - uses: cachix/install-nix-action@v31.9.0
         with:
-          extra_nix_config: ${{ env.extra_nix_config }}
+          extra_nix_config: |
+            ${{ env.extra_nix_config }}
 
       - name: Restore and save Nix store
         if: matrix.do-cache
