@@ -115,7 +115,10 @@ export async function restoreCache({
     let tarCommandModifiers = new TarCommandModifiers();
 
     if (inputs.nix && !lookupOnly) {
-        tarCommandModifiers.extractArgs = await prepareExcludeFromFile(true);
+        tarCommandModifiers.extractArgs = [
+            ...(await prepareExcludeFromFile(true)),
+            "--no-same-owner"
+        ];
 
         info(`::group::Logs produced while restoring a cache.`);
     }
