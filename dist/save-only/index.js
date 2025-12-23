@@ -58760,7 +58760,10 @@ async function prepareExcludeFromFile(forRestore) {
 async function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     let tarCommandModifiers = new options_1.TarCommandModifiers();
     if (inputs.nix && !lookupOnly) {
-        tarCommandModifiers.extractArgs = await prepareExcludeFromFile(true);
+        tarCommandModifiers.extractArgs = [
+            ...(await prepareExcludeFromFile(true)),
+            "--no-same-owner"
+        ];
         (0, exports.info)(`::group::Logs produced while restoring a cache.`);
     }
     // The "restoreCache" implementation is selected at runtime.
