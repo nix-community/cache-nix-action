@@ -8,14 +8,14 @@ import { mergeStoreDatabases } from "./mergeStoreDatabases";
 
 export async function restoreCache(key: string, ref?: string) {
     const tempDir = await cacheUtils.createTempDirectory();
-    const dbPath = "/nix/var/nix/db/db.sqlite";
-    const dbPath1 = `${tempDir}/old.sqlite`;
-    const dbPath2 = `${tempDir}/new.sqlite`;
-    const dbPath3 = `${tempDir}/merged.sqlite`;
+    const dbStorePath = "/nix/var/nix/db/db.sqlite";
+    const dbOldPath = `${tempDir}/old.sqlite`;
+    const dbNewPath = `${tempDir}/new.sqlite`;
+    const dbMergedPath = `${tempDir}/merged.sqlite`;
 
     if (inputs.nix) {
-        utils.info(`Copying "${dbPath}" to "${dbPath1}".`);
-        copyFileSync(dbPath, dbPath1);
+        utils.info(`Copying "${dbStorePath}" to "${dbOldPath}".`);
+        copyFileSync(dbStorePath, dbOldPath);
     }
 
     utils.info(
@@ -34,23 +34,23 @@ export async function restoreCache(key: string, ref?: string) {
         utils.info(`Finished restoring the cache.`);
 
         if (inputs.nix) {
-            utils.info(`Copying "${dbPath}" to "${dbPath2}".`);
+            utils.info(`Copying "${dbStorePath}" to "${dbNewPath}".`);
 
-            copyFileSync(dbPath, dbPath2);
+            copyFileSync(dbStorePath, dbNewPath);
 
             utils.info(
                 `
-                Merging store databases "${dbPath1}" and "${dbPath2}"
-                into the new database "${dbPath3}".
+                Merging store databases "${dbOldPath}" and "${dbNewPath}"
+                into the new database "${dbMergedPath}".
                 `
             );
 
             await mergeStoreDatabases(
                 tempDir,
-                dbPath1,
-                dbPath2,
-                dbPath3,
-                dbPath
+                dbOldPath,
+                dbNewPath,
+                dbMergedPath,
+                dbStorePath
             );
 
             const nixCacheDir = `${process.env.HOME}/.cache/nix`;
