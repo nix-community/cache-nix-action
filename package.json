@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
-    "@types/jest": "^29.5.14",
+    "@types/jest": "^30.0.0",
     "@types/nock": "^11.1.0",
     "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
