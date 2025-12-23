@@ -235,7 +235,7 @@ jobs:
 
       # Stuff in a profile can survive garbage collection.
       # Therefore, profiles are ignored when restoring a cache.
-      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # So, the current profile should be the default profile created by the action that installs Nix.
       # The default profile should contain only nix.
       - name: List profile
         run: nix profile list
@@ -301,7 +301,7 @@ jobs:
 
       # Stuff in a profile can survive garbage collection.
       # Therefore, profiles are ignored when restoring a cache.
-      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # So, the current profile should be the default profile created by the action that installs Nix.
       # The default profile should contain only nix.
       - name: List profile
         run: nix profile list
