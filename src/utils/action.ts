@@ -123,6 +123,8 @@ export async function restoreCache({
         info(`::group::Logs produced while restoring a cache.`);
     }
 
+    tarCommandModifiers.useSudo = true;
+
     // The "restoreCache" implementation is selected at runtime.
     // The options are in the "cache" module.
     const key = await cache.restoreCache(
