@@ -61,6 +61,8 @@ in
       trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
       keep-env-derivations = true
       keep-outputs = true
+      experimental-features = nix-command flakes
+      accept-flake-config = true
     nix_config_ca_derivations: |
       extra-experimental-features = ca-derivations
 
