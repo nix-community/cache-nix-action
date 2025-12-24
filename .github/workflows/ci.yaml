@@ -64,10 +64,6 @@ jobs:
           # and collect garbage in the Nix store until it reaches this size in bytes
           gc-max-store-size: 0
 
-      # Uncomment to debug this job
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Configure git
         run: |
           ${{
@@ -79,6 +75,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      # Uncomment to debug this job
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+          
       - name: Install packages & Build the action
         run: nix run .#install
 
