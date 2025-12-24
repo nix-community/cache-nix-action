@@ -58766,6 +58766,7 @@ async function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
         ];
         (0, exports.info)(`::group::Logs produced while restoring a cache.`);
     }
+    tarCommandModifiers.useSudo = true;
     // The "restoreCache" implementation is selected at runtime.
     // The options are in the "cache" module.
     const key = await cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, tarCommandModifiers);
