@@ -217,7 +217,7 @@ export const stringify = (value: any) => JSON.stringify(value, null, 2);
 
 export async function run(
     command: string,
-    enableCommandOutput: boolean = false
+    enableCommandOutput: boolean = true
 ) {
     let stdout = "";
     let stderr = "";
