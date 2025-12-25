@@ -58800,7 +58800,7 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 }
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
-async function run(command, enableCommandOutput = false) {
+async function run(command, enableCommandOutput = true) {
     let stdout = "";
     let stderr = "";
     const options = {
