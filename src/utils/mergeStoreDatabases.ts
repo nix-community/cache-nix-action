@@ -13,8 +13,13 @@ export async function mergeStoreDatabases(
 ) {
     const mergeSqlFile = `${tempDir}/merge.sql`;
     const template = Handlebars.compile(mergeSqlTemplate);
+    
+    await utils.run(`
+        ls -l ${dbOldPath} ${dbNewPath} ${dbMergedPath} ${mergeSqlFile}
+    `)
+    
     writeFileSync(mergeSqlFile, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
-
+    
     await utils.run(`sqlite3 ${dbMergedPath} < ${mergeSqlFile}`);
     
     utils.info(`Checking the new database.`);
