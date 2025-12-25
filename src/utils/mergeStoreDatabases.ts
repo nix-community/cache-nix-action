@@ -11,10 +11,6 @@ export async function mergeStoreDatabases(
     dbMergedPath: string,
     dbStorePath: string
 ) {
-    if (existsSync(dbStorePath)) {
-        await utils.run(`sudo rm -f ${dbStorePath}`);
-    }
-
     const mergeSqlFile = `${tempDir}/merge.sql`;
     const template = Handlebars.compile(mergeSqlTemplate);
     writeFileSync(mergeSqlFile, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
@@ -27,7 +23,13 @@ export async function mergeStoreDatabases(
     
     utils.info(`The new database is consistent.`)
     
+    utils.info(`Removing old database files.`)
+    
+    await utils.run(`sudo rm -f ${dbStorePath} ${dbStorePath}-wal ${dbStorePath}-shm`);
+    
+    utils.info(`Moving the database file to ${dbStorePath}.`)
+    
     await utils.run(`sudo mv ${dbMergedPath} ${dbStorePath}`);
     
-    utils.info(`Moved the new database to ${dbStorePath}.`)
+    utils.info(`Moved.`)
 }
