@@ -68,6 +68,7 @@ in
       keep-env-derivations = true
       keep-outputs = true
       experimental-features = nix-command flakes
+      accept-flake-config = true
     nix_config_ca_derivations: |
       extra-experimental-features = ca-derivations
 
