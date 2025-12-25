@@ -79,9 +79,9 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      # # Uncomment to debug this job
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
+      # Uncomment to debug this job
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Stop nix-daemon
         run: sudo systemctl start nix-daemon.service
