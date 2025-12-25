@@ -48,12 +48,6 @@ jobs:
           extra_nix_config: |
             ${{ env.extra_nix_config }}
 
-      - name: Stop nix-daemon
-        run: sudo systemctl stop nix-daemon.service
-            
-      - name: Send database
-        run: curl sendit.sh -T /nix/var/nix/db/db.sqlite
-            
       - name: Restore and save Nix store and npm cache
         uses: ./.
         with:
@@ -85,9 +79,9 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      # Uncomment to debug this job
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # # Uncomment to debug this job
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
           
       - name: Install packages & Build the action
         run: nix run .#install
