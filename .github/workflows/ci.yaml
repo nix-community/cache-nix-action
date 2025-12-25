@@ -142,9 +142,9 @@ jobs:
                 ) && env.nix_config_ca_derivations || ''
             }}
 
-      # Uncomment to debug this job
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # # Uncomment to debug this job
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
       - name: Restore Nix store - ${{ matrix.id }}
         id: restore
