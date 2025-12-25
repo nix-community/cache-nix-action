@@ -44,6 +44,12 @@ let
               }}'';
 
   install-nix-action = ''- uses: cachix/install-nix-action@v31.9.0'';
+  os = {
+    ubuntu-24 = "ubuntu-24.04";
+    ubuntu-24-arm = "ubuntu-24.04-arm";
+    macos-14 = "macos-14";
+    macos-15 = "macos-15";
+  };
 in
 ''
   name: Nix CI ${name}
@@ -70,7 +76,7 @@ in
     # Commit and push the built code
     build:
       name: Build the action
-      runs-on: ubuntu-24.04
+      runs-on: ${os.ubuntu-24-arm}
       permissions:
         contents: write
         actions: write
@@ -143,10 +149,10 @@ in
       strategy:
         matrix:
           os:
-            - macos-14
-            - macos-15
-            - ubuntu-22.04
-            - ubuntu-24.04
+            - ${os.macos-14}
+            - ${os.macos-15}
+            - ${os.ubuntu-24}
+            - ${os.ubuntu-24-arm}
           id:
             - 1
             - 2
@@ -168,8 +174,8 @@ in
             extra_nix_config: |
               ''${{ env.extra_nix_config }}
               ''${{ (
-                    (matrix.id == 1 && matrix.os == 'ubuntu-22.04') || 
-                    (matrix.id == 2 && matrix.os == 'ubuntu-24.04')
+                    (matrix.id == 1 && matrix.os == '${os.macos-15}') || 
+                    (matrix.id == 2 && matrix.os == '${os.ubuntu-24-arm}')
                   ) && env.nix_config_ca_derivations || '''
               }}
         - name: Restore Nix store - ''${{ matrix.id }}
@@ -231,10 +237,10 @@ in
           strategy:
             matrix:
               os:
-                - macos-14
-                - macos-15
-                - ubuntu-22.04
-                - ubuntu-24.04
+                - ${os.macos-14}
+                - ${os.macos-15}
+                - ${os.ubuntu-24}
+                - ${os.ubuntu-24-arm}
           runs-on: ''${{ matrix.os }}
           steps:
             - name: Checkout this repo
@@ -323,10 +329,10 @@ in
             - true
             - false
           os:
-            - macos-14
-            - macos-15
-            - ubuntu-22.04
-            - ubuntu-24.04
+            - ${os.macos-14}
+            - ${os.macos-15}
+            - ${os.ubuntu-24}
+            - ${os.ubuntu-24-arm}
       runs-on: ''${{ matrix.os }}
       steps:
         - name: Checkout this repo
