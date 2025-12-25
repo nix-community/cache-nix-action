@@ -46,12 +46,12 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 ## Limitations
 
 - Uses experimental [nix](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix) commands like [nix store gc](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-store-gc) and [nix path-info](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-path-info).
-- By default, the action caches and restores only `/nix`, `~/.cache/nix`, `~root/.cache/nix` (see [documentation](#inputs) for the `paths` input).
+- By default, the action caches and restores only `/nix` (see [documentation](#inputs) for the `paths` input).
   - The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nixos.org/manual/nix/unstable/store/types/local-store.html#local-store)).
   - When restoring a cache, the action doesn't extract from the cache the `/nix/store` paths that already exist on the runner.
-  - Additionally, the action unarchives only the `/nix/var/nix/db/db.sqlite` and skips other cached `/nix/var` directories.
+  - The action unarchives only the `/nix/var/nix/db/db.sqlite` and skips other cached `/nix/var` directories and files.
+  - The action removes existing `/nix/var/nix/db/db.sqlite-wal` and `/nix/var/nix/db/db.sqlite-shm` (see [WAL-mode File Format](https://sqlite.org/walformat.html)).
   - The action merges existing and new databases when restoring a cache.
-- The action requires [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
 - The action supports only `Linux` and `macOS` runners for Nix store caching.
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
@@ -167,7 +167,7 @@ See [action.yml](action.yml).
 | `fail-on`                         | <ul> <li>Input form: <code>&lt;key type&gt;.&lt;result&gt;</code>.</li> <li><code>&lt;key type&gt;</code> options: <code>primary-key</code>, <code>first-match</code>.</li> <li><code>&lt;result&gt;</code> options: <code>miss</code>, <code>not-restored</code>.</li> <li>When the input satisfies the input form, when the event described in the input happens, the action fails.</li> <li>Example:<ul> <li>Input: <code>primary-key.not-restored</code>.</li> <li>Event: a cache could not be restored via the <code>primary-key</code>.</li></ul></li> <li>Otherwise, this input has no effect.</li> </ul>                                                                                                                                                                                                                                                     | `false`  | `""`                  |
 | `nix`                             | <ul> <li>Can have an effect only when the action runs on a <code>Linux</code> or a <code>macOS</code> runner.</li> <li>When <code>true</code>, the action can do Nix-specific things.</li> <li>Otherwise, the action doesn't do them.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `false`  | `true`                |
 | `save`                            | <ul> <li>When <code>true</code>, the action can save a cache with the <code>primary-key</code>.</li> <li>Otherwise, the action can't save a cache.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `false`  | `true`                |
-| `paths`                           | <ul> <li>When <code>nix: true</code>, the action uses <code>["/nix", "~/.cache/nix", "~root/.cache/nix"]</code> as default paths, as suggested <a href="https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7">here</a>.</li> <li>Otherwise, the action uses an empty list as default paths.</li> <li>When a newline-separated non-empty list of non-empty path patterns (see <a href="https://github.com/actions/toolkit/tree/main/packages/glob"><code>@actions/glob</code></a> for supported patterns), the action appends it to default paths and uses the resulting list for restoring and saving caches.</li> <li>Otherwise, the action uses default paths for restoring and saving caches.</li> </ul>                                                                                                        | `false`  | `""`                  |
+| `paths`                           | <ul> <li>When <code>nix: true</code>, the action uses <code>["/nix"]</code> as default paths.</li> <li>Otherwise, the action uses an empty list as default paths.</li> <li>When a newline-separated non-empty list of non-empty path patterns (see <a href="https://github.com/actions/toolkit/tree/main/packages/glob"><code>@actions/glob</code></a> for supported patterns), the action appends it to default paths and uses the resulting list for restoring and saving caches.</li> <li>Otherwise, the action uses default paths for restoring and saving caches.</li> </ul>                                                                                                                                                                                                                                                                                    | `false`  | `""`                  |
 | `paths-macos`                     | <ul> <li>Overrides <code>paths</code>.</li> <li>Can have an effect only when the action runs on a <code>macOS</code> runner.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `false`  | `""`                  |
 | `paths-linux`                     | <ul> <li>Overrides <code>paths</code>.</li> <li>Can have an effect only when the action runs on a <code>Linux</code> runner.</li> </ul>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `false`  | `""`                  |
 | `backend`                         | <p>Choose an implementation of the <code>cache</code> package.</p> <ul> <li>When <code>actions</code>, use the <a href="https://github.com/actions/toolkit/tree/main/packages/cache">actions version</a> from <a href="https://github.com/nix-community/cache-nix-action/tree/actions-toolkit/packages/cache">here</a>.</li> <li>When <code>buildjet</code>, use the <a href="https://github.com/BuildJet/toolkit/tree/main/packages/cache-buildjet">BuildJet version</a> from <a href="https://github.com/nix-community/cache-nix-action/tree/buildjet-toolkit/packages/cache">here</a>.</li> </ul>                                                                                                                                                                                                                                                                 | `false`  | `actions`             |
@@ -363,11 +363,11 @@ closure
 /nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
 
 derivations
-/nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2
-/nix/store/8xjhphvn58rrqydsx5569jn01yd5a0al-nix-shell
+/nix/store/2bcv91i8fahqghn8dmyr791iaycbsjdd-hello-2.12.2
+/nix/store/vb1fjr733z2hmwf3kfh72ja8wny59ssr-nix-shell
 
 paths
-/nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2/bin/hello
+/nix/store/2bcv91i8fahqghn8dmyr791iaycbsjdd-hello-2.12.2/bin/hello
 ```
 
 Add the installable to the default profile.
@@ -379,7 +379,7 @@ nix profile list | grep save-from-gc
 ```
 
 ```console
-Store paths:        /nix/store/d3wvhfgi549va9f5m4qhzjmk9g2asmnc-save-from-gc
+Store paths:        /nix/store/mrp80d8sp6dzzhw4s8xm6gq4zz4cdz6d-save-from-gc
 ```
 
 Or, build the installable and see the garbage collection roots that won't let it be garbage collected.
@@ -399,7 +399,7 @@ Output (edited):
 ```console
 ...
 <...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
-<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/d3wvhfgi549va9f5m4qhzjmk9g2asmnc-save-from-gc
+<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/mrp80d8sp6dzzhw4s8xm6gq4zz4cdz6d-save-from-gc
 ```
 
 <!-- `$ nix profile remove examples/saveFromGC; rm result` -->

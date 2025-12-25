@@ -52,16 +52,6 @@ export async function restoreCache(key: string, ref?: string) {
                 dbMergedPath,
                 dbStorePath
             );
-
-            const nixCacheDir = `${process.env.HOME}/.cache/nix`;
-
-            if (existsSync(nixCacheDir)) {
-                utils.info(
-                    `Giving write permissions for ${nixCacheDir} to all users.`
-                );
-                
-                await utils.run(`sudo chmod a+w -R ${nixCacheDir}`);
-            }
         }
 
         return cacheKey;
