@@ -1,5 +1,3 @@
-import { copyFileSync, existsSync } from "fs";
-
 import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
@@ -15,7 +13,8 @@ export async function restoreCache(key: string, ref?: string) {
 
     if (inputs.nix) {
         utils.info(`Copying "${dbStorePath}" to "${dbOldPath}".`);
-        copyFileSync(dbStorePath, dbOldPath);
+        
+        await utils.run(`sudo cp ${dbStorePath} ${dbOldPath}`)
     }
 
     utils.info(
@@ -36,7 +35,7 @@ export async function restoreCache(key: string, ref?: string) {
         if (inputs.nix) {
             utils.info(`Copying "${dbStorePath}" to "${dbNewPath}".`);
 
-            copyFileSync(dbStorePath, dbNewPath);
+            await utils.run(`sudo cp ${dbStorePath} ${dbNewPath}`)
 
             utils.info(
                 `
