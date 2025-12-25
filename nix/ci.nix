@@ -408,11 +408,11 @@ in
         - name: Install nixpkgs#cachix
           run: nix profile add nixpkgs#cachix
 
-        - name: Install nixpkgs#nixpkgs-fmt
-          run: nix profile add nixpkgs#nixpkgs-fmt
+        - name: Install nixpkgs#nixfmt
+          run: nix profile add nixpkgs#nixfmt
 
-        - name: Install nixpkgs#alejandra
-          run: nix profile add nixpkgs#alejandra
+        - name: Install nixpkgs#cargo
+          run: nix profile add nixpkgs#cargo
 
         - name: Install nixpkgs#nixd
           run: nix profile add nixpkgs#nixd
