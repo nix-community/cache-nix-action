@@ -23,15 +23,11 @@ export async function mergeStoreDatabases(
     
     await utils.run(`sqlite3 "${dbMergedPath}" 'PRAGMA integrity_check;'`);
     
-    utils.info(`The new database is consistent.`)
-    
     utils.info(`Removing old database files.`)
     
     await utils.run(`sudo rm -f ${dbStorePath} ${dbStorePath}-wal ${dbStorePath}-shm`);
     
     utils.info(`Moving the database file to ${dbStorePath}.`)
     
-    await utils.run(`sudo mv ${dbMergedPath} ${dbStorePath}`);
-    
-    utils.info(`Moved.`)
+    await utils.run(`sudo mv ${dbMergedPath} ${dbStorePath}`);    
 }
