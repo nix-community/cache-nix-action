@@ -292,10 +292,10 @@ in
             - name: List profile
               run: nix profile list
 
-            - name: Check that the profile doesn't have anything apart from `nix`
+            - name: Check that the profile is empty.
               shell: bash
               run: |
-                [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
+                [[ "$(nix profile list)" == "" ]]
 
             - name: Install nixpkgs#poetry
               run: nix profile add nixpkgs#poetry
