@@ -11,12 +11,14 @@ export async function restoreCache(key: string, ref?: string) {
     const dbNewPath = `${tempDir}/new.sqlite`;
     const dbMergedPath = `${tempDir}/merged.sqlite`;
 
+    const group = inputs.choose("runner", "staff", "");
+    
     if (inputs.nix) {
         utils.info(`Copying "${dbStorePath}" to "${dbOldPath}".`);
         
         await utils.run(`
             sudo cp ${dbStorePath} ${dbOldPath};
-            sudo chown runner:runner ${dbOldPath}
+            sudo chown runner:${group} ${dbOldPath}
         `)
     }
 
@@ -40,7 +42,7 @@ export async function restoreCache(key: string, ref?: string) {
 
             await utils.run(`
                 sudo cp ${dbStorePath} ${dbNewPath};
-                sudo chown runner:runner ${dbNewPath}
+                sudo chown runner:${group} ${dbNewPath}
             `)
 
             utils.info(
