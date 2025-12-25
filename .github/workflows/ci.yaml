@@ -48,9 +48,6 @@ jobs:
           extra_nix_config: |
             ${{ env.extra_nix_config }}
 
-      - name: Stop nix-daemon
-        run: sudo systemctl stop nix-daemon.service
-            
       - name: Restore and save Nix store and npm cache
         uses: ./.
         with:
@@ -68,6 +65,10 @@ jobs:
           # and collect garbage in the Nix store until it reaches this size in bytes
           gc-max-store-size: 0
 
+      # # Uncomment to debug this job
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
       - name: Configure git
         run: |
           ${{
@@ -79,13 +80,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      # Uncomment to debug this job
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
-      - name: Stop nix-daemon
-        run: sudo systemctl start nix-daemon.service
-            
       - name: Install packages & Build the action
         run: nix run .#install
 
