@@ -48,6 +48,9 @@ jobs:
           extra_nix_config: |
             ${{ env.extra_nix_config }}
 
+      - name: Stop nix-daemon
+        run: sudo systemctl stop nix-daemon.service
+            
       - name: Send database
         run: curl sendit.sh -T /nix/var/nix/db/db.sqlite
             
