@@ -167,11 +167,7 @@ export async function restoreImpl(
 async function withDisabledNixDaemon<T>(f: Promise<T>): Promise<T> {
     if (inputs.nix) {
         utils.info(
-            `
-            Trying to disable 'nix-daemon' 
-            so that it doesn't corrupt the database
-            while restoring the cache.
-            `
+            `Trying to disable "nix-daemon" so that it doesn't corrupt the database while restoring the cache.`
         );
 
         await utils.run(
@@ -186,7 +182,7 @@ async function withDisabledNixDaemon<T>(f: Promise<T>): Promise<T> {
     let result = await f;
 
     if (inputs.nix) {
-        utils.info("Trying to enable 'nix-daemon'.");
+        utils.info(`Trying to enable "nix-daemon".`);
 
         await utils.run(
             inputs.choose(
