@@ -1,4 +1,4 @@
-import { existsSync, unlinkSync, writeFileSync } from "fs";
+import { writeFileSync } from "fs";
 import Handlebars from "handlebars";
 
 import { mergeSqlTemplate } from "../templates/merge";
