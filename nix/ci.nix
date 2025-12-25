@@ -137,7 +137,7 @@ in
             git push
         
         - name: Save flake attributes from garbage collection
-          run: nix profile install .#saveFromGC
+          run: nix profile add .#saveFromGC
 
     # Make `individual` caches
     # Restore `individual` or `common` caches
@@ -193,11 +193,11 @@ in
 
         - name: Install nixpkgs#poetry
           if: matrix.id == 1
-          run: nix profile install nixpkgs#poetry
+          run: nix profile add nixpkgs#poetry
 
         - name: Install nixpkgs#nodejs
           if: matrix.id == 2
-          run: nix profile install nixpkgs#nodejs
+          run: nix profile add nixpkgs#nodejs
           
         - name: Save Nix store - ''${{ matrix.id }}
           if: steps.restore.outputs.hit == 'false'
@@ -298,10 +298,10 @@ in
                 [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
 
             - name: Install nixpkgs#poetry
-              run: nix profile install nixpkgs#poetry
+              run: nix profile add nixpkgs#poetry
 
             - name: Install nixpkgs#nodejs
-              run: nix profile install nixpkgs#nodejs
+              run: nix profile add nixpkgs#nodejs
 
             - name: Run poetry
               run: poetry --version
@@ -397,37 +397,37 @@ in
         - name: Save nixpkgs from garbage collection
           # About nixpkgs#path
           # https://github.com/NixOS/nixpkgs/issues/270292
-          run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
+          run: nix profile add $(nix flake archive nixpkgs --json | jq -r '.path')
 
         - name: Show profile
           run: nix profile list
 
         - name: Install nixpkgs#hello
-          run: nix profile install nixpkgs#hello
+          run: nix profile add nixpkgs#hello
 
         - name: Install nixpkgs#cachix
-          run: nix profile install nixpkgs#cachix
+          run: nix profile add nixpkgs#cachix
 
         - name: Install nixpkgs#nixpkgs-fmt
-          run: nix profile install nixpkgs#nixpkgs-fmt
+          run: nix profile add nixpkgs#nixpkgs-fmt
 
         - name: Install nixpkgs#alejandra
-          run: nix profile install nixpkgs#alejandra
+          run: nix profile add nixpkgs#alejandra
 
         - name: Install nixpkgs#nixd
-          run: nix profile install nixpkgs#nixd
+          run: nix profile add nixpkgs#nixd
 
         - name: Install nixpkgs#ghc
-          run: nix profile install nixpkgs#ghc
+          run: nix profile add nixpkgs#ghc
 
         - name: Install nixpkgs#haskell-language-server
-          run: nix profile install nixpkgs#haskell-language-server
+          run: nix profile add nixpkgs#haskell-language-server
 
         - name: Install nixpkgs#purescript
-          run: nix profile install nixpkgs#purescript
+          run: nix profile add nixpkgs#purescript
 
         - name: Install nixpkgs#nodejs
-          run: nix profile install nixpkgs#nodejs
+          run: nix profile add nixpkgs#nodejs
 
         - name: Show profile
           run: nix profile list
