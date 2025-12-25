@@ -1,6 +1,7 @@
 -- =====
 -- Get tables from store databases
 -- =====
+pragma main.journal_mode;
 
 attach database '{{ dbPath1 }}' as store1;
 
