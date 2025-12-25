@@ -16,7 +16,7 @@ export async function mergeStoreDatabases(
     writeFileSync(mergeSqlFile, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
     
     await utils.run(
-        `ls -l ${dbOldPath} ${dbNewPath} ${dbMergedPath} ${mergeSqlFile}`, 
+        `ls -l ${dbOldPath} ${dbNewPath} ${mergeSqlFile}`, 
         true
     )
     
