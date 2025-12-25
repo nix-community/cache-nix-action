@@ -59,7 +59,7 @@ jobs:
         run: |
           NIX_LIBGCC_PATHS="$(
             nix derivation show ${{ env.installable-nix1 }} \
-            | jq -r '.[] .outputs.out.path' \
+            | jq -r '.derivations.[].outputs.out.path' \
             | xargs -I {} nix-store -qR --include-outputs {}\
             | grep libgcc \
             || printf "error!")"
@@ -73,7 +73,7 @@ jobs:
         run: |
           NIX_LIBGCC_PATHS="$(
             nix derivation show ${{ env.installable-nix2 }} \
-            | jq -r '.[] .outputs.out.path' \
+            | jq -r '.derivations.[].outputs.out.path' \
             | xargs -I {} nix-store -qR --include-outputs {}\
             | grep libgcc \
             || printf "error!")"
