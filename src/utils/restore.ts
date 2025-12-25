@@ -14,7 +14,10 @@ export async function restoreCache(key: string, ref?: string) {
     if (inputs.nix) {
         utils.info(`Copying "${dbStorePath}" to "${dbOldPath}".`);
         
-        await utils.run(`sudo cp ${dbStorePath} ${dbOldPath}`)
+        await utils.run(`
+            sudo cp ${dbStorePath} ${dbOldPath};
+            sudo chown runner:runner ${dbOldPath}
+        `)
     }
 
     utils.info(
@@ -35,7 +38,10 @@ export async function restoreCache(key: string, ref?: string) {
         if (inputs.nix) {
             utils.info(`Copying "${dbStorePath}" to "${dbNewPath}".`);
 
-            await utils.run(`sudo cp ${dbStorePath} ${dbNewPath}`)
+            await utils.run(`
+                sudo cp ${dbStorePath} ${dbNewPath};
+                sudo chown runner:runner ${dbOldPath}
+            `)
 
             utils.info(
                 `
