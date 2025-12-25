@@ -40,7 +40,7 @@ export async function restoreCache(key: string, ref?: string) {
 
             await utils.run(`
                 sudo cp ${dbStorePath} ${dbNewPath};
-                sudo chown runner:runner ${dbOldPath}
+                sudo chown runner:runner ${dbNewPath}
             `)
 
             utils.info(
