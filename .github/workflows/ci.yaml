@@ -141,11 +141,6 @@ jobs:
                   (matrix.id == 2 && matrix.os == 'ubuntu-24.04-arm')
                 ) && env.nix_config_ca_derivations || ''
             }}
-
-      # # Uncomment to debug this job
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-
       - name: Restore Nix store - ${{ matrix.id }}
         id: restore
         uses: ./restore
@@ -426,11 +421,11 @@ jobs:
       - name: Install nixpkgs#cachix
         run: nix profile add nixpkgs#cachix
 
-      - name: Install nixpkgs#nixpkgs-fmt
-        run: nix profile add nixpkgs#nixpkgs-fmt
+      - name: Install nixpkgs#nixfmt
+        run: nix profile add nixpkgs#nixfmt
 
-      - name: Install nixpkgs#alejandra
-        run: nix profile add nixpkgs#alejandra
+      - name: Install nixpkgs#cargo
+        run: nix profile add nixpkgs#cargo
 
       - name: Install nixpkgs#nixd
         run: nix profile add nixpkgs#nixd
