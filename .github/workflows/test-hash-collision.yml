@@ -46,15 +46,15 @@ jobs:
       - name: Save nixpkgs for nix1
         run: |
           nix registry pin nixpkgs-nix1 github:nixos/nixpkgs/${{ env.hash-nix1 }}
-          nix profile install "$(nix eval nixpkgs-nix1#path)"
+          nix profile add "$(nix flake archive nixpkgs-nix1 --json | jq -r '.path')" --priority 10
       - name: Save nixpkgs for nix2
         run: |
           nix registry pin nixpkgs-nix2 github:nixos/nixpkgs/${{ env.hash-nix2 }}
-          nix profile install "$(nix eval nixpkgs-nix2#path)" --priority 10
+          nix profile add "$(nix flake archive nixpkgs-nix2 --json | jq -r '.path')" --priority 20
       - name: Install nix1
-        run: nix profile install ${{ env.installable-nix1 }} --priority 20
+        run: nix profile add ${{ env.installable-nix1 }} --priority 30
       - name: Install nix2
-        run: nix profile install ${{ env.installable-nix2 }} --priority 30
+        run: nix profile add ${{ env.installable-nix2 }} --priority 40
       - name: See libgcc paths in the nix1 closure
         run: |
           NIX_LIBGCC_PATHS="$(
