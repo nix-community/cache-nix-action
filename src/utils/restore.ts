@@ -10,16 +10,21 @@ export async function restoreCache(key: string, ref?: string) {
     const dbOldPath = `${tempDir}/old.sqlite`;
     const dbNewPath = `${tempDir}/new.sqlite`;
     const dbMergedPath = `${tempDir}/merged.sqlite`;
-
+    
+    const user = "runner";
     const group = inputs.choose("runner", "staff", "");
+    
+    let copyDb = async (dbPath: string) => {
+        await utils.run(`
+            sudo cp ${dbStorePath} ${dbPath};
+            sudo chown ${user}:${group} ${dbPath}
+        `)
+    }
     
     if (inputs.nix) {
         utils.info(`Copying "${dbStorePath}" to "${dbOldPath}".`);
         
-        await utils.run(`
-            sudo cp ${dbStorePath} ${dbOldPath};
-            sudo chown runner:${group} ${dbOldPath}
-        `)
+        await copyDb(dbOldPath)
     }
 
     utils.info(
@@ -40,10 +45,7 @@ export async function restoreCache(key: string, ref?: string) {
         if (inputs.nix) {
             utils.info(`Copying "${dbStorePath}" to "${dbNewPath}".`);
 
-            await utils.run(`
-                sudo cp ${dbStorePath} ${dbNewPath};
-                sudo chown runner:${group} ${dbNewPath}
-            `)
+            await copyDb(dbNewPath)
 
             utils.info(
                 `
