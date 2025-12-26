@@ -175,7 +175,7 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
-          # and collect garbage in the Nix store until it reaches this size in bytes
+          # and collect garbage in the Nix store until it reaches this size
           gc-max-store-size: 8G
 
   # Merge similar `individual` caches
@@ -408,7 +408,7 @@ jobs:
         run: nix registry list
 
       - name: Save nixpkgs from garbage collection
-        # About nixpkgs#path
+        # Can't use nixpkgs#path
         # https://github.com/NixOS/nixpkgs/issues/270292
         run: nix profile add $(nix flake archive nixpkgs --json | jq -r '.path')
 
@@ -481,9 +481,10 @@ jobs:
             ${{ env.nix_config_ca_derivations }}
 
       - if: matrix.nix-installer == 'nixbuild/nix-quick-install-action'
-        uses: nixbuild/nix-quick-install-action@v34
+        uses: deemp/nix-quick-install-action@v35
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_archives_url: https://github.com/nixbuild/nix-quick-install-action/releases/download/v35
           nix_conf: |
             ${{ env.extra_nix_config }}
             ${{ env.nix_config_ca_derivations }}
@@ -506,7 +507,7 @@ jobs:
 
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
-          
+
       - name: Save nixpkgs from garbage collection
         run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
 
@@ -551,9 +552,10 @@ jobs:
             ${{ env.nix_config_ca_derivations }}
 
       - if: matrix.nix-installer == 'nixbuild/nix-quick-install-action'
-        uses: nixbuild/nix-quick-install-action@v34
+        uses: deemp/nix-quick-install-action@v35
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_archives_url: https://github.com/nixbuild/nix-quick-install-action/releases/download/v35
           nix_conf: |
             ${{ env.extra_nix_config }}
             ${{ env.nix_config_ca_derivations }}
@@ -565,7 +567,7 @@ jobs:
 
       - name: Pin nixpkgs
         run: ${{ env.pin_nixpkgs }}
-          
+
       - name: Install a package
         run: nix profile install nixpkgs#ghc
 

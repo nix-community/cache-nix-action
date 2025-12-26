@@ -213,7 +213,7 @@ in
             purge-created: 0
             # except the version with the `primary-key`, if it exists
             purge-primary-key: never
-            # and collect garbage in the Nix store until it reaches this size in bytes
+            # and collect garbage in the Nix store until it reaches this size
             gc-max-store-size: 8G
             ${indent 10 backend_}
 ''
@@ -395,7 +395,7 @@ in
           run: nix registry list
         
         - name: Save nixpkgs from garbage collection
-          # About nixpkgs#path
+          # Can't use nixpkgs#path
           # https://github.com/NixOS/nixpkgs/issues/270292
           run: nix profile add $(nix flake archive nixpkgs --json | jq -r '.path')
 
@@ -431,7 +431,136 @@ in
 
         - name: Show profile
           run: nix profile list
-          
+
+    test-alt-nix-installers-restore-and-save:
+      name: Check alternative nix installers - restore and save cache
+      # needs: build
+      permissions:
+        actions: write
+      strategy:
+        matrix:
+          os:
+            - ${os.macos-14}
+            - ${os.macos-15}
+            - ${os.ubuntu-24}
+            - ${os.ubuntu-24-arm}
+          nix-installer:
+            - DeterminateSystems/determinate-nix-action
+            - nixbuild/nix-quick-install-action
+      runs-on: ''${{ matrix.os }}
+      steps:
+        - name: Checkout this repo
+          uses: actions/checkout@v6
+
+        - name: Rebase
+          run: |
+            ''${{
+              github.head_ref
+                && format('gh pr checkout {0}', github.event.pull_request.number) 
+                || format('git pull --rebase origin {0}', github.ref_name) 
+            }}
+
+        - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
+          uses: DeterminateSystems/determinate-nix-action@v3.15.1
+          with:
+            extra-conf: |
+              ''${{ env.extra_nix_config }}
+              ''${{ env.nix_config_ca_derivations }}
+
+        - if: matrix.nix-installer == 'nixbuild/nix-quick-install-action'
+          uses: deemp/nix-quick-install-action@v35
+          with:
+            github_access_token: ''${{ secrets.GITHUB_TOKEN }}
+            nix_archives_url: https://github.com/nixbuild/nix-quick-install-action/releases/download/v35
+            nix_conf: |
+              ''${{ env.extra_nix_config }}
+              ''${{ env.nix_config_ca_derivations }}
+
+        - name: Restore and save Nix store
+          uses: ./.
+          with:
+            primary-key: alt-cache-''${{ matrix.os }}-''${{ matrix.nix-installer }}-''${{ hashFiles('.github/workflows/ci.yaml') }}
+            # do purge caches
+            purge: true
+            # purge old versions of the `common` cache and any versions of individual caches
+            purge-prefixes: |
+              alt-cache-''${{ matrix.os }}-''${{ matrix.nix-installer }}-
+            # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+            purge-created: 0
+            # except the version with the `primary-key`, if it exists
+            purge-primary-key: never
+            # and collect garbage in the Nix store until it reaches this size
+            gc-max-store-size: 0
+
+        - name: Pin nixpkgs
+          run: ''${{ env.pin_nixpkgs }}
+            
+        - name: Save nixpkgs from garbage collection
+          run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
+
+        - name: Install a package
+          run: nix profile install nixpkgs#ghc
+
+        - name: Check installation
+          run: ghc --version
+
+    test-alt-nix-installers-restore-only:
+      name: Check alternative nix installers - restore only
+      needs: test-alt-nix-installers-restore-and-save
+      strategy:
+        fail-fast: false
+        matrix:
+          os:
+            - ${os.macos-14}
+            - ${os.macos-15}
+            - ${os.ubuntu-24}
+            - ${os.ubuntu-24-arm}
+          nix-installer:
+            - DeterminateSystems/determinate-nix-action
+            - nixbuild/nix-quick-install-action
+      runs-on: ''${{ matrix.os }}
+      steps:
+        - name: Checkout this repo
+          uses: actions/checkout@v6
+
+        - name: Rebase
+          run: |
+            ''${{
+              github.head_ref
+                && format('gh pr checkout {0}', github.event.pull_request.number) 
+                || format('git pull --rebase origin {0}', github.ref_name) 
+            }}
+
+        - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
+          uses: DeterminateSystems/determinate-nix-action@v3.15.1
+          with:
+            extra-conf: |
+              ''${{ env.extra_nix_config }}
+              ''${{ env.nix_config_ca_derivations }}
+
+        - if: matrix.nix-installer == 'nixbuild/nix-quick-install-action'
+          uses: deemp/nix-quick-install-action@v35
+          with:
+            github_access_token: ''${{ secrets.GITHUB_TOKEN }}
+            nix_archives_url: https://github.com/nixbuild/nix-quick-install-action/releases/download/v35
+            nix_conf: |
+              ''${{ env.extra_nix_config }}
+              ''${{ env.nix_config_ca_derivations }}
+
+        - name: Restore Nix store
+          uses: ./restore
+          with:
+            primary-key: alt-cache-''${{ matrix.os }}-''${{ matrix.nix-installer }}-''${{ hashFiles('.github/workflows/ci.yaml') }}
+
+        - name: Pin nixpkgs
+          run: ''${{ env.pin_nixpkgs }}
+            
+        - name: Install a package
+          run: nix profile install nixpkgs#ghc
+
+        - name: Check installation
+          run: ghc --version
+            
     test-collision-produce:
       needs: build
       uses: ./.github/workflows/test-hash-collision.yml
