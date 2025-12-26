@@ -438,6 +438,7 @@ in
       permissions:
         actions: write
       strategy:
+        fail-fast: false
         matrix:
           os:
             - ${os.macos-14}

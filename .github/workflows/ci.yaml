@@ -451,6 +451,7 @@ jobs:
     permissions:
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-14
