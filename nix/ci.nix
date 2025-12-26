@@ -434,7 +434,7 @@ in
 
     test-alt-nix-installers-restore-and-save:
       name: Check alternative nix installers - restore and save cache
-      # needs: build
+      needs: compare-run-times
       permissions:
         actions: write
       strategy:
