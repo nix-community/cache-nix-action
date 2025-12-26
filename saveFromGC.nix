@@ -25,7 +25,7 @@ let
   mkFlakesClosure =
     flakes': flakes:
     if flakes == [ ] then
-      flakes'
+      lib.unique flakes'
     else
       let
         flakes'' = lib.unique (flakes' ++ flakes);
