@@ -3,7 +3,7 @@
   pkgs,
   # Flake inputs.
   # Their transitive inputs will be included
-  inputs,
+  inputs ? { },
   # Derivations like 'pkgs.hello'
   derivations ? [ ],
   # Paths like '/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1'
