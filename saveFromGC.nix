@@ -24,7 +24,7 @@ let
   mkFlakesClosure =
     flakes: if flakes == [ ] then [ ] else flakes ++ mkFlakesClosure (getInputs flakes);
 
-  closure = lib.trivial.pipe inputs [
+  flakesClosure = lib.trivial.pipe inputs [
     attrValues
     # The current flake will probably change next time.
     # Hence, we only save its inputs.
@@ -40,7 +40,7 @@ let
   saveFromGC = pkgs.writeScriptBin "save-from-gc" (
     concatStringsSep "\n\n" (
       lib.attrsets.mapAttrsToList (name: value: "${name}\n${concatStringsSep "\n" value}") {
-        inherit closure derivations paths;
+        inherit flakesClosure derivations paths;
       }
     )
   );
@@ -49,7 +49,7 @@ in
   inherit
     getInputs
     mkFlakesClosure
-    closure
+    flakesClosure
     saveFromGC
     ;
 }
