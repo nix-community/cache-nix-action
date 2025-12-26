@@ -18,6 +18,7 @@ let
     filter
     ;
   inherit (pkgs) lib;
+
   getInputs =
     flakes: concatMap (flake: if flake ? inputs then attrValues flake.inputs else [ ]) flakes;
 
@@ -29,10 +30,10 @@ let
     # The current flake will probably change next time.
     # Hence, we only save its inputs.
     # If you want to save the flake, put "self" into "derivations".
-    (filter (x: x != inputs.self))
+    (filter (x: x != (inputs.self or { })))
     mkFlakesClosure
     lib.unique
-    (filter (x: x != inputs.self))
+    (filter (x: x != (inputs.self or { })))
   ];
 
   # We don't have much more info.
