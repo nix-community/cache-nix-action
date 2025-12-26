@@ -137,11 +137,14 @@
 
             inherit
               (import ./saveFromGC.nix {
-                inherit pkgs inputs;
-                inputsExclude = [
-                  inputs.devshell
-                  inputs.treefmt-nix
-                ];
+                inherit pkgs;
+                inputs = {
+                  inherit (inputs)
+                    nixpkgs
+                    flake-parts
+                    systems
+                    ;
+                };
                 derivations = [
                   config.packages.install
                   config.packages.write
