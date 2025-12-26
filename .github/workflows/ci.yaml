@@ -505,7 +505,7 @@ jobs:
           gc-max-store-size: 0
 
       - name: Save nixpkgs from garbage collection
-        run: nix profile add $(nix flake archive nixpkgs --json | jq -r '.path')
+        run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
 
       - name: Install a package
         run: nix profile install nixpkgs#ghc
