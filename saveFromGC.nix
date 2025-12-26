@@ -1,12 +1,12 @@
 # https://github.com/NixOS/nix/issues/6895#issuecomment-2475461113
 {
   pkgs,
-  # flake inputs
-  # their transitive inputs will be included
+  # Flake inputs.
+  # Their transitive inputs will be included
   inputs,
-  # derivations like pkgs.hello
+  # Derivations like 'pkgs.hello'
   derivations ? [ ],
-  # paths like /nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1
+  # Paths like '/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1'
   paths ? [ ],
 }:
 assert builtins.isList derivations;
@@ -26,17 +26,17 @@ let
 
   closure = lib.trivial.pipe inputs [
     attrValues
-    # the current flake will probably change next time
-    # hence, we only save its inputs
-    # if you want to save the flake, put "self" into "derivations"
+    # The current flake will probably change next time.
+    # Hence, we only save its inputs.
+    # If you want to save the flake, put "self" into "derivations".
     (filter (x: x != inputs.self))
     mkFlakesClosure
     lib.unique
     (filter (x: x != inputs.self))
   ];
 
-  # we don't have much more info
-  # so, we're just printing the paths
+  # We don't have much more info.
+  # Therefore, we're just printing the paths.
   saveFromGC = pkgs.writeScriptBin "save-from-gc" (
     concatStringsSep "\n\n" (
       lib.attrsets.mapAttrsToList (name: value: "${name}\n${concatStringsSep "\n" value}") {
