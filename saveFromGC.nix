@@ -23,7 +23,14 @@ let
     flakes: concatMap (flake: if flake ? inputs then attrValues flake.inputs else [ ]) flakes;
 
   mkFlakesClosure =
-    flakes: if flakes == [ ] then [ ] else flakes ++ mkFlakesClosure (getInputs flakes);
+    flakes': flakes:
+    if flakes == [ ] then
+      flakes'
+    else
+      let
+        flakes'' = lib.unique (flakes' ++ flakes);
+      in
+      mkFlakesClosure flakes'' (filter (x: !builtins.elem x flakes'') (getInputs flakes));
 
   flakesClosure = lib.trivial.pipe inputs [
     attrValues
@@ -31,7 +38,7 @@ let
     # Hence, we only save its inputs.
     # If you want to save the flake, put "self" into "derivations".
     (filter (x: x != (inputs.self or { })))
-    mkFlakesClosure
+    (mkFlakesClosure [ ])
     lib.unique
     (filter (x: x != (inputs.self or { })))
   ];
