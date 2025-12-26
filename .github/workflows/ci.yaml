@@ -445,6 +445,126 @@ jobs:
       - name: Show profile
         run: nix profile list
 
+  test-alt-nix-installers-restore-and-save:
+    name: Check alternative nix installers - restore and save cache
+    # needs: build
+    permissions:
+      actions: write
+    strategy:
+      matrix:
+        os:
+          - macos-14
+          - macos-15
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+        nix-installer:
+          - DeterminateSystems/determinate-nix-action
+          - nixbuild/nix-quick-install-action
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v6
+
+      - name: Rebase
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
+
+      - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
+        uses: DeterminateSystems/determinate-nix-action@v3.15.1
+        with:
+          extra-conf: |
+            ${{ env.extra_nix_config }}
+            ${{ env.nix_config_ca_derivations }}
+
+      - if: matrix.nix-installer == 'nixbuild/nix-quick-install-action'
+        uses: nixbuild/nix-quick-install-action@v34
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_conf: |
+            ${{ env.extra_nix_config }}
+            ${{ env.nix_config_ca_derivations }}
+
+      - name: Restore and save Nix store
+        uses: ./.
+        with:
+          primary-key: alt-cache-${{ matrix.os }}-${{ matrix.nix-installer }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # do purge caches
+          purge: true
+          # purge old versions of the `common` cache and any versions of individual caches
+          purge-prefixes: |
+            alt-cache-${{ matrix.os }}-${{ matrix.nix-installer }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
+          # and collect garbage in the Nix store until it reaches this size
+          gc-max-store-size: 0
+
+      - name: Save nixpkgs from garbage collection
+        run: nix profile add $(nix flake archive nixpkgs --json | jq -r '.path')
+
+      - name: Install a package
+        run: nix profile install nixpkgs#ghc
+
+      - name: Check installation
+        run: ghc --version
+
+  test-alt-nix-installers-restore-only:
+    name: Check alternative nix installers - restore only
+    needs: test-alt-nix-installers-restore-and-save
+    strategy:
+      matrix:
+        os:
+          - macos-14
+          - macos-15
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+        nix-installer:
+          - DeterminateSystems/determinate-nix-action
+          - nixbuild/nix-quick-install-action
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v6
+
+      - name: Rebase
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
+
+      - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
+        uses: DeterminateSystems/determinate-nix-action@v3.15.1
+        with:
+          extra-conf: |
+            ${{ env.extra_nix_config }}
+            ${{ env.nix_config_ca_derivations }}
+
+      - if: matrix.nix-installer == 'nixbuild/nix-quick-install-action'
+        uses: nixbuild/nix-quick-install-action@v34
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_conf: |
+            ${{ env.extra_nix_config }}
+            ${{ env.nix_config_ca_derivations }}
+
+      - name: Restore Nix store
+        uses: ./restore
+        with:
+          primary-key: alt-cache-${{ matrix.os }}-${{ matrix.nix-installer }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+
+      - name: Install a package
+        run: nix profile install nixpkgs#ghc
+
+      - name: Check installation
+        run: ghc --version
+
   test-collision-produce:
     needs: build
     uses: ./.github/workflows/test-hash-collision.yml
