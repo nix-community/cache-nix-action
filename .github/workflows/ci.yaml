@@ -504,6 +504,9 @@ jobs:
           # and collect garbage in the Nix store until it reaches this size
           gc-max-store-size: 0
 
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+          
       - name: Save nixpkgs from garbage collection
         run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
 
@@ -560,6 +563,9 @@ jobs:
         with:
           primary-key: alt-cache-${{ matrix.os }}-${{ matrix.nix-installer }}-${{ hashFiles('.github/workflows/ci.yaml') }}
 
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+          
       - name: Install a package
         run: nix profile install nixpkgs#ghc
 
