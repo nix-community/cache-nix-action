@@ -22,13 +22,25 @@ let
   getInputs =
     flakes: concatMap (flake: if flake ? inputs then attrValues flake.inputs else [ ]) flakes;
 
+  nubBy =
+    eq: l:
+    if l == [ ] then
+      l
+    else
+      let
+        x = builtins.head l;
+      in
+      [ x ] ++ (nubBy eq (filter (y: !(eq x y)) (builtins.tail l)));
+
+  uniqueFlakes = nubBy (x: y: x.outPath == y.outPath);
+
   mkFlakesClosure =
     flakes': flakes:
     if flakes == [ ] then
-      lib.unique flakes'
+      uniqueFlakes flakes'
     else
       let
-        flakes'' = lib.unique (flakes' ++ flakes);
+        flakes'' = uniqueFlakes (flakes' ++ flakes);
       in
       mkFlakesClosure flakes'' (filter (x: !builtins.elem x flakes'') (getInputs flakes));
 
