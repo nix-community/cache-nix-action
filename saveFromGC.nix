@@ -4,10 +4,6 @@
   # flake inputs
   # their transitive inputs will be included
   inputs,
-  # flake inputs to exclude
-  # their transitive inputs will be excluded
-  # unless they're transitive inputs of any included inputs
-  inputsExclude ? [ ],
   # derivations like pkgs.hello
   derivations ? [ ],
   # paths like /nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1
@@ -34,9 +30,6 @@ let
     # hence, we only save its inputs
     # if you want to save the flake, put "self" into "derivations"
     (filter (x: x != inputs.self))
-    # we need to exclude particular inputs
-    # before we collect their transitive inputs
-    (filter (x: !(builtins.elem x inputsExclude)))
     mkFlakesClosure
     lib.unique
     (filter (x: x != inputs.self))
