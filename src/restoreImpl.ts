@@ -164,43 +164,11 @@ export async function restoreImpl(
     }
 }
 
-async function withDisabledNixDaemon<T>(f: Promise<T>): Promise<T> {
-    if (inputs.nix) {
-        utils.info(
-            `Trying to disable "nix-daemon" so that it doesn't corrupt the database while restoring the cache.`
-        );
-
-        await utils.run(
-            inputs.choose(
-                `sudo systemctl stop nix-daemon.service || echo "Couldn't stop the daemon."`,
-                `sudo launchctl unload /Library/LaunchDaemons/org.nixos.nix-daemon.plist || echo "Couldn't stop the daemon."`,
-                ""
-            )
-        );
-    }
-
-    let result = await f;
-
-    if (inputs.nix) {
-        utils.info(`Trying to enable "nix-daemon".`);
-
-        await utils.run(
-            inputs.choose(
-                `sudo systemctl start nix-daemon.service || echo "Couldn't start the daemon."`,
-                `sudo launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist || echo "Couldn't start the daemon."`,
-                ""
-            )
-        );
-    }
-
-    return result;
-}
-
 async function run(
     stateProvider: IStateProvider,
     earlyExit: boolean | undefined
 ): Promise<void> {
-    await withDisabledNixDaemon(restoreImpl(stateProvider, earlyExit));
+    await restoreImpl(stateProvider, earlyExit);
 
     // node will stay alive if any promises are not resolved,
     // which is a possibility if HTTP requests are dangling
