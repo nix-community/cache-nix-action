@@ -517,6 +517,7 @@ jobs:
     name: Check alternative nix installers - restore only
     needs: test-alt-nix-installers-restore-and-save
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-14
