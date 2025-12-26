@@ -472,7 +472,7 @@ in
           uses: deemp/nix-quick-install-action@v35
           with:
             github_access_token: ''${{ secrets.GITHUB_TOKEN }}
-            nix_archives_url: https://github.com/nixbuild/nix-quick-install-action/releases/download/v35
+            nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v35
             nix_conf: |
               ''${{ env.extra_nix_config }}
               ''${{ env.nix_config_ca_derivations }}
@@ -543,7 +543,7 @@ in
           uses: deemp/nix-quick-install-action@v35
           with:
             github_access_token: ''${{ secrets.GITHUB_TOKEN }}
-            nix_archives_url: https://github.com/nixbuild/nix-quick-install-action/releases/download/v35
+            nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v35
             nix_conf: |
               ''${{ env.extra_nix_config }}
               ''${{ env.nix_config_ca_derivations }}
