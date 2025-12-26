@@ -172,8 +172,8 @@ async function withDisabledNixDaemon<T>(f: Promise<T>): Promise<T> {
 
         await utils.run(
             inputs.choose(
-                "sudo systemctl stop nix-daemon.service",
-                "sudo launchctl unload /Library/LaunchDaemons/org.nixos.nix-daemon.plist",
+                `sudo systemctl stop nix-daemon.service || echo "Couldn't stop the daemon."`,
+                `sudo launchctl unload /Library/LaunchDaemons/org.nixos.nix-daemon.plist || echo "Couldn't stop the daemon."`,
                 ""
             )
         );
@@ -186,8 +186,8 @@ async function withDisabledNixDaemon<T>(f: Promise<T>): Promise<T> {
 
         await utils.run(
             inputs.choose(
-                "sudo systemctl start nix-daemon.service",
-                "sudo launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist",
+                `sudo systemctl start nix-daemon.service || echo "Couldn't start the daemon."`,
+                `sudo launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist || echo "Couldn't start the daemon."`,
                 ""
             )
         );
