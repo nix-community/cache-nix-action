@@ -363,11 +363,11 @@ closure
 /nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
 
 derivations
-/nix/store/2bcv91i8fahqghn8dmyr791iaycbsjdd-hello-2.12.2
-/nix/store/vb1fjr733z2hmwf3kfh72ja8wny59ssr-nix-shell
+/nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2
+/nix/store/8xjhphvn58rrqydsx5569jn01yd5a0al-nix-shell
 
 paths
-/nix/store/2bcv91i8fahqghn8dmyr791iaycbsjdd-hello-2.12.2/bin/hello
+/nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2/bin/hello
 ```
 
 Add the installable to the default profile.
@@ -379,7 +379,7 @@ nix profile list | grep save-from-gc
 ```
 
 ```console
-Store paths:        /nix/store/mrp80d8sp6dzzhw4s8xm6gq4zz4cdz6d-save-from-gc
+Store paths:        /nix/store/d3wvhfgi549va9f5m4qhzjmk9g2asmnc-save-from-gc
 ```
 
 Or, build the installable and see the garbage collection roots that won't let it be garbage collected.
@@ -399,7 +399,7 @@ Output (edited):
 ```console
 ...
 <...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
-<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/mrp80d8sp6dzzhw4s8xm6gq4zz4cdz6d-save-from-gc
+<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/d3wvhfgi549va9f5m4qhzjmk9g2asmnc-save-from-gc
 ```
 
 <!-- `$ nix profile remove examples/saveFromGC; rm result` -->
