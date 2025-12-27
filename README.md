@@ -53,9 +53,9 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 ## Limitations
 
-- Uses experimental [nix](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix) commands like [nix store gc](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-store-gc) and [nix path-info](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-path-info).
+- Uses experimental [`nix`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix) commands like [`nix store gc`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-store-gc) and [`nix path-info`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-path-info).
 - By default, the action caches and restores only `/nix`, `~/.cache/nix`, `~root/.cache/nix` (see [documentation](#inputs) for the `paths` input).
-  - The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nixos.org/manual/nix/unstable/store/types/local-store.html#local-store)).
+  - The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nix.dev/manual/nix/2.33/store/types/local-store.html#local-store)).
   - When restoring a cache, the action doesn't extract from the cache the `/nix/store` paths that already exist on the runner.
   - Additionally, the action unarchives only the `/nix/var/nix/db/db.sqlite` and skips other cached `/nix/var` directories.
   - The action merges existing and new databases when restoring a cache.
@@ -134,7 +134,7 @@ See [Caching Approaches](#caching-approaches).
     purge-primary-key: never
 ```
 
-- `nix-quick-install-action` writes the supplied [nix_conf](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/action.yml#L19) to [nix.conf](https://nixos.org/manual/nix/unstable/command-ref/conf-file.html) (see [action.yml](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/action.yml#L63), [script](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/nix-quick-install.sh#L99)).
+- `nix-quick-install-action` writes the supplied [nix_conf](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/action.yml#L19) to [nix.conf](https://nix.dev/manual/nix/2.33/command-ref/conf-file.html) (see [action.yml](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/action.yml#L63), [script](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/nix-quick-install.sh#L99)).
 - `nix-quick-install-action` enables [flakes](https://nixos.wiki/wiki/Flakes) and accepts `nixConfig` from `flake.nix` (see [script](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/nix-quick-install.sh#L113)).
 - Due to `gc-max-store-size-linux: 1G`, on `Linux` runners, garbage in the Nix store is collected until the store size reaches `1GB` or until there's no garbage to collect.
 - Since `gc-max-store-size-macos` isn't set to a number, on `macOS` runners, no garbage is collected in the Nix store.
@@ -338,16 +338,16 @@ See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFr
 }
 ```
 
-### `nix profile install` or `nix build`
+### `nix profile add` or `nix build`
 
-Each profile [is](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-profile#filesystem-layout) a [garbage collection root](https://nix.dev/manual/nix/2.25/package-management/garbage-collector-roots.html#garbage-collector-roots).
+Each profile [is](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-profile#filesystem-layout) a [garbage collection root](https://nix.dev/manual/nix/2.33/package-management/garbage-collector-roots.html#garbage-collector-roots).
 
-Each [`nix build`](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-build) result symlink [is](https://nixos.org/guides/nix-pills/11-garbage-collector.html#indirect-roots) a garbage collection root.
+Each [`nix build`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-build) result symlink [is](https://nixos.org/guides/nix-pills/11-garbage-collector.html#indirect-roots) a garbage collection root.
 
-To save particular Nix store paths, create an [installable](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix#installables) that contains these paths and
+To save particular Nix store paths, create an [installable](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix#installables) that contains these paths and
 
-- add it to a profile via [`nix profile install`](https://nix.dev/manual/nix/2.25/command-ref/new-cli/nix3-profile-install.html) or
-- `nix build` it
+- either add it to a profile via [`nix profile add`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-profile-add.html)
+- or `nix build`
 
 The `saveFromGC` attribute of the flake above is a script (an installable) that contains paths of elements of the flake closure (the flake itself, flake inputs, inputs of these inputs, etc.).
 
@@ -476,7 +476,7 @@ These distances affect the restore and save speed.
 
 If used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action), it's similar to the [cache-nix-action](#cache-nix-action).
 
-If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#local-store):
+If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-help-stores.html#local-store):
 
 **Pros**:
 
@@ -484,13 +484,13 @@ If used with [install-nix-action](https://github.com/cachix/install-nix-action) 
 
 **Cons**:
 
-- Slow [nix copy](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
+- Slow [`nix copy`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
 
 If used with [install-nix-action](https://github.com/cachix/install-nix-action) and this [trick](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1030697681), it's similar to the [cache-nix-action](#cache-nix-action), but slower ([link](https://github.com/ryantm/nix-installer-action-benchmark)).
 
 ### Hosted binary caches
 
-See [binary cache](https://nixos.org/manual/nix/unstable/glossary.html#gloss-binary-cache), [HTTP Binary Cache Store](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-help-stores.html#http-binary-cache-store).
+See [binary cache](https://nix.dev/manual/nix/2.33/glossary.html#gloss-binary-cache), [HTTP Binary Cache Store](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-help-stores.html#http-binary-cache-store).
 
 - [cachix](https://www.cachix.org/)
 - [attic](https://github.com/zhaofengli/attic)
