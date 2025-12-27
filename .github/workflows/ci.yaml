@@ -106,6 +106,7 @@ jobs:
     permissions:
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-14
@@ -187,6 +188,7 @@ jobs:
     permissions:
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-14
@@ -267,6 +269,7 @@ jobs:
     permissions:
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-14
