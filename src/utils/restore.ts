@@ -62,7 +62,7 @@ export async function restoreCache(key: string, ref?: string) {
                     `Giving write permissions for ${nixCacheDir} to the current user.`
                 );
                 
-                await utils.run(`sudo chmod -R a+w ${nixCacheDir}`);
+                await utils.run(`sudo chmod -R u+w ${nixCacheDir}`);
             }
 
             await mergeStoreDatabases(
