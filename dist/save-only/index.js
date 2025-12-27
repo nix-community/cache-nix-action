@@ -58933,7 +58933,10 @@ async function collectGarbage() {
     await utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
     utils.info("Calculating store size.");
     async function getStoreSize() {
-        const { stdout } = await utils.run(`nix path-info --json --all | jq 'map(.narSize) | add'`);
+        const { stdout } = await utils.run(`nix \
+                --experimental-features nix-command \
+                path-info --json --json-format 2 --all \
+                | jq '.info | map(.narSize) | add'`);
         const storeSize = (() => {
             try {
                 return BigInt(stdout);
@@ -58967,7 +58970,7 @@ async function collectGarbage() {
         const maxBytesToFree = storeSize - inputs.gcMaxStoreSize.value;
         utils.info(`Max bytes to free: ${maxBytesToFree}.`);
         utils.info(`::group::Logs produced while collecting garbage.`);
-        await utils.run(`nix store gc --max ${maxBytesToFree}`, true);
+        await utils.run(`nix --experimental-features nix-command store gc --max ${maxBytesToFree}`, true);
         utils.info(`::endgroup::`);
         utils.info(`Finished collecting garbage.`);
         await getStoreSize();
