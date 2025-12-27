@@ -17,12 +17,20 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - Merge caches produced by several jobs.
 - Purge caches created or last accessed at least the given time ago.
 
+## Compatible Nix installers
+
+`cache-nix-action` is compatible with:
+
+- [`nixbuild/nix-quick-install-action`](https://github.com/nixbuild/nix-quick-install-action)
+- [`cachix/install-nix-action`](https://github.com/cachix/install-nix-action/)
+- [`DeterminateSystems/determinate-nix-action`](https://github.com/DeterminateSystems/determinate-nix-action)
+
 ## A typical job
 
 > [!NOTE]
 > Inputs are given for reference. All available inputs are specified [below](#inputs).
 
-1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) installs Nix in single-user mode.
+1. One of the [compatible actions](#compatible-nix-installers) installs Nix.
 
 1. `Restore` phase:
 
@@ -51,7 +59,6 @@ This action is based on [actions/cache](https://github.com/actions/cache).
   - When restoring a cache, the action doesn't extract from the cache the `/nix/store` paths that already exist on the runner.
   - Additionally, the action unarchives only the `/nix/var/nix/db/db.sqlite` and skips other cached `/nix/var` directories.
   - The action merges existing and new databases when restoring a cache.
-- The action requires [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
 - The action supports only `Linux` and `macOS` runners for Nix store caching.
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
