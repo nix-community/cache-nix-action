@@ -13,8 +13,8 @@ export async function collectGarbage() {
         const { stdout } = await utils.run(
             `nix \
                 --experimental-features nix-command \
-                path-info --json --all \
-                | jq 'map(.narSize) | add'`
+                path-info --json --json-format 2 --all \
+                | jq '.info | map(.narSize) | add'`
         );
 
         const storeSize = (() => {
