@@ -48,30 +48,25 @@ export async function restoreCache(key: string, ref?: string) {
 
             await copyDb(dbNewPath)
 
-            utils.info(
-                `
-                Merging store databases "${dbOldPath}" and "${dbNewPath}"
-                into the new database "${dbMergedPath}".
-                `
-            );
+            const mergeScriptPath = `${tempDir}/merge.sql`;
             
-            const nixCacheDir = `${process.env.HOME}/.cache/nix`;
-
-            if (existsSync(nixCacheDir)) {
-                utils.info(
-                    `Giving write permissions for ${nixCacheDir} to the current user.`
-                );
-                
-                await utils.run(`sudo chmod -R u+w ${nixCacheDir}`);
-            }
-
             await mergeStoreDatabases(
-                tempDir,
+                mergeScriptPath,
                 dbOldPath,
                 dbNewPath,
                 dbMergedPath,
                 dbStorePath
             );
+            
+            const nixCachePath = `${process.env.HOME}/.cache/nix`;
+
+            if (existsSync(nixCachePath)) {
+                utils.info(
+                    `Giving write permissions for ${nixCachePath} to the current user.`
+                );
+                
+                await utils.run(`sudo chmod -R u+w ${nixCachePath}`);
+            }
         }
 
         return cacheKey;

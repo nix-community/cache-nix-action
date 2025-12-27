@@ -5,17 +5,23 @@ import { mergeSqlTemplate } from "../templates/merge";
 import * as utils from "./action";
 
 export async function mergeStoreDatabases(
-    tempDir: string,
+    mergeScriptPath: string,
     dbOldPath: string,
     dbNewPath: string,
     dbMergedPath: string,
     dbStorePath: string
 ) {
-    const mergeSqlFile = `${tempDir}/merge.sql`;
+    utils.info(
+        `
+        Merging store databases "${dbOldPath}" and "${dbNewPath}"
+        into the new database "${dbMergedPath}".
+        `
+    );
+    
     const template = Handlebars.compile(mergeSqlTemplate);
-    writeFileSync(mergeSqlFile, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
+    writeFileSync(mergeScriptPath, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
 
-    await utils.run(`sqlite3 ${dbMergedPath} < ${mergeSqlFile}`);
+    await utils.run(`sqlite3 ${dbMergedPath} < ${mergeScriptPath}`);
     
     utils.info(`Checking the new database.`);
     
