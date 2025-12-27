@@ -17,14 +17,14 @@ jobs:
       - name: Checkout this repo
         uses: actions/checkout@v6
       - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v34
+        uses: cachix/install-nix-action@v31.9.0
         with:
-          nix_conf: |
+          extra_nix_config: |
             substituters = https://cache.nixos.org/ https://nix-community.cachix.org https://cache.iog.io
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
             keep-env-derivations = true
             keep-outputs = true
-            extra-experimental-features = ca-derivations
+            extra-experimental-features = nix-command flakes ca-derivations
       - name: Update the branch to use the latest action version
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,21 +46,21 @@ jobs:
       - name: Save nixpkgs for nix1
         run: |
           nix registry pin nixpkgs-nix1 github:nixos/nixpkgs/${{ env.hash-nix1 }}
-          nix profile install "$(nix eval nixpkgs-nix1#path)"
+          nix profile add --profile ./profile "$(nix flake archive nixpkgs-nix1 --json | jq -r '.path')" --priority 10
       - name: Save nixpkgs for nix2
         run: |
           nix registry pin nixpkgs-nix2 github:nixos/nixpkgs/${{ env.hash-nix2 }}
-          nix profile install "$(nix eval nixpkgs-nix2#path)" --priority 10
+          nix profile add --profile ./profile "$(nix flake archive nixpkgs-nix2 --json | jq -r '.path')" --priority 20
       - name: Install nix1
-        run: nix profile install ${{ env.installable-nix1 }} --priority 20
+        run: nix profile add --profile ./profile ${{ env.installable-nix1 }} --priority 30
       - name: Install nix2
-        run: nix profile install ${{ env.installable-nix2 }} --priority 30
+        run: nix profile add --profile ./profile ${{ env.installable-nix2 }} --priority 40
       - name: See libgcc paths in the nix1 closure
         run: |
           NIX_LIBGCC_PATHS="$(
             nix derivation show ${{ env.installable-nix1 }} \
-            | jq -r '.[] .outputs.out.path' \
-            | xargs -I {} nix-store -qR --include-outputs {}\
+            | jq -r '.derivations.[].outputs.out.path' \
+            | xargs -I {} nix-store -qR --include-outputs '/nix/store/{}' \
             | grep libgcc \
             || printf "error!")"
           printf "%s\n" "$NIX_LIBGCC_PATHS"
@@ -73,8 +73,8 @@ jobs:
         run: |
           NIX_LIBGCC_PATHS="$(
             nix derivation show ${{ env.installable-nix2 }} \
-            | jq -r '.[] .outputs.out.path' \
-            | xargs -I {} nix-store -qR --include-outputs {}\
+            | jq -r '.derivations.[].outputs.out.path' \
+            | xargs -I {} nix-store -qR --include-outputs '/nix/store/{}' \
             | grep libgcc \
             || printf "error!")"
           printf "%s\n" "$NIX_LIBGCC_PATHS"

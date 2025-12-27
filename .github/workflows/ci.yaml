@@ -17,12 +17,14 @@ env:
   # required for gh
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  nix_conf: |
+  extra_nix_config: |
     substituters = https://cache.nixos.org/ https://nix-community.cachix.org https://cache.iog.io
     trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
     keep-env-derivations = true
     keep-outputs = true
-  nix_conf_ca_derivations: |
+    experimental-features = nix-command flakes
+    accept-flake-config = true
+  nix_config_ca_derivations: |
     extra-experimental-features = ca-derivations
 
 jobs:
@@ -30,7 +32,7 @@ jobs:
   # Commit and push the built code
   build:
     name: Build the action
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: write
       actions: write
@@ -39,11 +41,12 @@ jobs:
         with:
           submodules: true
 
-      - uses: nixbuild/nix-quick-install-action@v34
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           # We don't enable ca-derivations here
           # because we have later jobs where ca-derivations is enabled.
-          nix_conf: ${{ env.nix_conf }}
+          extra_nix_config: |
+            ${{ env.extra_nix_config }}
 
       - name: Restore and save Nix store and npm cache
         uses: ./.
@@ -92,7 +95,7 @@ jobs:
           git push
 
       - name: Save flake attributes from garbage collection
-        run: nix profile install .#saveFromGC
+        run: nix profile add .#saveFromGC
 
   # Make `individual` caches
   # Restore `individual` or `common` caches
@@ -103,12 +106,13 @@ jobs:
     permissions:
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-14
           - macos-15
-          - ubuntu-22.04
           - ubuntu-24.04
+          - ubuntu-24.04-arm
         id:
           - 1
           - 2
@@ -125,18 +129,18 @@ jobs:
               || format('git pull --rebase origin {0}', github.ref_name) 
           }}
 
-      - uses: nixbuild/nix-quick-install-action@v34
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           # Make caches with ca-derivations enabled on some machines
           # to test merging stores where the feature is enabled for one store and disabled for another.
           # Don't enable it on some machines at all
           # to test merging stores with that feature disabled.
-          nix_conf: |
-            ${{ env.nix_conf }}
+          extra_nix_config: |
+            ${{ env.extra_nix_config }}
             ${{ (
-                  (matrix.id == 1 && matrix.os == 'ubuntu-22.04') || 
-                  (matrix.id == 2 && matrix.os == 'ubuntu-24.04')
-                ) && env.nix_conf_ca_derivations || ''
+                  (matrix.id == 1 && matrix.os == 'macos-15') || 
+                  (matrix.id == 2 && matrix.os == 'ubuntu-24.04-arm')
+                ) && env.nix_config_ca_derivations || ''
             }}
       - name: Restore Nix store - ${{ matrix.id }}
         id: restore
@@ -152,11 +156,11 @@ jobs:
 
       - name: Install nixpkgs#poetry
         if: matrix.id == 1
-        run: nix profile install nixpkgs#poetry
+        run: nix profile add nixpkgs#poetry
 
       - name: Install nixpkgs#nodejs
         if: matrix.id == 2
-        run: nix profile install nixpkgs#nodejs
+        run: nix profile add nixpkgs#nodejs
 
       - name: Save Nix store - ${{ matrix.id }}
         if: steps.restore.outputs.hit == 'false'
@@ -172,7 +176,7 @@ jobs:
           purge-created: 0
           # except the version with the `primary-key`, if it exists
           purge-primary-key: never
-          # and collect garbage in the Nix store until it reaches this size in bytes
+          # and collect garbage in the Nix store until it reaches this size
           gc-max-store-size: 8G
 
   # Merge similar `individual` caches
@@ -184,12 +188,13 @@ jobs:
     permissions:
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-14
           - macos-15
-          - ubuntu-22.04
           - ubuntu-24.04
+          - ubuntu-24.04-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo
@@ -203,13 +208,13 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: nixbuild/nix-quick-install-action@v34
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           # We enable ca-derivations only on macos-15
           # to test more different cases.
-          nix_conf: |
-            ${{ env.nix_conf }}
-            ${{ matrix.os == 'macos-15' && env.nix_conf_ca_derivations || '' }}
+          extra_nix_config: |
+            ${{ env.extra_nix_config }}
+            ${{ matrix.os == 'macos-15' && env.nix_config_ca_derivations || '' }}
 
       - name: Restore and save Nix store
         uses: ./.
@@ -235,21 +240,21 @@ jobs:
 
       # Stuff in a profile can survive garbage collection.
       # Therefore, profiles are ignored when restoring a cache.
-      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # So, the current profile should be the default profile created by the action that installs Nix.
       # The default profile should contain only nix.
       - name: List profile
         run: nix profile list
 
-      - name: Check that the profile doesn't have anything apart from `nix`
+      - name: Check that the profile is empty.
         shell: bash
         run: |
-          [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
+          [[ "$(nix profile list)" == "" ]]
 
       - name: Install nixpkgs#poetry
-        run: nix profile install nixpkgs#poetry
+        run: nix profile add nixpkgs#poetry
 
       - name: Install nixpkgs#nodejs
-        run: nix profile install nixpkgs#nodejs
+        run: nix profile add nixpkgs#nodejs
 
       - name: Run poetry
         run: poetry --version
@@ -264,12 +269,13 @@ jobs:
     permissions:
       actions: write
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-14
           - macos-15
-          - ubuntu-22.04
           - ubuntu-24.04
+          - ubuntu-24.04-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo
@@ -283,13 +289,13 @@ jobs:
                 || format('git pull --rebase origin {0}', github.ref_name) 
             }}
 
-      - uses: nixbuild/nix-quick-install-action@v34
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           # We enable ca-derivations only on macos-15
           # to test more different cases.
-          nix_conf: |
-            ${{ env.nix_conf }}
-            ${{ matrix.os == 'macos-15' && env.nix_conf_ca_derivations || '' }}
+          extra_nix_config: |
+            ${{ env.extra_nix_config }}
+            ${{ matrix.os == 'macos-15' && env.nix_config_ca_derivations || '' }}
 
       - name: Restore Nix store
         uses: ./restore
@@ -301,21 +307,21 @@ jobs:
 
       # Stuff in a profile can survive garbage collection.
       # Therefore, profiles are ignored when restoring a cache.
-      # So, the current profile should be the default profile created by nix-quick-install-action.
+      # So, the current profile should be the default profile created by the action that installs Nix.
       # The default profile should contain only nix.
       - name: List profile
         run: nix profile list
 
-      - name: Check that the profile doesn't have anything apart from `nix`
+      - name: Check that the profile is empty.
         shell: bash
         run: |
-          [[ "$(nix profile list --json | jq -rc '.elements | keys | .[]')" == "nix" ]]
+          [[ "$(nix profile list)" == "" ]]
 
       - name: Install nixpkgs#poetry
-        run: nix profile install nixpkgs#poetry
+        run: nix profile add nixpkgs#poetry
 
       - name: Install nixpkgs#nodejs
-        run: nix profile install nixpkgs#nodejs
+        run: nix profile add nixpkgs#nodejs
 
       - name: Run poetry
         run: poetry --version
@@ -339,8 +345,8 @@ jobs:
         os:
           - macos-14
           - macos-15
-          - ubuntu-22.04
           - ubuntu-24.04
+          - ubuntu-24.04-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo
@@ -367,9 +373,10 @@ jobs:
           df -h
           echo "::endgroup::"
 
-      - uses: nixbuild/nix-quick-install-action@v34
+      - uses: cachix/install-nix-action@v31.9.0
         with:
-          nix_conf: ${{ env.nix_conf }}
+          extra_nix_config: |
+            ${{ env.extra_nix_config }}
 
       - name: Restore and save Nix store
         if: matrix.do-cache
@@ -404,42 +411,172 @@ jobs:
         run: nix registry list
 
       - name: Save nixpkgs from garbage collection
-        # About nixpkgs#path
+        # Can't use nixpkgs#path
         # https://github.com/NixOS/nixpkgs/issues/270292
-        run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
+        run: nix profile add $(nix flake archive nixpkgs --json | jq -r '.path')
 
       - name: Show profile
         run: nix profile list
 
       - name: Install nixpkgs#hello
-        run: nix profile install nixpkgs#hello
+        run: nix profile add nixpkgs#hello
 
       - name: Install nixpkgs#cachix
-        run: nix profile install nixpkgs#cachix
+        run: nix profile add nixpkgs#cachix
 
-      - name: Install nixpkgs#nixpkgs-fmt
-        run: nix profile install nixpkgs#nixpkgs-fmt
+      - name: Install nixpkgs#nixfmt
+        run: nix profile add nixpkgs#nixfmt
 
-      - name: Install nixpkgs#alejandra
-        run: nix profile install nixpkgs#alejandra
+      - name: Install nixpkgs#cargo
+        run: nix profile add nixpkgs#cargo
 
       - name: Install nixpkgs#nixd
-        run: nix profile install nixpkgs#nixd
+        run: nix profile add nixpkgs#nixd
 
       - name: Install nixpkgs#ghc
-        run: nix profile install nixpkgs#ghc
+        run: nix profile add nixpkgs#ghc
 
       - name: Install nixpkgs#haskell-language-server
-        run: nix profile install nixpkgs#haskell-language-server
+        run: nix profile add nixpkgs#haskell-language-server
 
       - name: Install nixpkgs#purescript
-        run: nix profile install nixpkgs#purescript
+        run: nix profile add nixpkgs#purescript
 
       - name: Install nixpkgs#nodejs
-        run: nix profile install nixpkgs#nodejs
+        run: nix profile add nixpkgs#nodejs
 
       - name: Show profile
         run: nix profile list
+
+  test-alt-nix-installers-restore-and-save:
+    name: Check alternative nix installers - restore and save cache
+    needs: compare-run-times
+    permissions:
+      actions: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-14
+          - macos-15
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+        nix-installer:
+          - DeterminateSystems/determinate-nix-action
+          - nixbuild/nix-quick-install-action
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v6
+
+      - name: Rebase
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
+
+      - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
+        uses: DeterminateSystems/determinate-nix-action@v3.15.1
+        with:
+          extra-conf: |
+            ${{ env.extra_nix_config }}
+            ${{ env.nix_config_ca_derivations }}
+
+      - if: matrix.nix-installer == 'nixbuild/nix-quick-install-action'
+        uses: deemp/nix-quick-install-action@v35
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v35
+          nix_conf: |
+            ${{ env.extra_nix_config }}
+            ${{ env.nix_config_ca_derivations }}
+
+      - name: Restore and save Nix store
+        uses: ./.
+        with:
+          primary-key: alt-cache-${{ matrix.os }}-${{ matrix.nix-installer }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+          # do purge caches
+          purge: true
+          # purge old versions of the `common` cache and any versions of individual caches
+          purge-prefixes: |
+            alt-cache-${{ matrix.os }}-${{ matrix.nix-installer }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
+          # and collect garbage in the Nix store until it reaches this size
+          gc-max-store-size: 0
+
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+
+      - name: Save nixpkgs from garbage collection
+        run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
+
+      - name: Install a package
+        run: nix profile install nixpkgs#ghc
+
+      - name: Check installation
+        run: ghc --version
+
+  test-alt-nix-installers-restore-only:
+    name: Check alternative nix installers - restore only
+    needs: test-alt-nix-installers-restore-and-save
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-14
+          - macos-15
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+        nix-installer:
+          - DeterminateSystems/determinate-nix-action
+          - nixbuild/nix-quick-install-action
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v6
+
+      - name: Rebase
+        run: |
+          ${{
+            github.head_ref
+              && format('gh pr checkout {0}', github.event.pull_request.number) 
+              || format('git pull --rebase origin {0}', github.ref_name) 
+          }}
+
+      - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
+        uses: DeterminateSystems/determinate-nix-action@v3.15.1
+        with:
+          extra-conf: |
+            ${{ env.extra_nix_config }}
+            ${{ env.nix_config_ca_derivations }}
+
+      - if: matrix.nix-installer == 'nixbuild/nix-quick-install-action'
+        uses: deemp/nix-quick-install-action@v35
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_archives_url: https://github.com/deemp/nix-quick-install-action/releases/download/v35
+          nix_conf: |
+            ${{ env.extra_nix_config }}
+            ${{ env.nix_config_ca_derivations }}
+
+      - name: Restore Nix store
+        uses: ./restore
+        with:
+          primary-key: alt-cache-${{ matrix.os }}-${{ matrix.nix-installer }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+
+      - name: Pin nixpkgs
+        run: ${{ env.pin_nixpkgs }}
+
+      - name: Install a package
+        run: nix profile install nixpkgs#ghc
+
+      - name: Check installation
+        run: ghc --version
 
   test-collision-produce:
     needs: build

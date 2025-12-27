@@ -17,12 +17,20 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - Merge caches produced by several jobs.
 - Purge caches created or last accessed at least the given time ago.
 
+## Compatible Nix installers
+
+`cache-nix-action` is compatible with:
+
+- [`nixbuild/nix-quick-install-action`](https://github.com/nixbuild/nix-quick-install-action)
+- [`cachix/install-nix-action`](https://github.com/cachix/install-nix-action/)
+- [`DeterminateSystems/determinate-nix-action`](https://github.com/DeterminateSystems/determinate-nix-action)
+
 ## A typical job
 
 > [!NOTE]
 > Inputs are given for reference. All available inputs are specified [below](#inputs).
 
-1. The [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action) installs Nix in single-user mode.
+1. One of the [compatible actions](#compatible-nix-installers) installs Nix.
 
 1. `Restore` phase:
 
@@ -51,7 +59,6 @@ This action is based on [actions/cache](https://github.com/actions/cache).
   - When restoring a cache, the action doesn't extract from the cache the `/nix/store` paths that already exist on the runner.
   - Additionally, the action unarchives only the `/nix/var/nix/db/db.sqlite` and skips other cached `/nix/var` directories.
   - The action merges existing and new databases when restoring a cache.
-- The action requires [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action).
 - The action supports only `Linux` and `macOS` runners for Nix store caching.
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
@@ -364,11 +371,11 @@ closure
 /nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
 
 derivations
-/nix/store/2bcv91i8fahqghn8dmyr791iaycbsjdd-hello-2.12.2
-/nix/store/vb1fjr733z2hmwf3kfh72ja8wny59ssr-nix-shell
+/nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2
+/nix/store/8xjhphvn58rrqydsx5569jn01yd5a0al-nix-shell
 
 paths
-/nix/store/2bcv91i8fahqghn8dmyr791iaycbsjdd-hello-2.12.2/bin/hello
+/nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2/bin/hello
 ```
 
 Add the installable to the default profile.
@@ -380,7 +387,7 @@ nix profile list | grep save-from-gc
 ```
 
 ```console
-Store paths:        /nix/store/mrp80d8sp6dzzhw4s8xm6gq4zz4cdz6d-save-from-gc
+Store paths:        /nix/store/d3wvhfgi549va9f5m4qhzjmk9g2asmnc-save-from-gc
 ```
 
 Or, build the installable and see the garbage collection roots that won't let it be garbage collected.
@@ -400,7 +407,7 @@ Output (edited):
 ```console
 ...
 <...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
-<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/mrp80d8sp6dzzhw4s8xm6gq4zz4cdz6d-save-from-gc
+<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/d3wvhfgi549va9f5m4qhzjmk9g2asmnc-save-from-gc
 ```
 
 <!-- `$ nix profile remove examples/saveFromGC; rm result` -->

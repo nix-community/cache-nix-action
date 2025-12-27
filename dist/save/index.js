@@ -58760,9 +58760,12 @@ async function prepareExcludeFromFile(forRestore) {
 async function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
     let tarCommandModifiers = new options_1.TarCommandModifiers();
     if (inputs.nix && !lookupOnly) {
-        tarCommandModifiers.extractArgs = await prepareExcludeFromFile(true);
+        tarCommandModifiers.extractArgs = [
+            ...(await prepareExcludeFromFile(true))
+        ];
         (0, exports.info)(`::group::Logs produced while restoring a cache.`);
     }
+    tarCommandModifiers.useSudo = true;
     // The "restoreCache" implementation is selected at runtime.
     // The options are in the "cache" module.
     const key = await cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, tarCommandModifiers);
@@ -58808,7 +58811,7 @@ function getMaxDate({ doUseLastAccessedTime, time }) {
 }
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
-async function run(command, enableCommandOutput = false) {
+async function run(command, enableCommandOutput = true) {
     let stdout = "";
     let stderr = "";
     const options = {

@@ -115,10 +115,14 @@ export async function restoreCache({
     let tarCommandModifiers = new TarCommandModifiers();
 
     if (inputs.nix && !lookupOnly) {
-        tarCommandModifiers.extractArgs = await prepareExcludeFromFile(true);
+        tarCommandModifiers.extractArgs = [
+            ...(await prepareExcludeFromFile(true))
+        ];
 
         info(`::group::Logs produced while restoring a cache.`);
     }
+
+    tarCommandModifiers.useSudo = true;
 
     // The "restoreCache" implementation is selected at runtime.
     // The options are in the "cache" module.
@@ -212,7 +216,7 @@ export const stringify = (value: any) => JSON.stringify(value, null, 2);
 
 export async function run(
     command: string,
-    enableCommandOutput: boolean = false
+    enableCommandOutput: boolean = true
 ) {
     let stdout = "";
     let stderr = "";
