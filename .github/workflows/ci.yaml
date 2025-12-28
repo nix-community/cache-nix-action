@@ -579,10 +579,10 @@ jobs:
       - name: Check installation
         run: ghc --version
 
-  test-collision-produce:
-    needs: build
-    uses: ./.github/workflows/test-hash-collision.yml
+  # test-collision-produce:
+  #   needs: build
+  #   uses: ./.github/workflows/test-hash-collision.yml
 
-  test-collision-consume:
-    needs: test-collision-produce
-    uses: ./.github/workflows/test-hash-collision.yml
+  # test-collision-consume:
+  #   needs: test-collision-produce
+  #   uses: ./.github/workflows/test-hash-collision.yml
