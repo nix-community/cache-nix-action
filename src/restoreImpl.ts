@@ -15,8 +15,17 @@ export async function restoreImpl(
     stateProvider: IStateProvider,
     earlyExit?: boolean | undefined
 ): Promise<string | undefined> {
+    function setOutputsEarlyReturn() {
+        core.setOutput(Outputs.Hit, "false");
+        core.setOutput(Outputs.HitFirstMatch, "false");
+        core.setOutput(Outputs.HitPrimaryKey, "false");
+        core.setOutput(Outputs.RestoredKey, undefined);
+        core.setOutput(Outputs.RestoredKeys, undefined);
+    }
+
     try {
         if (!utils.isCacheFeatureAvailable()) {
+            setOutputsEarlyReturn();
             return;
         }
 
@@ -27,6 +36,8 @@ export async function restoreImpl(
                     process.env[Events.Key]
                 } is not supported because it's not tied to a branch or tag ref.`
             );
+            setOutputsEarlyReturn();
+            return;
         }
 
         let restoredKey: string | undefined;
@@ -155,7 +166,10 @@ export async function restoreImpl(
 
         return restoredKey;
     } catch (error: unknown) {
+        setOutputsEarlyReturn();
+
         core.setFailed((error as Error).message);
+
         if (earlyExit) {
             process.exit(1);
         }
