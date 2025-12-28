@@ -58935,12 +58935,7 @@ async function collectGarbage() {
     await utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
     utils.info("Calculating store size.");
     async function getStoreSize() {
-        const { stdout } = await utils.run(`
-            nix \
-                --experimental-features nix-command \
-                path-info --json --json-format 2 --all \
-                | jq '.info | map(.narSize) | add'
-        `);
+        const { stdout } = await utils.run(`nix --experimental-features nix-command path-info --json --json-format 2 --all | jq '.info | map(.narSize) | add'`);
         const storeSize = (() => {
             try {
                 return BigInt(stdout);
