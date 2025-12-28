@@ -56146,11 +56146,13 @@ function getWorkingDirectory() {
     return process.env['GITHUB_WORKSPACE'] ?? process.cwd();
 }
 // Common function for extractTar and listTar to get the compression method
+// -T#: Compress using # working thread. If # is 0, attempt to detect and use the number of physical CPU cores.
+// zstdmt is equivalent to 'zstd -T0'
+// -d: Decompress.
+// unzstd is equivalent to 'zstd -d'
+// --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
+// Using 30 here because we also support 32-bit self-hosted runners.
 async function getDecompressionProgram(tarPath, compressionMethod, archivePath) {
-    // -d: Decompress.
-    // unzstd is equivalent to 'zstd -d'
-    // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
-    // Using 30 here because we also support 32-bit self-hosted runners.
     const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
         compressionMethod !== constants_1.CompressionMethod.Gzip &&
         IS_WINDOWS;
@@ -56158,22 +56160,22 @@ async function getDecompressionProgram(tarPath, compressionMethod, archivePath) 
         case constants_1.CompressionMethod.Zstd:
             return BSD_TAR_ZSTD
                 ? [
-                    'zstd -d --long=30 --force -o',
+                    'zstd -d -T0 --long=30 --force -o',
                     constants_1.TarFilename,
                     archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
                 ]
                 : [
                     '--use-compress-program',
-                    IS_WINDOWS ? '"zstd -d --long=30"' : 'unzstd --long=30'
+                    '"zstd -d -T0 --long=30"'
                 ];
         case constants_1.CompressionMethod.ZstdWithoutLong:
             return BSD_TAR_ZSTD
                 ? [
-                    'zstd -d --force -o',
+                    'zstd -d -T0 --force -o',
                     constants_1.TarFilename,
                     archivePath.replace(new RegExp(`\\${path.sep}`, 'g'), '/')
                 ]
-                : ['--use-compress-program', IS_WINDOWS ? '"zstd -d"' : 'unzstd'];
+                : ['--use-compress-program', '"zstd -d -T0"'];
         default:
             return ['-z'];
     }
