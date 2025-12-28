@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { Events, Inputs, State } from "./constants";
 import * as inputs from "./inputs";
 import {
-    type IStateProvider,
+    IStateProvider,
     NullStateProvider,
     StateProvider
 } from "./stateProvider";
@@ -35,6 +35,7 @@ export async function saveImpl(
                     process.env[Events.Key]
                 } is not supported because it's not tied to a branch or tag ref.`
             );
+            return;
         }
 
         // If restore has stored a primary key in state, reuse that
@@ -141,7 +142,7 @@ export async function saveImpl(
             });
         }
     } catch (error: unknown) {
-        core.setFailed((error as Error).message);
+        utils.logWarning((error as Error).message);
     }
     return cacheId;
 }
