@@ -29,8 +29,6 @@ export async function restoreImpl(
             );
         }
 
-        await install.installSQLite3();
-
         let restoredKey: string | undefined;
         let lookedUpPrimaryKey: string | undefined;
         const restoredKeys: string[] = [];

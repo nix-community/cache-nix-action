@@ -4,6 +4,7 @@ import * as inputs from "../inputs";
 import * as utils from "./action";
 import { cacheUtils } from "./cacheBackend";
 import { mergeStoreDatabases } from "./mergeStoreDatabases";
+import { installSQLite3 } from './install';
 
 export async function restoreCache(key: string, ref?: string) {
     const tempDir = await cacheUtils.createTempDirectory();
@@ -42,6 +43,8 @@ export async function restoreCache(key: string, ref?: string) {
 
     if (cacheKey) {
         utils.info(`Finished restoring the cache.`);
+        
+        await installSQLite3();
 
         if (inputs.nix) {
             utils.info(`Copying "${dbStorePath}" to "${dbNewPath}".`);
