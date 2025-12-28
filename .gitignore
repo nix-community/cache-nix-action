@@ -97,10 +97,6 @@ typings/
 
 .direnv
 
-__pycache__
-
-table.md
-
 tmp
 
 src/templates/merge.ts
