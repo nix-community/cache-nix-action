@@ -192,9 +192,9 @@ in
         - name: Pin nixpkgs
           run: ''${{ env.pin_nixpkgs }}
 
-        - name: Install nixpkgs#poetry
+        - name: Install nixpkgs#uv
           if: matrix.id == 1
-          run: nix profile add nixpkgs#poetry
+          run: nix profile add nixpkgs#uv
 
         - name: Install nixpkgs#nodejs
           if: matrix.id == 2
@@ -299,14 +299,14 @@ in
               run: |
                 [[ "$(nix profile list)" == "" ]]
 
-            - name: Install nixpkgs#poetry
-              run: nix profile add nixpkgs#poetry
+            - name: Install nixpkgs#uv
+              run: nix profile add nixpkgs#uv
 
             - name: Install nixpkgs#nodejs
               run: nix profile add nixpkgs#nodejs
 
-            - name: Run poetry
-              run: poetry --version
+            - name: Run uv
+              run: uv --version
 
             - name: Run node
               run: node --version
