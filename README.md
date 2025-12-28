@@ -53,6 +53,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 ## Limitations
 
+- Requires Nix 2.24+ and SQLite 3.37+ to be installed on the GitHub Actions runner.
 - Uses experimental [`nix`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix) commands like [`nix store gc`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-store-gc) and [`nix path-info`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-path-info).
 - By default, the action caches and restores only `/nix`, `~/.cache/nix`, `~root/.cache/nix` (see [documentation](#inputs) for the `paths` input).
   - The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nix.dev/manual/nix/2.33/store/types/local-store.html#local-store)).
