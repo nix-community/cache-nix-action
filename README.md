@@ -16,6 +16,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - Collect garbage in the Nix store before saving a new cache.
 - Merge caches produced by several jobs.
 - Purge caches created or last accessed at least the given time ago.
+- Redefine `ACTIONS_CACHE_URL` and `ACTIONS_RESULTS_URL` using `CUSTOM_ACTIONS_CACHE_URL` and `CUSTOM_ACTIONS_RESULTS_URL` environment variables.
 
 ## Compatible Nix installers
 
