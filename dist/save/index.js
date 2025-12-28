@@ -58425,6 +58425,7 @@ async function saveImpl(stateProvider) {
         }
         if (!utils.isValidEvent()) {
             utils.logWarning(`Event Validation Error: The event type ${process.env[constants_1.Events.Key]} is not supported because it's not tied to a branch or tag ref.`);
+            return;
         }
         // If restore has stored a primary key in state, reuse that
         // Else re-evaluate from inputs
@@ -58503,7 +58504,7 @@ async function saveImpl(stateProvider) {
         }
     }
     catch (error) {
-        core.setFailed(error.message);
+        utils.logWarning(error.message);
     }
     return cacheId;
 }
