@@ -10,12 +10,12 @@ export async function collectGarbage() {
     utils.info("Calculating store size.");
 
     async function getStoreSize() {
-        const { stdout } = await utils.run(
-            `nix \
+        const { stdout } = await utils.run(`
+            nix \
                 --experimental-features nix-command \
                 path-info --json --json-format 2 --all \
-                | jq '.info | map(.narSize) | add'`
-        );
+                | jq '.info | map(.narSize) | add'
+        `);
 
         const storeSize = (() => {
             try {
