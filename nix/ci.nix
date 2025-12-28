@@ -97,6 +97,7 @@ in
           uses: ./.
           with:
             primary-key: build-''${{ runner.os }}-''${{ hashFiles('**/package-lock.json', 'package.json', 'flake.nix', 'flake.lock') }}
+            restore-prefixes-first-match: build-''${{ runner.os }}-
             paths: |
               ~/.npm
             # do purge caches
