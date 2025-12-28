@@ -59089,6 +59089,64 @@ function getInputAsBool(name, options) {
 
 /***/ }),
 
+/***/ 99784:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.tryOverrideActionsUrl = tryOverrideActionsUrl;
+const utils = __importStar(__nccwpck_require__(39603));
+// Adapted from https://github.com/nix-community/cache-nix-action/issues/189
+async function tryOverrideActionsUrl() {
+    const customCacheURL = process.env["CUSTOM_ACTIONS_CACHE_URL"];
+    if (customCacheURL) {
+        utils.info(`Redefining the "ACTIONS_CACHE_URL" to "${customCacheURL}"`);
+        process.env["ACTIONS_CACHE_URL"] = customCacheURL;
+    }
+    const customResultsURL = process.env["CUSTOM_ACTIONS_RESULTS_URL"];
+    if (customResultsURL) {
+        utils.info(`Redefining the "ACTIONS_RESULTS_URL" to "${customResultsURL}"`);
+        process.env["ACTIONS_RESULTS_URL"] = customResultsURL;
+    }
+}
+
+
+/***/ }),
+
 /***/ 48342:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -102451,7 +102509,9 @@ var __webpack_exports__ = {};
 var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const overrideUrl_1 = __nccwpck_require__(99784);
 const saveImpl_1 = __nccwpck_require__(20056);
+(0, overrideUrl_1.tryOverrideActionsUrl)();
 (0, saveImpl_1.saveRun)(true);
 
 })();
