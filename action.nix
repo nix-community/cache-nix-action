@@ -272,7 +272,7 @@ in
       ""
   }
   runs:
-    using: "node20"
+    using: "node24"
     main: "${specific.main}"
     ${specific.post}
   branding:
