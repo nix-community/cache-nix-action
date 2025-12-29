@@ -268,6 +268,7 @@ Disadvantages:
 
 ### Garbage collection tools
 
+- GC by access time tracked in the Nix store DB: [PR](https://github.com/NixOS/nix/pull/14725).
 - GC by `atime`: [nix-heuristic-gc](https://github.com/risicle/nix-heuristic-gc).
 - GC via gc roots: [nix-cache-cut](https://github.com/astro/nix-cache-cut).
 - GC based on time: [cache-gc](https://github.com/lheckemann/cache-gc).
@@ -275,15 +276,23 @@ Disadvantages:
 
 ## Save Nix store paths from garbage collection
 
+### Problems
+
+One problem is that garbage collection doesn't differentiate between the least and the most recently used paths ([issue](https://github.com/NixOS/nix/issues/2793)).
+
+Another problem is that derivations produced with the help of flake inputs don't retain references to these inputs ([issue](https://github.com/NixOS/nix/issues/4250), [issue](https://github.com/NixOS/nix/issues/6895)).
+
+### Solution 1 - `saveFromGC`
+
 > [!WARNING]
 > We don't guarantee that [`saveFromGC.nix`](./saveFromGC.nix) will be available or won't have breaking changes in future.
 
-### Issues
+Write an expression for a derivation that mentions the necessary paths and flake inputs. Next, [add it to a profile or build it](#solution-2---nix-profile-add-or-nix-build).
 
-- [issue](https://github.com/NixOS/nix/issues/4250)
-- [issue](https://github.com/NixOS/nix/issues/6895)
+- **Pros**: Allows to include and exclude flake inputs in Nix expressions.
+- **Cons**: Requires writing Nix expressions and running extra commands.
 
-### Sample flake
+#### Sample flake that uses `saveFromGC`
 
 See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFromGC.nix](./saveFromGC.nix).
 
@@ -340,7 +349,7 @@ See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFr
 }
 ```
 
-### `nix profile add` or `nix build`
+### Solution 2 - `nix profile add` or `nix build`
 
 Each profile [is](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-profile#filesystem-layout) a [garbage collection root](https://nix.dev/manual/nix/2.33/package-management/garbage-collector-roots.html#garbage-collector-roots).
 
@@ -350,6 +359,11 @@ To save particular Nix store paths, create an [installable](https://nix.dev/manu
 
 - either add it to a profile via [`nix profile add`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-profile-add.html)
 - or `nix build`
+
+- **Pros**: Easy to use in CI.
+- **Cons**: These commands save only output paths. Use the [solution 1](#solution-1---savefromgc) or [solution 3](#solution-3---nix-flake-archive) to save flake inputs.
+
+#### Example with `saveFromGC`
 
 The `saveFromGC` attribute of the flake above is a script (an installable) that contains paths of elements of the flake closure (the flake itself, flake inputs, inputs of these inputs, etc.).
 
@@ -384,7 +398,7 @@ Add the installable to the default profile.
 
 ```$ as console
 nix profile remove examples/saveFromGC
-nix profile install .#saveFromGC
+nix profile add .#saveFromGC
 nix profile list | grep save-from-gc
 ```
 
@@ -414,9 +428,21 @@ Output (edited):
 
 <!-- `$ nix profile remove examples/saveFromGC; rm result` -->
 
-### Other approaches
+### Solution 3 - `nix flake archive`
 
-- Run [direnv](https://github.com/nix-community/nix-direnv) in background.
+[Implementation](https://github.com/NixOS/nix/issues/4250#issuecomment-1146878407).
+
+- **Pros**: Can be run without adding any Nix code.
+- **Cons**:
+  - Requires custom bash code to exclude particular flake inputs if you decide not to save some of them.
+  - Saves only flake inputs. To save output paths, use the [solution 1](#solution-1---savefromgc) together with the [solution 2](#solution-2---nix-profile-add-or-nix-build).
+
+### Solution 4 - `direnv`
+
+Run [`direnv`](https://direnv.net/) with [`nix-direnv`](https://github.com/nix-community/nix-direnv) in background.
+
+- **Pros**: Can save both output paths and inputs.
+- **Cons**: Like the [solution 3](#solution-3---nix-flake-archive), requires writing some code to exclude particular paths.
 
 ## Caching approaches
 
