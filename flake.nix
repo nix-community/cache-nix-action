@@ -135,23 +135,18 @@
               meta.description = "build project";
             };
 
-            inherit
+            saveFromGC =
               (import ./saveFromGC.nix {
-                inherit pkgs;
-                inputs = {
-                  inherit (inputs)
-                    nixpkgs
-                    flake-parts
-                    systems
-                    ;
-                };
-                derivations = [
-                  config.packages.install
-                  config.packages.write
+                inherit pkgs inputs;
+                inputsInclude = [
+                  "nixpkgs"
+                  "flake-parts"
+                  "treefmt-nix"
                 ];
-              })
-              saveFromGC
-              ;
+                derivationsAttrs = {
+                  inherit (config.packages) install write build;
+                };
+              }).package;
           };
 
           devshells.default = {
