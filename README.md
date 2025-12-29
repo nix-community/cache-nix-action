@@ -376,7 +376,7 @@ cd examples/saveFromGC
 Print the contents of `saveFromGC`.
 
 ```$ as console
-cat $(nix build .#saveFromGC --no-link --print-out-paths)/bin/save-from-gc
+cat $(nix build .#saveFromGC --no-link --print-out-paths)
 ```
 
 ```console
