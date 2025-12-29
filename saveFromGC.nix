@@ -73,7 +73,8 @@ let
     concatStringsSep
     ;
   inherit (pkgs) lib;
-
+  
+  # Get all candidate `inputsInclude`.
   getInputsIncludeCandidates =
     inputs:
     builtins.concatLists (
@@ -101,9 +102,11 @@ let
         go name [ input ]
       ) inputs
     );
-
+  
+  # Output this list to see which `inputsInclude` you can specify.
   inputsIncludeCandidates = getInputsIncludeCandidates inputs;
-
+  
+  # Resolve inputs for attribute paths in `inputsInclude` using `inputs`.
   getInputsIncluded =
     inputs: inputsInclude:
     lib.pipe inputsInclude [
@@ -115,7 +118,7 @@ let
           let
             errorMessage = lib.generators.toPretty { } (builtins.map (builtins.concatStringsSep "/") x.wrong);
           in
-          throw "The paths\n\n${errorMessage}\n\ncontain empty attribute names."
+          throw "The attribute paths\n\n${errorMessage}\n\ncontain empty attribute names."
         else
           x.right
       )
@@ -137,7 +140,7 @@ let
               builtins.map (y: builtins.concatStringsSep "/" y.inputPath) x.wrong
             );
           in
-          throw "The paths\n\n${invalidMessage}\n\ndon't have corresponding inputs."
+          throw "The attribute paths\n\n${invalidMessage}\n\ndon't have corresponding inputs."
         else
           x.right
       )
@@ -147,12 +150,13 @@ let
       }))
       builtins.listToAttrs
     ];
-
+  
+  # All resolved inputs.
   inputsIncluded = getInputsIncluded inputs (
     if inputsInclude == [ ] then inputsIncludeCandidates else inputsInclude
   );
   
-  # All paths printed.
+  # A script that combines all output paths.
   package = pkgs.writeScript "save-from-gc" (
     concatStringsSep "\n\n" (
       lib.mapAttrsToList (name: value: "# ${name}:\n\n${lib.concatMapStringsSep "\n" (x: "- ${x}") value}") (
