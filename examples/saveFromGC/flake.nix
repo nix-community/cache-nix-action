@@ -21,22 +21,21 @@
         packages = {
           hello = pkgs.hello;
 
-          inherit
+          saveFromGC =
             (import "${inputs.cache-nix-action}/saveFromGC.nix" {
               inherit pkgs inputs;
-              inputsExclude = [
-                # the systems input will still be saved
-                # because flake-utils needs it
-                inputs.systems
+              # The `cache-nix-action` input won't be saved.
+              inputsInclude = [
+                "nixpkgs"
+                "flake-utils"
+                "systems"
               ];
               derivations = [
                 packages.hello
                 devShells.default
               ];
               paths = [ "${packages.hello}/bin/hello" ];
-            })
-            saveFromGC
-            ;
+            }).package;
         };
 
         devShells.default = pkgs.mkShell { buildInputs = [ pkgs.gcc ]; };

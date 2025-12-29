@@ -322,22 +322,21 @@ See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFr
         packages = {
           hello = pkgs.hello;
 
-          inherit
+          saveFromGC =
             (import "${inputs.cache-nix-action}/saveFromGC.nix" {
               inherit pkgs inputs;
-              inputsExclude = [
-                # the systems input will still be saved
-                # because flake-utils needs it
-                inputs.systems
+              # The `cache-nix-action` input won't be saved.
+              inputsInclude = [
+                "nixpkgs"
+                "flake-utils"
+                "systems"
               ];
               derivations = [
                 packages.hello
                 devShells.default
               ];
               paths = [ "${packages.hello}/bin/hello" ];
-            })
-            saveFromGC
-            ;
+            }).package;
         };
 
         devShells.default = pkgs.mkShell { buildInputs = [ pkgs.gcc ]; };
@@ -376,22 +375,31 @@ cd examples/saveFromGC
 Print the contents of `saveFromGC`.
 
 ```$ as console
-cat $(nix build .#saveFromGC --no-link --print-out-paths)/bin/save-from-gc
+cat $(nix build .#saveFromGC --no-link --print-out-paths)
 ```
 
 ```console
-closure
-/nix/store/pj0rhk7zkfx82xsighf72v8x4rqldzgi-source
-/nix/store/01x5k4nlxcpyd85nnr0b9gm89rm8ff4x-source
-/nix/store/f3phg71mppsdj69cb63xllf1nnigzr2s-source
-/nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
+# derivations:
 
-derivations
-/nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2
-/nix/store/8xjhphvn58rrqydsx5569jn01yd5a0al-nix-shell
+- /nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2
+- /nix/store/8xjhphvn58rrqydsx5569jn01yd5a0al-nix-shell
 
-paths
-/nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2/bin/hello
+# derivationsAttrs:
+
+
+
+# inputs:
+
+- "flake-utils": /nix/store/01x5k4nlxcpyd85nnr0b9gm89rm8ff4x-source
+- "nixpkgs": /nix/store/f3phg71mppsdj69cb63xllf1nnigzr2s-source
+- "systems": /nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source
+
+# paths:
+
+- /nix/store/jrq3p609i85jsg27mr5zxm2imk3mjzyk-hello-2.12.2/bin/hello
+
+# pathsAttrs:
+
 ```
 
 Add the installable to the default profile.
@@ -403,7 +411,7 @@ nix profile list | grep save-from-gc
 ```
 
 ```console
-Store paths:        /nix/store/d3wvhfgi549va9f5m4qhzjmk9g2asmnc-save-from-gc
+Store paths:        /nix/store/6ypnwndqz9r8cxwywib0cysnbafzmp6f-save-from-gc
 ```
 
 Or, build the installable and see the garbage collection roots that won't let it be garbage collected.
@@ -423,7 +431,7 @@ Output (edited):
 ```console
 ...
 <...>/.local/state/nix/profiles/profile-1-link -> /nix/store/pyvyymji6pvgify5gvnlvprlrxi42pdd-profile
-<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/d3wvhfgi549va9f5m4qhzjmk9g2asmnc-save-from-gc
+<...>/cache-nix-action/examples/saveFromGC/result -> /nix/store/6ypnwndqz9r8cxwywib0cysnbafzmp6f-save-from-gc
 ```
 
 <!-- `$ nix profile remove examples/saveFromGC; rm result` -->
