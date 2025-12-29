@@ -1,75 +1,180 @@
 # https://github.com/NixOS/nix/issues/6895#issuecomment-2475461113
 {
   pkgs,
-  # Flake inputs.
-  # Their transitive inputs will be included
+  # An attrset of flake inputs.
   inputs ? { },
-  # Derivations like 'pkgs.hello'
+  # A list of paths in the `inputs` attrset to inputs that should be included.
+  #
+  # When empty, all `inputs` will be included.
+  #
+  # If non-empty, only the inputs specified in this list will be included from
+  # the `inputs` attrset.
+  #
+  # Entries should be `/`-separated sequence of names denoting a path to an
+  # input in the `inputs` attrset if `.inputs` attributes of flakes were
+  # excluded from paths.
+  #
+  # Example:
+  #
+  # ```nix
+  # [
+  #   "devshell/nixpkgs"
+  #   "devshell/flake-utils/systems"
+  # ]
+  # ```
+  inputsInclude ? [ ],
+  # Derivations list.
+  #
+  # Example:
+  #
+  # ```nix
+  # [
+  #   pkgs.hello
+  # ]
+  # ```
   derivations ? [ ],
-  # Paths like '/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1'
+  # Derivations attrset.
+  #
+  # Example:
+  #
+  # ```nix
+  # {
+  #   hello = pkgs.hello;
+  # }
+  # ```
+  derivationsAttrs ? { },
+  # Nix store paths.
+  #
+  # Example:
+  #
+  # ```nix
+  # [
+  #   "/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1"
+  # ]
+  # ```
   paths ? [ ],
+  # Paths attrset.
+  #
+  # Example:
+  #
+  # ```nix
+  # {
+  #   hello = "/nix/store/p09fxxwkdj69hk4mgddk4r3nassiryzc-hello-2.12.1";
+  # }
+  # ```
+  pathsAttrs ? { },
 }:
+assert builtins.isList inputsInclude;
 assert builtins.isList derivations;
+assert builtins.isList paths;
 let
   inherit (builtins)
     concatMap
-    attrValues
     concatStringsSep
-    filter
     ;
   inherit (pkgs) lib;
 
-  getInputs =
-    flakes: concatMap (flake: if flake ? inputs then attrValues flake.inputs else [ ]) flakes;
+  getInputsIncludeCandidates =
+    inputs:
+    builtins.concatLists (
+      lib.mapAttrsToList (
+        name: input:
+        let
+          go =
+            prefix: flakes:
+            concatMap (
+              flake:
+              if flake ? inputs then
+                builtins.concatLists (
+                  lib.mapAttrsToList (
+                    name: input':
+                    let
+                      prefix' = "${prefix}/${name}";
+                    in
+                    [ prefix' ] ++ go prefix' [ input' ]
+                  ) flake.inputs
+                )
+              else
+                [ prefix ]
+            ) flakes;
+        in
+        go name [ input ]
+      ) inputs
+    );
 
-  nubBy =
-    eq: l:
-    if l == [ ] then
-      l
-    else
-      let
-        x = builtins.head l;
-      in
-      [ x ] ++ (nubBy eq (filter (y: !(eq x y)) (builtins.tail l)));
+  inputsIncludeCandidates = getInputsIncludeCandidates inputs;
 
-  uniqueFlakes = nubBy (x: y: x.outPath == y.outPath);
+  getInputsIncluded =
+    inputs: inputsInclude:
+    lib.pipe inputsInclude [
+      (builtins.map (lib.strings.splitString "/"))
+      (builtins.partition (x: !(builtins.elem "" x)))
+      (
+        x:
+        if x.wrong != [ ] then
+          let
+            errorMessage = lib.generators.toPretty { } (builtins.map (builtins.concatStringsSep "/") x.wrong);
+          in
+          throw "The paths\n\n${errorMessage}\n\ncontain empty attribute names."
+        else
+          x.right
+      )
+      (builtins.map (
+        inputPath:
+        {
+          value = lib.attrByPath (lib.intersperse "inputs" inputPath) { } inputs;
+        }
+        // {
+          inherit inputPath;
+        }
+      ))
+      (builtins.partition (x: x.value != { }))
+      (
+        x:
+        if x.wrong != [ ] then
+          let
+            invalidMessage = lib.generators.toPretty { } (
+              builtins.map (y: builtins.concatStringsSep "/" y.inputPath) x.wrong
+            );
+          in
+          throw "The paths\n\n${invalidMessage}\n\ndon't have corresponding inputs."
+        else
+          x.right
+      )
+      (builtins.map (x: {
+        name = "${builtins.concatStringsSep "/" x.inputPath}";
+        value = x.value;
+      }))
+      builtins.listToAttrs
+    ];
 
-  mkFlakesClosure =
-    flakes': flakes:
-    if flakes == [ ] then
-      uniqueFlakes flakes'
-    else
-      let
-        flakes'' = uniqueFlakes (flakes' ++ flakes);
-      in
-      mkFlakesClosure flakes'' (filter (x: !builtins.elem x flakes'') (getInputs flakes));
-
-  flakesClosure = lib.trivial.pipe inputs [
-    attrValues
-    # The current flake will probably change next time.
-    # Hence, we only save its inputs.
-    # If you want to save the flake, put "self" into "derivations".
-    (filter (x: x != (inputs.self or { })))
-    (mkFlakesClosure [ ])
-    lib.unique
-    (filter (x: x != (inputs.self or { })))
-  ];
-
-  # We don't have much more info.
-  # Therefore, we're just printing the paths.
-  saveFromGC = pkgs.writeScriptBin "save-from-gc" (
+  inputsIncluded = getInputsIncluded inputs (
+    if inputsInclude == [ ] then inputsIncludeCandidates else inputsInclude
+  );
+  
+  # All paths printed.
+  package = pkgs.writeScript "save-from-gc" (
     concatStringsSep "\n\n" (
-      lib.attrsets.mapAttrsToList (name: value: "${name}\n${concatStringsSep "\n" value}") {
-        inherit flakesClosure derivations paths;
-      }
+      lib.mapAttrsToList (name: value: "# ${name}:\n\n${lib.concatMapStringsSep "\n" (x: "- ${x}") value}") (
+        let
+          includeAttrset = lib.mapAttrsToList (name: value: ''"${name}": ${value}'');
+        in
+        {
+          inherit derivations paths;
+          inputs = includeAttrset inputsIncluded;
+          derivationsAttrs = includeAttrset derivationsAttrs;
+          pathsAttrs = includeAttrset pathsAttrs;
+        }
+      )
     )
   );
 in
 {
   inherit
-    getInputs
-    mkFlakesClosure
-    flakesClosure
-    saveFromGC
+    getInputsIncludeCandidates
+    inputsIncludeCandidates
+    getInputsIncluded
+    inputsIncluded
+    package
     ;
 }
