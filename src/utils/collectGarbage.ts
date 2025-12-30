@@ -21,7 +21,7 @@ export async function collectGarbage() {
                 let sizeDummy = 1_000_000_000_000n;
                 utils.warning(
                     `
-                    Expected a number as the store size, but got: ${stdout}.
+                    Expected a number for the store size, but got: ${stdout}.
                     
                     Assuming the store has size: ${sizeDummy}.
                     `

@@ -1,7 +1,6 @@
 import * as core from "@actions/core";
 import * as exec from "@actions/exec";
 import * as github from "@actions/github";
-import dedent from "dedent";
 import * as fs from "fs";
 import { devNull } from "os";
 
@@ -9,12 +8,10 @@ import { Inputs, RefKey } from "../constants";
 import * as inputs from "../inputs";
 import { cache, cacheUtils } from "./cacheBackend";
 import { TarCommandModifiers } from "actions/toolkit/packages/cache/src/options";
+import { info, warning, logWarning } from "./log";
+import { Temporal } from "temporal-polyfill";
 
-const myDedent = dedent.withOptions({});
-
-export const info = (message: string) => core.info(myDedent(message));
-
-export const warning = (message: string) => core.warning(myDedent(message));
+export { info, warning, logWarning };
 
 export function isGhes(): boolean {
     const ghUrl = new URL(
@@ -36,16 +33,6 @@ export function isExactKeyMatch(key: string, cacheKey?: string): boolean {
             sensitivity: "accent"
         }) === 0
     );
-}
-
-export function logWarning(message: string): void {
-    const warningPrefix = "[warning]";
-    core.warning(`${warningPrefix} ${message}`);
-}
-
-export function logError(message: string): void {
-    const prefix = "[error]";
-    core.error(`${prefix} ${message}`);
 }
 
 // Cache token authorized for all events that are tied to a ref
