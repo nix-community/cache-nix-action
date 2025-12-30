@@ -58179,7 +58179,7 @@ var Inputs;
     Inputs["PrimaryKey"] = "primary-key";
     Inputs["RestorePrefixesFirstMatch"] = "restore-prefixes-first-match";
     Inputs["RestorePrefixesAllMatches"] = "restore-prefixes-all-matches";
-    Inputs["SkipRestoreOnHitPrimaryKey"] = "skip-restore-on-hit-primary-key";
+    Inputs["LookupOnly"] = "lookup-only";
     Inputs["FailOn"] = "fail-on";
     Inputs["Nix"] = "nix";
     Inputs["Save"] = "save";
@@ -58262,7 +58262,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.backend = exports.Backend = exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgePrimaryKey = exports.purge = exports.gcMaxStoreSize = exports.gcMaxStoreSizeInputName = exports.save = exports.paths = exports.nix = exports.isMacos = exports.isLinux = exports.failOn = exports.skipRestoreOnHitPrimaryKey = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
+exports.backend = exports.Backend = exports.token = exports.uploadChunkSize = exports.purgeCreated = exports.purgeLastAccessed = exports.purgePrefixes = exports.purgePrimaryKey = exports.purge = exports.gcMaxStoreSize = exports.gcMaxStoreSizeInputName = exports.save = exports.paths = exports.nix = exports.isMacos = exports.isLinux = exports.failOn = exports.lookupOnly = exports.restorePrefixesAllMatches = exports.restorePrefixesFirstMatch = exports.primaryKey = void 0;
 exports.choose = choose;
 const core = __importStar(__nccwpck_require__(37484));
 const constants_1 = __nccwpck_require__(27242);
@@ -58270,7 +58270,7 @@ const utils = __importStar(__nccwpck_require__(9612));
 exports.primaryKey = core.getInput(constants_1.Inputs.PrimaryKey, { required: true });
 exports.restorePrefixesFirstMatch = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesFirstMatch);
 exports.restorePrefixesAllMatches = utils.getInputAsArray(constants_1.Inputs.RestorePrefixesAllMatches);
-exports.skipRestoreOnHitPrimaryKey = utils.getInputAsBool(constants_1.Inputs.SkipRestoreOnHitPrimaryKey);
+exports.lookupOnly = utils.getInputAsBool(constants_1.Inputs.LookupOnly);
 exports.failOn = (function () {
     const failOnRaw = new RegExp("^(primary|first-match)\\.(miss|not-restored)$")
         .exec(core.getInput(constants_1.Inputs.FailOn))

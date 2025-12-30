@@ -85,7 +85,7 @@ export async function restoreImpl(
                 );
                 hitPrimaryKey = true;
 
-                if (!inputs.skipRestoreOnHitPrimaryKey) {
+                if (!inputs.lookupOnly) {
                     restoredKey = await restore.restoreCache(primaryKey);
                     if (restoredKey) {
                         restoredKeys.push(...[restoredKey]);
@@ -104,7 +104,8 @@ export async function restoreImpl(
         if (
             inputs.restorePrefixesFirstMatch.length > 0 &&
             // We may have got an unexpected primary key match by prefix.
-            !hitPrimaryKey
+            !hitPrimaryKey &&
+            !inputs.lookupOnly
         ) {
             utils.info(
                 `
@@ -149,7 +150,7 @@ export async function restoreImpl(
             }
         }
 
-        if (!lookedUpPrimaryKey) {
+        if (!hitPrimaryKey && !inputs.lookupOnly) {
             restoredKeys.push(...(await restore.restoreAllMatches()));
         }
 

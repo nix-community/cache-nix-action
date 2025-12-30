@@ -4,7 +4,7 @@ export enum Inputs {
     RestorePrefixesFirstMatch = "restore-prefixes-first-match", // Input for cache, restore actions
     RestorePrefixesAllMatches = "restore-prefixes-all-matches", // Input for cache, restore actions
 
-    SkipRestoreOnHitPrimaryKey = "skip-restore-on-hit-primary-key", // Input for cache, restore, actions
+    LookupOnly = "lookup-only", // Input for cache, restore actions
 
     FailOn = "fail-on", // Input for cache, restore actions
 
