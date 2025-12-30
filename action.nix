@@ -203,17 +203,19 @@ in
             purge-last-accessed:
               description: |
                 - ${effectOnlyWhen [ "purge: true" ]}
-                - When a non-negative number, the action purges selected caches that were last accessed more than this number of seconds ago relative to the start of the ${
+                - When a non-negative number or a string in the [ISO 8601 duration format](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/Duration#iso_8601_duration_format),
+                  the action purges selected caches that were last accessed more than this number of seconds or this duration before the start of the ${
                   if target == cache then "`Post Restore` phase" else "Save step"
-                }.
+                }. Examples: `0` (0 seconds), `P1DT12H` (1 day and 12 hours).
                 - ${noEffectOtherwise}
               default: ""
             purge-created:
               description: |
                 - ${effectOnlyWhen [ "purge: true" ]}
-                - When a non-negative number, the action purges selected caches that were created more than this number of seconds ago relative to the start of the ${
+                - When a non-negative number or a string in the [ISO 8601 duration format](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/Duration#iso_8601_duration_format),
+                  the action purges selected caches that were created more than this number of seconds or this duration before the start of the ${
                   if target == cache then "`Post Restore` phase" else "Save step"
-                }.
+                }. Examples: `0` (0 seconds), `P1DT12H` (1 day and 12 hours).
                 - ${noEffectOtherwise}
               default: ""
 
