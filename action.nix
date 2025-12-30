@@ -91,10 +91,12 @@ in
                 - ${noEffectOtherwise}
               default: ""
 
-            skip-restore-on-hit-primary-key:
+            lookup-only:
               description: |
-                - When `true`, when there's a hit on the ${q primary-key}, the action doesn't restore the found cache.
-                - Otherwise, the action restores the cache.
+                - When `true`, when there's a hit on the ${q primary-key}, the action doesn't restore any cache.
+                - Otherwise, the action can restore caches.${
+                  if target == cache then "\n      - Doesn't change the behavior of cache saving in any case." else ""
+                }
               default: "false"
 
             fail-on:
