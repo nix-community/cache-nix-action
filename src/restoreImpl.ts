@@ -103,7 +103,6 @@ export async function restoreImpl(
 
         if (
             inputs.restorePrefixesFirstMatch.length > 0 &&
-            // We may have got an unexpected primary key match by prefix.
             !hitPrimaryKey &&
             !inputs.lookupOnly
         ) {
