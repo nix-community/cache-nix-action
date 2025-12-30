@@ -13,6 +13,7 @@ import { cache } from "./utils/cacheBackend";
 import { collectGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCaches } from "./utils/purge";
 import { TarCommandModifiers } from "actions/toolkit/packages/cache/src/options";
+import { Temporal } from "temporal-polyfill";
 
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
@@ -23,7 +24,7 @@ export async function saveImpl(
     stateProvider: IStateProvider
 ): Promise<number | void> {
     let cacheId = -1;
-    const time = Date.now();
+    const time = Temporal.Now.zonedDateTimeISO("UTC");
     try {
         if (!utils.isCacheFeatureAvailable()) {
             return;

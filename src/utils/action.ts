@@ -177,26 +177,18 @@ export async function getCachesByPrefixes({
 export const mkMessageWrongValue = (input: string, value: string) =>
     `Wrong value for the input "${input}": ${value}`;
 
-export function getMaxDate({
+export function getMaxTime({
     doUseLastAccessedTime,
     time
 }: {
     doUseLastAccessedTime: boolean;
-    time: number;
-}) {
-    const inputMaxAge = doUseLastAccessedTime
-        ? Inputs.PurgeLastAccessed
-        : Inputs.PurgeCreated;
+    time: Temporal.ZonedDateTime;
+}): Temporal.ZonedDateTime | undefined {
+    const purgeTime = doUseLastAccessedTime
+        ? inputs.purgeLastAccessed
+        : inputs.purgeCreated;
 
-    const maxAge = core.getInput(inputMaxAge);
-
-    const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
-
-    if (maxDate === null) {
-        throw new Error(mkMessageWrongValue(inputMaxAge, maxAge));
-    }
-
-    return maxDate;
+    return purgeTime === undefined ? undefined : time.subtract(purgeTime);
 }
 
 export const stringify = (value: any) => JSON.stringify(value, null, 2);

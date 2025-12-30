@@ -1,4 +1,6 @@
 import * as core from "@actions/core";
+import { Temporal } from "temporal-polyfill";
+import { logWarning } from "./log";
 
 export function getInputAsArray(
     name: string,
@@ -23,7 +25,7 @@ export function parseNixGcMax(name: string, options?: core.InputOptions) {
 
     let result: bigint = 0n;
     let invalidNumber: bigint = -1n;
-    
+
     for (let i = 0; i < chars.length; i++) {
         const char = chars[i];
         const digit = parseInt(char);
@@ -63,6 +65,38 @@ export function getInputAsInt(
         return undefined;
     }
     return value;
+}
+
+export function getInputAsDuration(
+    name: string,
+    options?: core.InputOptions
+): Temporal.Duration | undefined {
+    const input = core.getInput(name, options);
+
+    if (input == "") {
+        return undefined;
+    }
+
+    const value = parseInt(input);
+
+    function message(problem: string): string {
+        return `
+            Bad value of the input "${name}": ${problem}.
+            The value must be a non-negative number or a string in the ISO 8601 duration format.
+            See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/Duration#iso_8601_duration_format
+        `;
+    }
+
+    if (value < 0) {
+        logWarning(message(`a negative number "${input}"`));
+        return undefined;
+    }
+    try {
+        return Temporal.Duration.from(value >= 0 ? { seconds: value } : input);
+    } catch (error: unknown) {
+        logWarning(message((error as Error).message));
+        return undefined;
+    }
 }
 
 export function getInputAsBool(
