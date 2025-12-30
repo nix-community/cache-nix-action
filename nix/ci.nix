@@ -47,7 +47,7 @@ let
   os = {
     ubuntu-24 = "ubuntu-24.04";
     ubuntu-24-arm = "ubuntu-24.04-arm";
-    macos-14 = "macos-14";
+    macos-15-intel = "macos-15-intel";
     macos-15 = "macos-15";
   };
 in
@@ -152,7 +152,7 @@ in
         fail-fast: false
         matrix:
           os:
-            - ${os.macos-14}
+            - ${os.macos-15-intel}
             - ${os.macos-15}
             - ${os.ubuntu-24}
             - ${os.ubuntu-24-arm}
@@ -241,7 +241,7 @@ in
             fail-fast: false
             matrix:
               os:
-                - ${os.macos-14}
+                - ${os.macos-15-intel}
                 - ${os.macos-15}
                 - ${os.ubuntu-24}
                 - ${os.ubuntu-24-arm}
@@ -333,7 +333,7 @@ in
             - true
             - false
           os:
-            - ${os.macos-14}
+            - ${os.macos-15-intel}
             - ${os.macos-15}
             - ${os.ubuntu-24}
             - ${os.ubuntu-24-arm}
@@ -444,7 +444,7 @@ in
         fail-fast: false
         matrix:
           os:
-            - ${os.macos-14}
+            - ${os.macos-15-intel}
             - ${os.macos-15}
             - ${os.ubuntu-24}
             - ${os.ubuntu-24-arm}
@@ -515,7 +515,7 @@ in
         fail-fast: false
         matrix:
           os:
-            - ${os.macos-14}
+            - ${os.macos-15-intel}
             - ${os.macos-15}
             - ${os.ubuntu-24}
             - ${os.ubuntu-24-arm}
