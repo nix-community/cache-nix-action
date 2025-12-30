@@ -104,8 +104,8 @@ in
             purge: true
             # purge all versions of the cache
             purge-prefixes: build-''${{ runner.os }}-
-            # created more than 0 seconds ago relative to the start of the `Post Restore` phase
-            purge-created: 0
+            # created more than 10 seconds ago relative to the start of the `Post Restore` phase
+            purge-created: PT10S
             # except the version with the `primary-key`, if it exists
             purge-primary-key: never
             # and collect garbage in the Nix store until it reaches this size in bytes
