@@ -58338,8 +58338,8 @@ exports.purgePrimaryKey = (function () {
     return purgePrimaryKey;
 })();
 exports.purgePrefixes = utils.getInputAsArray(constants_1.Inputs.PurgePrefixes);
-exports.purgeLastAccessed = utils.getInputAsInt(constants_1.Inputs.PurgeLastAccessed);
-exports.purgeCreated = utils.getInputAsInt(constants_1.Inputs.PurgeCreated);
+exports.purgeLastAccessed = utils.getInputAsDuration(constants_1.Inputs.PurgeLastAccessed);
+exports.purgeCreated = utils.getInputAsDuration(constants_1.Inputs.PurgeCreated);
 exports.uploadChunkSize = utils.getInputAsInt(constants_1.Inputs.UploadChunkSize) || 32 * 1024 * 1024;
 exports.token = core.getInput(constants_1.Inputs.Token, { required: true });
 var Backend;
@@ -58412,13 +58412,14 @@ const cacheBackend_1 = __nccwpck_require__(2455);
 const collectGarbage_1 = __nccwpck_require__(97304);
 const purge_1 = __nccwpck_require__(48342);
 const options_1 = __nccwpck_require__(24338);
+const temporal_polyfill_1 = __nccwpck_require__(27645);
 // Catch and log any unhandled exceptions.  These exceptions can leak out of the uploadChunk method in
 // @actions/toolkit when a failed upload closes the file descriptor causing any in-process reads to
 // throw an uncaught exception.  Instead of failing this action, just warn.
 process.on("uncaughtException", e => utils.logWarning(e.message));
 async function saveImpl(stateProvider) {
     let cacheId = -1;
-    const time = Date.now();
+    const time = temporal_polyfill_1.Temporal.Now.zonedDateTimeISO("UTC");
     try {
         if (!utils.isCacheFeatureAvailable()) {
             return;
@@ -58668,37 +58669,29 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.stringify = exports.mkMessageWrongValue = exports.warning = exports.info = void 0;
+exports.stringify = exports.mkMessageWrongValue = exports.logWarning = exports.warning = exports.info = void 0;
 exports.isGhes = isGhes;
 exports.isExactKeyMatch = isExactKeyMatch;
-exports.logWarning = logWarning;
-exports.logError = logError;
 exports.isValidEvent = isValidEvent;
 exports.isCacheFeatureAvailable = isCacheFeatureAvailable;
 exports.prepareExcludeFromFile = prepareExcludeFromFile;
 exports.restoreCache = restoreCache;
 exports.getCachesByPrefixes = getCachesByPrefixes;
-exports.getMaxDate = getMaxDate;
+exports.getMaxTime = getMaxTime;
 exports.run = run;
-const core = __importStar(__nccwpck_require__(37484));
 const exec = __importStar(__nccwpck_require__(95236));
 const github = __importStar(__nccwpck_require__(93228));
-const dedent_1 = __importDefault(__nccwpck_require__(93924));
 const fs = __importStar(__nccwpck_require__(79896));
 const os_1 = __nccwpck_require__(70857);
 const constants_1 = __nccwpck_require__(27242);
 const inputs = __importStar(__nccwpck_require__(38422));
 const cacheBackend_1 = __nccwpck_require__(2455);
 const options_1 = __nccwpck_require__(24338);
-const myDedent = dedent_1.default.withOptions({});
-const info = (message) => core.info(myDedent(message));
-exports.info = info;
-const warning = (message) => core.warning(myDedent(message));
-exports.warning = warning;
+const log_1 = __nccwpck_require__(56555);
+Object.defineProperty(exports, "info", ({ enumerable: true, get: function () { return log_1.info; } }));
+Object.defineProperty(exports, "warning", ({ enumerable: true, get: function () { return log_1.warning; } }));
+Object.defineProperty(exports, "logWarning", ({ enumerable: true, get: function () { return log_1.logWarning; } }));
 function isGhes() {
     const ghUrl = new URL(process.env["GITHUB_SERVER_URL"] || "https://github.com");
     const hostname = ghUrl.hostname.trimEnd().toUpperCase();
@@ -58713,14 +58706,6 @@ function isExactKeyMatch(key, cacheKey) {
             sensitivity: "accent"
         }) === 0);
 }
-function logWarning(message) {
-    const warningPrefix = "[warning]";
-    core.warning(`${warningPrefix} ${message}`);
-}
-function logError(message) {
-    const prefix = "[error]";
-    core.error(`${prefix} ${message}`);
-}
 // Cache token authorized for all events that are tied to a ref
 // See GitHub Context https://docs.github.com/en/actions/learn-github-actions/contexts
 function isValidEvent() {
@@ -58731,11 +58716,11 @@ function isCacheFeatureAvailable() {
         return true;
     }
     if (isGhes()) {
-        logWarning(`Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
+        (0, log_1.logWarning)(`Cache action is only supported on GHES version >= 3.5. If you are on version >=3.5 Please check with GHES admin if Actions cache service is enabled or not.
 Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github Connect, please unretire the actions/cache namespace before upgrade (see https://docs.github.com/en/enterprise-server@3.5/admin/github-actions/managing-access-to-actions-from-githubcom/enabling-automatic-access-to-githubcom-actions-using-github-connect#automatic-retirement-of-namespaces-for-actions-accessed-on-githubcom)`);
         return false;
     }
-    logWarning("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
+    (0, log_1.logWarning)("An internal error has occurred in cache backend. Please check https://www.githubstatus.com/ for any ongoing issue in actions.");
     return false;
 }
 async function prepareExcludeFromFile(forRestore) {
@@ -58766,14 +58751,14 @@ async function restoreCache({ primaryKey, restoreKeys, lookupOnly }) {
         tarCommandModifiers.extractArgs = [
             ...(await prepareExcludeFromFile(true))
         ];
-        (0, exports.info)(`::group::Logs produced while restoring a cache.`);
+        (0, log_1.info)(`::group::Logs produced while restoring a cache.`);
     }
     tarCommandModifiers.useSudo = true;
     // The "restoreCache" implementation is selected at runtime.
     // The options are in the "cache" module.
     const key = await cacheBackend_1.cache.restoreCache(inputs.paths, primaryKey, restoreKeys, { lookupOnly }, false, tarCommandModifiers);
     if (inputs.nix && !lookupOnly) {
-        (0, exports.info)(`::endgroup::`);
+        (0, log_1.info)(`::endgroup::`);
     }
     return key;
 }
@@ -58801,16 +58786,11 @@ async function getCachesByPrefixes({ prefixes, anyRef }) {
 }
 const mkMessageWrongValue = (input, value) => `Wrong value for the input "${input}": ${value}`;
 exports.mkMessageWrongValue = mkMessageWrongValue;
-function getMaxDate({ doUseLastAccessedTime, time }) {
-    const inputMaxAge = doUseLastAccessedTime
-        ? constants_1.Inputs.PurgeLastAccessed
-        : constants_1.Inputs.PurgeCreated;
-    const maxAge = core.getInput(inputMaxAge);
-    const maxDate = new Date(time - Number.parseInt(maxAge) * 1000);
-    if (maxDate === null) {
-        throw new Error((0, exports.mkMessageWrongValue)(inputMaxAge, maxAge));
-    }
-    return maxDate;
+function getMaxTime({ doUseLastAccessedTime, time }) {
+    const purgeTime = doUseLastAccessedTime
+        ? inputs.purgeLastAccessed
+        : inputs.purgeCreated;
+    return purgeTime === undefined ? undefined : time.subtract(purgeTime);
 }
 const stringify = (value) => JSON.stringify(value, null, 2);
 exports.stringify = stringify;
@@ -58944,7 +58924,7 @@ async function collectGarbage() {
             catch (err) {
                 let sizeDummy = 1000000000000n;
                 utils.warning(`
-                    Expected a number as the store size, but got: ${stdout}.
+                    Expected a number for the store size, but got: ${stdout}.
                     
                     Assuming the store has size: ${sizeDummy}.
                     `);
@@ -59022,8 +59002,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getInputAsArray = getInputAsArray;
 exports.parseNixGcMax = parseNixGcMax;
 exports.getInputAsInt = getInputAsInt;
+exports.getInputAsDuration = getInputAsDuration;
 exports.getInputAsBool = getInputAsBool;
 const core = __importStar(__nccwpck_require__(37484));
+const temporal_polyfill_1 = __nccwpck_require__(27645);
+const log_1 = __nccwpck_require__(56555);
 function getInputAsArray(name, options) {
     return core
         .getInput(name, options)
@@ -59077,9 +59060,98 @@ function getInputAsInt(name, options) {
     }
     return value;
 }
+function getInputAsDuration(name, options) {
+    const input = core.getInput(name, options);
+    if (input == "") {
+        return undefined;
+    }
+    const value = parseInt(input);
+    function message(problem) {
+        return `
+            Bad value of the input "${name}": ${problem}.
+            The value must be a non-negative number or a string in the ISO 8601 duration format.
+            See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal/Duration#iso_8601_duration_format
+        `;
+    }
+    if (value < 0) {
+        (0, log_1.logWarning)(message(`a negative number "${input}"`));
+        return undefined;
+    }
+    try {
+        return temporal_polyfill_1.Temporal.Duration.from(value >= 0 ? { seconds: value } : input);
+    }
+    catch (error) {
+        (0, log_1.logWarning)(message(error.message));
+        return undefined;
+    }
+}
 function getInputAsBool(name, options) {
     const result = core.getInput(name, options);
     return result.toLowerCase() === "true";
+}
+
+
+/***/ }),
+
+/***/ 56555:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.warning = exports.info = void 0;
+exports.logWarning = logWarning;
+exports.logError = logError;
+const dedent_1 = __importDefault(__nccwpck_require__(93924));
+const core = __importStar(__nccwpck_require__(37484));
+const myDedent = dedent_1.default.withOptions({});
+const info = (message) => core.info(myDedent(message));
+exports.info = info;
+const warning = (message) => core.warning(myDedent(message));
+exports.warning = warning;
+function logWarning(message) {
+    const warningPrefix = "[warning]";
+    core.warning(`${warningPrefix} ${message}`);
+}
+function logError(message) {
+    const prefix = "[error]";
+    core.error(`${prefix} ${message}`);
 }
 
 
@@ -59189,6 +59261,7 @@ const github = __importStar(__nccwpck_require__(93228));
 const constants_1 = __nccwpck_require__(27242);
 const inputs = __importStar(__nccwpck_require__(38422));
 const utils = __importStar(__nccwpck_require__(39603));
+const temporal_polyfill_1 = __nccwpck_require__(27645);
 async function purgeCacheByKey(key, message) {
     try {
         utils.info(message || "");
@@ -59209,13 +59282,13 @@ async function purgeCacheByKey(key, message) {
             `);
     }
 }
-const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => caches.filter(cache => {
-    const at = doUseLastAccessedTime
+const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxTime }) => caches.filter(cache => {
+    const cacheTime = doUseLastAccessedTime
         ? cache.last_accessed_at
         : cache.created_at;
-    if (at && cache.key) {
-        const atDate = new Date(at);
-        return atDate < maxDate;
+    if (cacheTime && cache.key) {
+        const cacheDateTime = temporal_polyfill_1.Temporal.Instant.from(cacheTime).toZonedDateTimeISO("UTC");
+        return cacheDateTime < maxTime;
     }
     else
         return false;
@@ -59223,10 +59296,11 @@ const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxDate }) => cache
 exports.filterCachesByTime = filterCachesByTime;
 async function purgeCachesByPrimaryKeyAndPrefixes({ primaryKey, prefixes, doUseTime, doUseLastAccessedTime, time }) {
     const verb = doUseLastAccessedTime ? "last accessed" : "created";
-    const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
+    const maxTime = utils.getMaxTime({ doUseLastAccessedTime, time });
+    const doUseMaxTime = doUseTime && maxTime;
     let caches = [];
     utils.info(`
-        Purging cache(s) ${doUseTime ? `${verb} before ${maxDate.toISOString()}, ` : ""}scoped to "${github.context.ref}"${doUseTime ? "," : ""} and with ${prefixes.length > 0
+        Purging cache(s) ${doUseMaxTime ? `${verb} before ${maxTime}, ` : ""}scoped to "${github.context.ref}"${doUseMaxTime ? "," : ""} and with ${prefixes.length > 0
         ? `one of the key prefixes:\n${utils.stringify(prefixes)}`
         : `the key "${primaryKey}".`}
         `);
@@ -59234,11 +59308,11 @@ async function purgeCachesByPrimaryKeyAndPrefixes({ primaryKey, prefixes, doUseT
         prefixes: prefixes.length > 0 ? prefixes : [primaryKey],
         anyRef: false
     });
-    if (doUseTime) {
+    if (doUseMaxTime) {
         caches = (0, exports.filterCachesByTime)({
             caches,
             doUseLastAccessedTime,
-            maxDate
+            maxTime
         });
     }
     if (prefixes.length == 0) {
@@ -59264,14 +59338,18 @@ async function purgeCachesByPrimaryKeyAndPrefixes({ primaryKey, prefixes, doUseT
     }
     for (const cache of caches) {
         if (cache.key) {
-            if (doUseTime) {
-                const at = doUseLastAccessedTime
+            if (doUseMaxTime) {
+                const purgeTime = doUseLastAccessedTime
                     ? cache.last_accessed_at
                     : cache.created_at;
-                if (at) {
-                    const atDate = new Date(at);
-                    const atDatePretty = atDate.toISOString();
-                    await purgeCacheByKey(cache.key, `Purging the cache that was ${verb} at ${atDatePretty} and that has the key "${cache.key}".`);
+                if (purgeTime) {
+                    try {
+                        const purgeTimeStr = temporal_polyfill_1.Temporal.Instant.from(purgeTime).toZonedDateTimeISO("UTC");
+                        await purgeCacheByKey(cache.key, `Purging the cache that was ${verb} at ${purgeTimeStr} and that has the key "${cache.key}".`);
+                    }
+                    catch (error) {
+                        utils.logWarning(error.message);
+                    }
                 }
             }
             else {
@@ -59284,7 +59362,7 @@ async function purgeCachesByPrimaryKeyAndPrefixes({ primaryKey, prefixes, doUseT
 async function purgeCaches({ primaryKey, prefixes, time }) {
     if (inputs.purgeLastAccessed === undefined &&
         inputs.purgeCreated === undefined) {
-        purgeCachesByPrimaryKeyAndPrefixes({
+        await purgeCachesByPrimaryKeyAndPrefixes({
             primaryKey,
             prefixes,
             doUseTime: false,
@@ -102449,6 +102527,3698 @@ module.exports["default"] = exports.default;
 /***/ ((module) => {
 
 (()=>{"use strict";var t={d:(e,i)=>{for(var n in i)t.o(i,n)&&!t.o(e,n)&&Object.defineProperty(e,n,{enumerable:!0,get:i[n]})},o:(t,e)=>Object.prototype.hasOwnProperty.call(t,e),r:t=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(t,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(t,"__esModule",{value:!0})}},e={};t.r(e),t.d(e,{XMLBuilder:()=>lt,XMLParser:()=>tt,XMLValidator:()=>pt});const i=":A-Za-z_\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD",n=new RegExp("^["+i+"]["+i+"\\-.\\d\\u00B7\\u0300-\\u036F\\u203F-\\u2040]*$");function s(t,e){const i=[];let n=e.exec(t);for(;n;){const s=[];s.startIndex=e.lastIndex-n[0].length;const r=n.length;for(let t=0;t<r;t++)s.push(n[t]);i.push(s),n=e.exec(t)}return i}const r=function(t){return!(null==n.exec(t))},o={allowBooleanAttributes:!1,unpairedTags:[]};function a(t,e){e=Object.assign({},o,e);const i=[];let n=!1,s=!1;"\ufeff"===t[0]&&(t=t.substr(1));for(let o=0;o<t.length;o++)if("<"===t[o]&&"?"===t[o+1]){if(o+=2,o=u(t,o),o.err)return o}else{if("<"!==t[o]){if(l(t[o]))continue;return x("InvalidChar","char '"+t[o]+"' is not expected.",b(t,o))}{let a=o;if(o++,"!"===t[o]){o=h(t,o);continue}{let d=!1;"/"===t[o]&&(d=!0,o++);let p="";for(;o<t.length&&">"!==t[o]&&" "!==t[o]&&"\t"!==t[o]&&"\n"!==t[o]&&"\r"!==t[o];o++)p+=t[o];if(p=p.trim(),"/"===p[p.length-1]&&(p=p.substring(0,p.length-1),o--),!r(p)){let e;return e=0===p.trim().length?"Invalid space after '<'.":"Tag '"+p+"' is an invalid name.",x("InvalidTag",e,b(t,o))}const c=f(t,o);if(!1===c)return x("InvalidAttr","Attributes for '"+p+"' have open quote.",b(t,o));let N=c.value;if(o=c.index,"/"===N[N.length-1]){const i=o-N.length;N=N.substring(0,N.length-1);const s=g(N,e);if(!0!==s)return x(s.err.code,s.err.msg,b(t,i+s.err.line));n=!0}else if(d){if(!c.tagClosed)return x("InvalidTag","Closing tag '"+p+"' doesn't have proper closing.",b(t,o));if(N.trim().length>0)return x("InvalidTag","Closing tag '"+p+"' can't have attributes or invalid starting.",b(t,a));if(0===i.length)return x("InvalidTag","Closing tag '"+p+"' has not been opened.",b(t,a));{const e=i.pop();if(p!==e.tagName){let i=b(t,e.tagStartPos);return x("InvalidTag","Expected closing tag '"+e.tagName+"' (opened in line "+i.line+", col "+i.col+") instead of closing tag '"+p+"'.",b(t,a))}0==i.length&&(s=!0)}}else{const r=g(N,e);if(!0!==r)return x(r.err.code,r.err.msg,b(t,o-N.length+r.err.line));if(!0===s)return x("InvalidXml","Multiple possible root nodes found.",b(t,o));-1!==e.unpairedTags.indexOf(p)||i.push({tagName:p,tagStartPos:a}),n=!0}for(o++;o<t.length;o++)if("<"===t[o]){if("!"===t[o+1]){o++,o=h(t,o);continue}if("?"!==t[o+1])break;if(o=u(t,++o),o.err)return o}else if("&"===t[o]){const e=m(t,o);if(-1==e)return x("InvalidChar","char '&' is not expected.",b(t,o));o=e}else if(!0===s&&!l(t[o]))return x("InvalidXml","Extra text at the end",b(t,o));"<"===t[o]&&o--}}}return n?1==i.length?x("InvalidTag","Unclosed tag '"+i[0].tagName+"'.",b(t,i[0].tagStartPos)):!(i.length>0)||x("InvalidXml","Invalid '"+JSON.stringify(i.map((t=>t.tagName)),null,4).replace(/\r?\n/g,"")+"' found.",{line:1,col:1}):x("InvalidXml","Start tag expected.",1)}function l(t){return" "===t||"\t"===t||"\n"===t||"\r"===t}function u(t,e){const i=e;for(;e<t.length;e++)if("?"!=t[e]&&" "!=t[e]);else{const n=t.substr(i,e-i);if(e>5&&"xml"===n)return x("InvalidXml","XML declaration allowed only at the start of the document.",b(t,e));if("?"==t[e]&&">"==t[e+1]){e++;break}}return e}function h(t,e){if(t.length>e+5&&"-"===t[e+1]&&"-"===t[e+2]){for(e+=3;e<t.length;e++)if("-"===t[e]&&"-"===t[e+1]&&">"===t[e+2]){e+=2;break}}else if(t.length>e+8&&"D"===t[e+1]&&"O"===t[e+2]&&"C"===t[e+3]&&"T"===t[e+4]&&"Y"===t[e+5]&&"P"===t[e+6]&&"E"===t[e+7]){let i=1;for(e+=8;e<t.length;e++)if("<"===t[e])i++;else if(">"===t[e]&&(i--,0===i))break}else if(t.length>e+9&&"["===t[e+1]&&"C"===t[e+2]&&"D"===t[e+3]&&"A"===t[e+4]&&"T"===t[e+5]&&"A"===t[e+6]&&"["===t[e+7])for(e+=8;e<t.length;e++)if("]"===t[e]&&"]"===t[e+1]&&">"===t[e+2]){e+=2;break}return e}const d='"',p="'";function f(t,e){let i="",n="",s=!1;for(;e<t.length;e++){if(t[e]===d||t[e]===p)""===n?n=t[e]:n!==t[e]||(n="");else if(">"===t[e]&&""===n){s=!0;break}i+=t[e]}return""===n&&{value:i,index:e,tagClosed:s}}const c=new RegExp("(\\s*)([^\\s=]+)(\\s*=)?(\\s*(['\"])(([\\s\\S])*?)\\5)?","g");function g(t,e){const i=s(t,c),n={};for(let t=0;t<i.length;t++){if(0===i[t][1].length)return x("InvalidAttr","Attribute '"+i[t][2]+"' has no space in starting.",E(i[t]));if(void 0!==i[t][3]&&void 0===i[t][4])return x("InvalidAttr","Attribute '"+i[t][2]+"' is without value.",E(i[t]));if(void 0===i[t][3]&&!e.allowBooleanAttributes)return x("InvalidAttr","boolean attribute '"+i[t][2]+"' is not allowed.",E(i[t]));const s=i[t][2];if(!N(s))return x("InvalidAttr","Attribute '"+s+"' is an invalid name.",E(i[t]));if(n.hasOwnProperty(s))return x("InvalidAttr","Attribute '"+s+"' is repeated.",E(i[t]));n[s]=1}return!0}function m(t,e){if(";"===t[++e])return-1;if("#"===t[e])return function(t,e){let i=/\d/;for("x"===t[e]&&(e++,i=/[\da-fA-F]/);e<t.length;e++){if(";"===t[e])return e;if(!t[e].match(i))break}return-1}(t,++e);let i=0;for(;e<t.length;e++,i++)if(!(t[e].match(/\w/)&&i<20)){if(";"===t[e])break;return-1}return e}function x(t,e,i){return{err:{code:t,msg:e,line:i.line||i,col:i.col}}}function N(t){return r(t)}function b(t,e){const i=t.substring(0,e).split(/\r?\n/);return{line:i.length,col:i[i.length-1].length+1}}function E(t){return t.startIndex+t[1].length}const v={preserveOrder:!1,attributeNamePrefix:"@_",attributesGroupName:!1,textNodeName:"#text",ignoreAttributes:!0,removeNSPrefix:!1,allowBooleanAttributes:!1,parseTagValue:!0,parseAttributeValue:!1,trimValues:!0,cdataPropName:!1,numberParseOptions:{hex:!0,leadingZeros:!0,eNotation:!0},tagValueProcessor:function(t,e){return e},attributeValueProcessor:function(t,e){return e},stopNodes:[],alwaysCreateTextNode:!1,isArray:()=>!1,commentPropName:!1,unpairedTags:[],processEntities:!0,htmlEntities:!1,ignoreDeclaration:!1,ignorePiTags:!1,transformTagName:!1,transformAttributeName:!1,updateTag:function(t,e,i){return t},captureMetaData:!1};let T;T="function"!=typeof Symbol?"@@xmlMetadata":Symbol("XML Node Metadata");class y{constructor(t){this.tagname=t,this.child=[],this[":@"]={}}add(t,e){"__proto__"===t&&(t="#__proto__"),this.child.push({[t]:e})}addChild(t,e){"__proto__"===t.tagname&&(t.tagname="#__proto__"),t[":@"]&&Object.keys(t[":@"]).length>0?this.child.push({[t.tagname]:t.child,":@":t[":@"]}):this.child.push({[t.tagname]:t.child}),void 0!==e&&(this.child[this.child.length-1][T]={startIndex:e})}static getMetaDataSymbol(){return T}}class w{constructor(t){this.suppressValidationErr=!t}readDocType(t,e){const i={};if("O"!==t[e+3]||"C"!==t[e+4]||"T"!==t[e+5]||"Y"!==t[e+6]||"P"!==t[e+7]||"E"!==t[e+8])throw new Error("Invalid Tag instead of DOCTYPE");{e+=9;let n=1,s=!1,r=!1,o="";for(;e<t.length;e++)if("<"!==t[e]||r)if(">"===t[e]){if(r?"-"===t[e-1]&&"-"===t[e-2]&&(r=!1,n--):n--,0===n)break}else"["===t[e]?s=!0:o+=t[e];else{if(s&&P(t,"!ENTITY",e)){let n,s;e+=7,[n,s,e]=this.readEntityExp(t,e+1,this.suppressValidationErr),-1===s.indexOf("&")&&(i[n]={regx:RegExp(`&${n};`,"g"),val:s})}else if(s&&P(t,"!ELEMENT",e)){e+=8;const{index:i}=this.readElementExp(t,e+1);e=i}else if(s&&P(t,"!ATTLIST",e))e+=8;else if(s&&P(t,"!NOTATION",e)){e+=9;const{index:i}=this.readNotationExp(t,e+1,this.suppressValidationErr);e=i}else{if(!P(t,"!--",e))throw new Error("Invalid DOCTYPE");r=!0}n++,o=""}if(0!==n)throw new Error("Unclosed DOCTYPE")}return{entities:i,i:e}}readEntityExp(t,e){e=I(t,e);let i="";for(;e<t.length&&!/\s/.test(t[e])&&'"'!==t[e]&&"'"!==t[e];)i+=t[e],e++;if(O(i),e=I(t,e),!this.suppressValidationErr){if("SYSTEM"===t.substring(e,e+6).toUpperCase())throw new Error("External entities are not supported");if("%"===t[e])throw new Error("Parameter entities are not supported")}let n="";return[e,n]=this.readIdentifierVal(t,e,"entity"),[i,n,--e]}readNotationExp(t,e){e=I(t,e);let i="";for(;e<t.length&&!/\s/.test(t[e]);)i+=t[e],e++;!this.suppressValidationErr&&O(i),e=I(t,e);const n=t.substring(e,e+6).toUpperCase();if(!this.suppressValidationErr&&"SYSTEM"!==n&&"PUBLIC"!==n)throw new Error(`Expected SYSTEM or PUBLIC, found "${n}"`);e+=n.length,e=I(t,e);let s=null,r=null;if("PUBLIC"===n)[e,s]=this.readIdentifierVal(t,e,"publicIdentifier"),'"'!==t[e=I(t,e)]&&"'"!==t[e]||([e,r]=this.readIdentifierVal(t,e,"systemIdentifier"));else if("SYSTEM"===n&&([e,r]=this.readIdentifierVal(t,e,"systemIdentifier"),!this.suppressValidationErr&&!r))throw new Error("Missing mandatory system identifier for SYSTEM notation");return{notationName:i,publicIdentifier:s,systemIdentifier:r,index:--e}}readIdentifierVal(t,e,i){let n="";const s=t[e];if('"'!==s&&"'"!==s)throw new Error(`Expected quoted string, found "${s}"`);for(e++;e<t.length&&t[e]!==s;)n+=t[e],e++;if(t[e]!==s)throw new Error(`Unterminated ${i} value`);return[++e,n]}readElementExp(t,e){e=I(t,e);let i="";for(;e<t.length&&!/\s/.test(t[e]);)i+=t[e],e++;if(!this.suppressValidationErr&&!r(i))throw new Error(`Invalid element name: "${i}"`);let n="";if("E"===t[e=I(t,e)]&&P(t,"MPTY",e))e+=4;else if("A"===t[e]&&P(t,"NY",e))e+=2;else if("("===t[e]){for(e++;e<t.length&&")"!==t[e];)n+=t[e],e++;if(")"!==t[e])throw new Error("Unterminated content model")}else if(!this.suppressValidationErr)throw new Error(`Invalid Element Expression, found "${t[e]}"`);return{elementName:i,contentModel:n.trim(),index:e}}readAttlistExp(t,e){e=I(t,e);let i="";for(;e<t.length&&!/\s/.test(t[e]);)i+=t[e],e++;O(i),e=I(t,e);let n="";for(;e<t.length&&!/\s/.test(t[e]);)n+=t[e],e++;if(!O(n))throw new Error(`Invalid attribute name: "${n}"`);e=I(t,e);let s="";if("NOTATION"===t.substring(e,e+8).toUpperCase()){if(s="NOTATION","("!==t[e=I(t,e+=8)])throw new Error(`Expected '(', found "${t[e]}"`);e++;let i=[];for(;e<t.length&&")"!==t[e];){let n="";for(;e<t.length&&"|"!==t[e]&&")"!==t[e];)n+=t[e],e++;if(n=n.trim(),!O(n))throw new Error(`Invalid notation name: "${n}"`);i.push(n),"|"===t[e]&&(e++,e=I(t,e))}if(")"!==t[e])throw new Error("Unterminated list of notations");e++,s+=" ("+i.join("|")+")"}else{for(;e<t.length&&!/\s/.test(t[e]);)s+=t[e],e++;const i=["CDATA","ID","IDREF","IDREFS","ENTITY","ENTITIES","NMTOKEN","NMTOKENS"];if(!this.suppressValidationErr&&!i.includes(s.toUpperCase()))throw new Error(`Invalid attribute type: "${s}"`)}e=I(t,e);let r="";return"#REQUIRED"===t.substring(e,e+8).toUpperCase()?(r="#REQUIRED",e+=8):"#IMPLIED"===t.substring(e,e+7).toUpperCase()?(r="#IMPLIED",e+=7):[e,r]=this.readIdentifierVal(t,e,"ATTLIST"),{elementName:i,attributeName:n,attributeType:s,defaultValue:r,index:e}}}const I=(t,e)=>{for(;e<t.length&&/\s/.test(t[e]);)e++;return e};function P(t,e,i){for(let n=0;n<e.length;n++)if(e[n]!==t[i+n+1])return!1;return!0}function O(t){if(r(t))return t;throw new Error(`Invalid entity name ${t}`)}const A=/^[-+]?0x[a-fA-F0-9]+$/,S=/^([\-\+])?(0*)([0-9]*(\.[0-9]*)?)$/,C={hex:!0,leadingZeros:!0,decimalPoint:".",eNotation:!0};const V=/^([-+])?(0*)(\d*(\.\d*)?[eE][-\+]?\d+)$/;function $(t){return"function"==typeof t?t:Array.isArray(t)?e=>{for(const i of t){if("string"==typeof i&&e===i)return!0;if(i instanceof RegExp&&i.test(e))return!0}}:()=>!1}class D{constructor(t){if(this.options=t,this.currentNode=null,this.tagsNodeStack=[],this.docTypeEntities={},this.lastEntities={apos:{regex:/&(apos|#39|#x27);/g,val:"'"},gt:{regex:/&(gt|#62|#x3E);/g,val:">"},lt:{regex:/&(lt|#60|#x3C);/g,val:"<"},quot:{regex:/&(quot|#34|#x22);/g,val:'"'}},this.ampEntity={regex:/&(amp|#38|#x26);/g,val:"&"},this.htmlEntities={space:{regex:/&(nbsp|#160);/g,val:" "},cent:{regex:/&(cent|#162);/g,val:"¢"},pound:{regex:/&(pound|#163);/g,val:"£"},yen:{regex:/&(yen|#165);/g,val:"¥"},euro:{regex:/&(euro|#8364);/g,val:"€"},copyright:{regex:/&(copy|#169);/g,val:"©"},reg:{regex:/&(reg|#174);/g,val:"®"},inr:{regex:/&(inr|#8377);/g,val:"₹"},num_dec:{regex:/&#([0-9]{1,7});/g,val:(t,e)=>String.fromCodePoint(Number.parseInt(e,10))},num_hex:{regex:/&#x([0-9a-fA-F]{1,6});/g,val:(t,e)=>String.fromCodePoint(Number.parseInt(e,16))}},this.addExternalEntities=j,this.parseXml=L,this.parseTextData=M,this.resolveNameSpace=F,this.buildAttributesMap=k,this.isItStopNode=Y,this.replaceEntitiesValue=B,this.readStopNodeData=W,this.saveTextToParentTag=R,this.addChild=U,this.ignoreAttributesFn=$(this.options.ignoreAttributes),this.options.stopNodes&&this.options.stopNodes.length>0){this.stopNodesExact=new Set,this.stopNodesWildcard=new Set;for(let t=0;t<this.options.stopNodes.length;t++){const e=this.options.stopNodes[t];"string"==typeof e&&(e.startsWith("*.")?this.stopNodesWildcard.add(e.substring(2)):this.stopNodesExact.add(e))}}}}function j(t){const e=Object.keys(t);for(let i=0;i<e.length;i++){const n=e[i];this.lastEntities[n]={regex:new RegExp("&"+n+";","g"),val:t[n]}}}function M(t,e,i,n,s,r,o){if(void 0!==t&&(this.options.trimValues&&!n&&(t=t.trim()),t.length>0)){o||(t=this.replaceEntitiesValue(t));const n=this.options.tagValueProcessor(e,t,i,s,r);return null==n?t:typeof n!=typeof t||n!==t?n:this.options.trimValues||t.trim()===t?q(t,this.options.parseTagValue,this.options.numberParseOptions):t}}function F(t){if(this.options.removeNSPrefix){const e=t.split(":"),i="/"===t.charAt(0)?"/":"";if("xmlns"===e[0])return"";2===e.length&&(t=i+e[1])}return t}const _=new RegExp("([^\\s=]+)\\s*(=\\s*(['\"])([\\s\\S]*?)\\3)?","gm");function k(t,e){if(!0!==this.options.ignoreAttributes&&"string"==typeof t){const i=s(t,_),n=i.length,r={};for(let t=0;t<n;t++){const n=this.resolveNameSpace(i[t][1]);if(this.ignoreAttributesFn(n,e))continue;let s=i[t][4],o=this.options.attributeNamePrefix+n;if(n.length)if(this.options.transformAttributeName&&(o=this.options.transformAttributeName(o)),"__proto__"===o&&(o="#__proto__"),void 0!==s){this.options.trimValues&&(s=s.trim()),s=this.replaceEntitiesValue(s);const t=this.options.attributeValueProcessor(n,s,e);r[o]=null==t?s:typeof t!=typeof s||t!==s?t:q(s,this.options.parseAttributeValue,this.options.numberParseOptions)}else this.options.allowBooleanAttributes&&(r[o]=!0)}if(!Object.keys(r).length)return;if(this.options.attributesGroupName){const t={};return t[this.options.attributesGroupName]=r,t}return r}}const L=function(t){t=t.replace(/\r\n?/g,"\n");const e=new y("!xml");let i=e,n="",s="";const r=new w(this.options.processEntities);for(let o=0;o<t.length;o++)if("<"===t[o])if("/"===t[o+1]){const e=G(t,">",o,"Closing Tag is not closed.");let r=t.substring(o+2,e).trim();if(this.options.removeNSPrefix){const t=r.indexOf(":");-1!==t&&(r=r.substr(t+1))}this.options.transformTagName&&(r=this.options.transformTagName(r)),i&&(n=this.saveTextToParentTag(n,i,s));const a=s.substring(s.lastIndexOf(".")+1);if(r&&-1!==this.options.unpairedTags.indexOf(r))throw new Error(`Unpaired tag can not be used as closing tag: </${r}>`);let l=0;a&&-1!==this.options.unpairedTags.indexOf(a)?(l=s.lastIndexOf(".",s.lastIndexOf(".")-1),this.tagsNodeStack.pop()):l=s.lastIndexOf("."),s=s.substring(0,l),i=this.tagsNodeStack.pop(),n="",o=e}else if("?"===t[o+1]){let e=X(t,o,!1,"?>");if(!e)throw new Error("Pi Tag is not closed.");if(n=this.saveTextToParentTag(n,i,s),this.options.ignoreDeclaration&&"?xml"===e.tagName||this.options.ignorePiTags);else{const t=new y(e.tagName);t.add(this.options.textNodeName,""),e.tagName!==e.tagExp&&e.attrExpPresent&&(t[":@"]=this.buildAttributesMap(e.tagExp,s)),this.addChild(i,t,s,o)}o=e.closeIndex+1}else if("!--"===t.substr(o+1,3)){const e=G(t,"--\x3e",o+4,"Comment is not closed.");if(this.options.commentPropName){const r=t.substring(o+4,e-2);n=this.saveTextToParentTag(n,i,s),i.add(this.options.commentPropName,[{[this.options.textNodeName]:r}])}o=e}else if("!D"===t.substr(o+1,2)){const e=r.readDocType(t,o);this.docTypeEntities=e.entities,o=e.i}else if("!["===t.substr(o+1,2)){const e=G(t,"]]>",o,"CDATA is not closed.")-2,r=t.substring(o+9,e);n=this.saveTextToParentTag(n,i,s);let a=this.parseTextData(r,i.tagname,s,!0,!1,!0,!0);null==a&&(a=""),this.options.cdataPropName?i.add(this.options.cdataPropName,[{[this.options.textNodeName]:r}]):i.add(this.options.textNodeName,a),o=e+2}else{let r=X(t,o,this.options.removeNSPrefix),a=r.tagName;const l=r.rawTagName;let u=r.tagExp,h=r.attrExpPresent,d=r.closeIndex;if(this.options.transformTagName){const t=this.options.transformTagName(a);u===a&&(u=t),a=t}i&&n&&"!xml"!==i.tagname&&(n=this.saveTextToParentTag(n,i,s,!1));const p=i;p&&-1!==this.options.unpairedTags.indexOf(p.tagname)&&(i=this.tagsNodeStack.pop(),s=s.substring(0,s.lastIndexOf("."))),a!==e.tagname&&(s+=s?"."+a:a);const f=o;if(this.isItStopNode(this.stopNodesExact,this.stopNodesWildcard,s,a)){let e="";if(u.length>0&&u.lastIndexOf("/")===u.length-1)"/"===a[a.length-1]?(a=a.substr(0,a.length-1),s=s.substr(0,s.length-1),u=a):u=u.substr(0,u.length-1),o=r.closeIndex;else if(-1!==this.options.unpairedTags.indexOf(a))o=r.closeIndex;else{const i=this.readStopNodeData(t,l,d+1);if(!i)throw new Error(`Unexpected end of ${l}`);o=i.i,e=i.tagContent}const n=new y(a);a!==u&&h&&(n[":@"]=this.buildAttributesMap(u,s)),e&&(e=this.parseTextData(e,a,s,!0,h,!0,!0)),s=s.substr(0,s.lastIndexOf(".")),n.add(this.options.textNodeName,e),this.addChild(i,n,s,f)}else{if(u.length>0&&u.lastIndexOf("/")===u.length-1){if("/"===a[a.length-1]?(a=a.substr(0,a.length-1),s=s.substr(0,s.length-1),u=a):u=u.substr(0,u.length-1),this.options.transformTagName){const t=this.options.transformTagName(a);u===a&&(u=t),a=t}const t=new y(a);a!==u&&h&&(t[":@"]=this.buildAttributesMap(u,s)),this.addChild(i,t,s,f),s=s.substr(0,s.lastIndexOf("."))}else{const t=new y(a);this.tagsNodeStack.push(i),a!==u&&h&&(t[":@"]=this.buildAttributesMap(u,s)),this.addChild(i,t,s,f),i=t}n="",o=d}}else n+=t[o];return e.child};function U(t,e,i,n){this.options.captureMetaData||(n=void 0);const s=this.options.updateTag(e.tagname,i,e[":@"]);!1===s||("string"==typeof s?(e.tagname=s,t.addChild(e,n)):t.addChild(e,n))}const B=function(t){if(this.options.processEntities){for(let e in this.docTypeEntities){const i=this.docTypeEntities[e];t=t.replace(i.regx,i.val)}for(let e in this.lastEntities){const i=this.lastEntities[e];t=t.replace(i.regex,i.val)}if(this.options.htmlEntities)for(let e in this.htmlEntities){const i=this.htmlEntities[e];t=t.replace(i.regex,i.val)}t=t.replace(this.ampEntity.regex,this.ampEntity.val)}return t};function R(t,e,i,n){return t&&(void 0===n&&(n=0===e.child.length),void 0!==(t=this.parseTextData(t,e.tagname,i,!1,!!e[":@"]&&0!==Object.keys(e[":@"]).length,n))&&""!==t&&e.add(this.options.textNodeName,t),t=""),t}function Y(t,e,i,n){return!(!e||!e.has(n))||!(!t||!t.has(i))}function G(t,e,i,n){const s=t.indexOf(e,i);if(-1===s)throw new Error(n);return s+e.length-1}function X(t,e,i,n=">"){const s=function(t,e,i=">"){let n,s="";for(let r=e;r<t.length;r++){let e=t[r];if(n)e===n&&(n="");else if('"'===e||"'"===e)n=e;else if(e===i[0]){if(!i[1])return{data:s,index:r};if(t[r+1]===i[1])return{data:s,index:r}}else"\t"===e&&(e=" ");s+=e}}(t,e+1,n);if(!s)return;let r=s.data;const o=s.index,a=r.search(/\s/);let l=r,u=!0;-1!==a&&(l=r.substring(0,a),r=r.substring(a+1).trimStart());const h=l;if(i){const t=l.indexOf(":");-1!==t&&(l=l.substr(t+1),u=l!==s.data.substr(t+1))}return{tagName:l,tagExp:r,closeIndex:o,attrExpPresent:u,rawTagName:h}}function W(t,e,i){const n=i;let s=1;for(;i<t.length;i++)if("<"===t[i])if("/"===t[i+1]){const r=G(t,">",i,`${e} is not closed`);if(t.substring(i+2,r).trim()===e&&(s--,0===s))return{tagContent:t.substring(n,i),i:r};i=r}else if("?"===t[i+1])i=G(t,"?>",i+1,"StopNode is not closed.");else if("!--"===t.substr(i+1,3))i=G(t,"--\x3e",i+3,"StopNode is not closed.");else if("!["===t.substr(i+1,2))i=G(t,"]]>",i,"StopNode is not closed.")-2;else{const n=X(t,i,">");n&&((n&&n.tagName)===e&&"/"!==n.tagExp[n.tagExp.length-1]&&s++,i=n.closeIndex)}}function q(t,e,i){if(e&&"string"==typeof t){const e=t.trim();return"true"===e||"false"!==e&&function(t,e={}){if(e=Object.assign({},C,e),!t||"string"!=typeof t)return t;let i=t.trim();if(void 0!==e.skipLike&&e.skipLike.test(i))return t;if("0"===t)return 0;if(e.hex&&A.test(i))return function(t){if(parseInt)return parseInt(t,16);if(Number.parseInt)return Number.parseInt(t,16);if(window&&window.parseInt)return window.parseInt(t,16);throw new Error("parseInt, Number.parseInt, window.parseInt are not supported")}(i);if(-1!==i.search(/.+[eE].+/))return function(t,e,i){if(!i.eNotation)return t;const n=e.match(V);if(n){let s=n[1]||"";const r=-1===n[3].indexOf("e")?"E":"e",o=n[2],a=s?t[o.length+1]===r:t[o.length]===r;return o.length>1&&a?t:1!==o.length||!n[3].startsWith(`.${r}`)&&n[3][0]!==r?i.leadingZeros&&!a?(e=(n[1]||"")+n[3],Number(e)):t:Number(e)}return t}(t,i,e);{const s=S.exec(i);if(s){const r=s[1]||"",o=s[2];let a=(n=s[3])&&-1!==n.indexOf(".")?("."===(n=n.replace(/0+$/,""))?n="0":"."===n[0]?n="0"+n:"."===n[n.length-1]&&(n=n.substring(0,n.length-1)),n):n;const l=r?"."===t[o.length+1]:"."===t[o.length];if(!e.leadingZeros&&(o.length>1||1===o.length&&!l))return t;{const n=Number(i),s=String(n);if(0===n||-0===n)return n;if(-1!==s.search(/[eE]/))return e.eNotation?n:t;if(-1!==i.indexOf("."))return"0"===s||s===a||s===`${r}${a}`?n:t;let l=o?a:i;return o?l===s||r+l===s?n:t:l===s||l===r+s?n:t}}return t}var n}(t,i)}return void 0!==t?t:""}const Z=y.getMetaDataSymbol();function K(t,e){return Q(t,e)}function Q(t,e,i){let n;const s={};for(let r=0;r<t.length;r++){const o=t[r],a=z(o);let l="";if(l=void 0===i?a:i+"."+a,a===e.textNodeName)void 0===n?n=o[a]:n+=""+o[a];else{if(void 0===a)continue;if(o[a]){let t=Q(o[a],e,l);const i=H(t,e);void 0!==o[Z]&&(t[Z]=o[Z]),o[":@"]?J(t,o[":@"],l,e):1!==Object.keys(t).length||void 0===t[e.textNodeName]||e.alwaysCreateTextNode?0===Object.keys(t).length&&(e.alwaysCreateTextNode?t[e.textNodeName]="":t=""):t=t[e.textNodeName],void 0!==s[a]&&s.hasOwnProperty(a)?(Array.isArray(s[a])||(s[a]=[s[a]]),s[a].push(t)):e.isArray(a,l,i)?s[a]=[t]:s[a]=t}}}return"string"==typeof n?n.length>0&&(s[e.textNodeName]=n):void 0!==n&&(s[e.textNodeName]=n),s}function z(t){const e=Object.keys(t);for(let t=0;t<e.length;t++){const i=e[t];if(":@"!==i)return i}}function J(t,e,i,n){if(e){const s=Object.keys(e),r=s.length;for(let o=0;o<r;o++){const r=s[o];n.isArray(r,i+"."+r,!0,!0)?t[r]=[e[r]]:t[r]=e[r]}}}function H(t,e){const{textNodeName:i}=e,n=Object.keys(t).length;return 0===n||!(1!==n||!t[i]&&"boolean"!=typeof t[i]&&0!==t[i])}class tt{constructor(t){this.externalEntities={},this.options=function(t){return Object.assign({},v,t)}(t)}parse(t,e){if("string"!=typeof t&&t.toString)t=t.toString();else if("string"!=typeof t)throw new Error("XML data is accepted in String or Bytes[] form.");if(e){!0===e&&(e={});const i=a(t,e);if(!0!==i)throw Error(`${i.err.msg}:${i.err.line}:${i.err.col}`)}const i=new D(this.options);i.addExternalEntities(this.externalEntities);const n=i.parseXml(t);return this.options.preserveOrder||void 0===n?n:K(n,this.options)}addEntity(t,e){if(-1!==e.indexOf("&"))throw new Error("Entity value can't have '&'");if(-1!==t.indexOf("&")||-1!==t.indexOf(";"))throw new Error("An entity must be set without '&' and ';'. Eg. use '#xD' for '&#xD;'");if("&"===e)throw new Error("An entity with value '&' is not permitted");this.externalEntities[t]=e}static getMetaDataSymbol(){return y.getMetaDataSymbol()}}function et(t,e){let i="";return e.format&&e.indentBy.length>0&&(i="\n"),it(t,e,"",i)}function it(t,e,i,n){let s="",r=!1;for(let o=0;o<t.length;o++){const a=t[o],l=nt(a);if(void 0===l)continue;let u="";if(u=0===i.length?l:`${i}.${l}`,l===e.textNodeName){let t=a[l];rt(u,e)||(t=e.tagValueProcessor(l,t),t=ot(t,e)),r&&(s+=n),s+=t,r=!1;continue}if(l===e.cdataPropName){r&&(s+=n),s+=`<![CDATA[${a[l][0][e.textNodeName]}]]>`,r=!1;continue}if(l===e.commentPropName){s+=n+`\x3c!--${a[l][0][e.textNodeName]}--\x3e`,r=!0;continue}if("?"===l[0]){const t=st(a[":@"],e),i="?xml"===l?"":n;let o=a[l][0][e.textNodeName];o=0!==o.length?" "+o:"",s+=i+`<${l}${o}${t}?>`,r=!0;continue}let h=n;""!==h&&(h+=e.indentBy);const d=n+`<${l}${st(a[":@"],e)}`,p=it(a[l],e,u,h);-1!==e.unpairedTags.indexOf(l)?e.suppressUnpairedNode?s+=d+">":s+=d+"/>":p&&0!==p.length||!e.suppressEmptyNode?p&&p.endsWith(">")?s+=d+`>${p}${n}</${l}>`:(s+=d+">",p&&""!==n&&(p.includes("/>")||p.includes("</"))?s+=n+e.indentBy+p+n:s+=p,s+=`</${l}>`):s+=d+"/>",r=!0}return s}function nt(t){const e=Object.keys(t);for(let i=0;i<e.length;i++){const n=e[i];if(t.hasOwnProperty(n)&&":@"!==n)return n}}function st(t,e){let i="";if(t&&!e.ignoreAttributes)for(let n in t){if(!t.hasOwnProperty(n))continue;let s=e.attributeValueProcessor(n,t[n]);s=ot(s,e),!0===s&&e.suppressBooleanAttributes?i+=` ${n.substr(e.attributeNamePrefix.length)}`:i+=` ${n.substr(e.attributeNamePrefix.length)}="${s}"`}return i}function rt(t,e){let i=(t=t.substr(0,t.length-e.textNodeName.length-1)).substr(t.lastIndexOf(".")+1);for(let n in e.stopNodes)if(e.stopNodes[n]===t||e.stopNodes[n]==="*."+i)return!0;return!1}function ot(t,e){if(t&&t.length>0&&e.processEntities)for(let i=0;i<e.entities.length;i++){const n=e.entities[i];t=t.replace(n.regex,n.val)}return t}const at={attributeNamePrefix:"@_",attributesGroupName:!1,textNodeName:"#text",ignoreAttributes:!0,cdataPropName:!1,format:!1,indentBy:"  ",suppressEmptyNode:!1,suppressUnpairedNode:!0,suppressBooleanAttributes:!0,tagValueProcessor:function(t,e){return e},attributeValueProcessor:function(t,e){return e},preserveOrder:!1,commentPropName:!1,unpairedTags:[],entities:[{regex:new RegExp("&","g"),val:"&amp;"},{regex:new RegExp(">","g"),val:"&gt;"},{regex:new RegExp("<","g"),val:"&lt;"},{regex:new RegExp("'","g"),val:"&apos;"},{regex:new RegExp('"',"g"),val:"&quot;"}],processEntities:!0,stopNodes:[],oneListGroup:!1};function lt(t){this.options=Object.assign({},at,t),!0===this.options.ignoreAttributes||this.options.attributesGroupName?this.isAttribute=function(){return!1}:(this.ignoreAttributesFn=$(this.options.ignoreAttributes),this.attrPrefixLen=this.options.attributeNamePrefix.length,this.isAttribute=dt),this.processTextOrObjNode=ut,this.options.format?(this.indentate=ht,this.tagEndChar=">\n",this.newLine="\n"):(this.indentate=function(){return""},this.tagEndChar=">",this.newLine="")}function ut(t,e,i,n){const s=this.j2x(t,i+1,n.concat(e));return void 0!==t[this.options.textNodeName]&&1===Object.keys(t).length?this.buildTextValNode(t[this.options.textNodeName],e,s.attrStr,i):this.buildObjectNode(s.val,e,s.attrStr,i)}function ht(t){return this.options.indentBy.repeat(t)}function dt(t){return!(!t.startsWith(this.options.attributeNamePrefix)||t===this.options.textNodeName)&&t.substr(this.attrPrefixLen)}lt.prototype.build=function(t){return this.options.preserveOrder?et(t,this.options):(Array.isArray(t)&&this.options.arrayNodeName&&this.options.arrayNodeName.length>1&&(t={[this.options.arrayNodeName]:t}),this.j2x(t,0,[]).val)},lt.prototype.j2x=function(t,e,i){let n="",s="";const r=i.join(".");for(let o in t)if(Object.prototype.hasOwnProperty.call(t,o))if(void 0===t[o])this.isAttribute(o)&&(s+="");else if(null===t[o])this.isAttribute(o)||o===this.options.cdataPropName?s+="":"?"===o[0]?s+=this.indentate(e)+"<"+o+"?"+this.tagEndChar:s+=this.indentate(e)+"<"+o+"/"+this.tagEndChar;else if(t[o]instanceof Date)s+=this.buildTextValNode(t[o],o,"",e);else if("object"!=typeof t[o]){const i=this.isAttribute(o);if(i&&!this.ignoreAttributesFn(i,r))n+=this.buildAttrPairStr(i,""+t[o]);else if(!i)if(o===this.options.textNodeName){let e=this.options.tagValueProcessor(o,""+t[o]);s+=this.replaceEntitiesValue(e)}else s+=this.buildTextValNode(t[o],o,"",e)}else if(Array.isArray(t[o])){const n=t[o].length;let r="",a="";for(let l=0;l<n;l++){const n=t[o][l];if(void 0===n);else if(null===n)"?"===o[0]?s+=this.indentate(e)+"<"+o+"?"+this.tagEndChar:s+=this.indentate(e)+"<"+o+"/"+this.tagEndChar;else if("object"==typeof n)if(this.options.oneListGroup){const t=this.j2x(n,e+1,i.concat(o));r+=t.val,this.options.attributesGroupName&&n.hasOwnProperty(this.options.attributesGroupName)&&(a+=t.attrStr)}else r+=this.processTextOrObjNode(n,o,e,i);else if(this.options.oneListGroup){let t=this.options.tagValueProcessor(o,n);t=this.replaceEntitiesValue(t),r+=t}else r+=this.buildTextValNode(n,o,"",e)}this.options.oneListGroup&&(r=this.buildObjectNode(r,o,a,e)),s+=r}else if(this.options.attributesGroupName&&o===this.options.attributesGroupName){const e=Object.keys(t[o]),i=e.length;for(let s=0;s<i;s++)n+=this.buildAttrPairStr(e[s],""+t[o][e[s]])}else s+=this.processTextOrObjNode(t[o],o,e,i);return{attrStr:n,val:s}},lt.prototype.buildAttrPairStr=function(t,e){return e=this.options.attributeValueProcessor(t,""+e),e=this.replaceEntitiesValue(e),this.options.suppressBooleanAttributes&&"true"===e?" "+t:" "+t+'="'+e+'"'},lt.prototype.buildObjectNode=function(t,e,i,n){if(""===t)return"?"===e[0]?this.indentate(n)+"<"+e+i+"?"+this.tagEndChar:this.indentate(n)+"<"+e+i+this.closeTag(e)+this.tagEndChar;{let s="</"+e+this.tagEndChar,r="";return"?"===e[0]&&(r="?",s=""),!i&&""!==i||-1!==t.indexOf("<")?!1!==this.options.commentPropName&&e===this.options.commentPropName&&0===r.length?this.indentate(n)+`\x3c!--${t}--\x3e`+this.newLine:this.indentate(n)+"<"+e+i+r+this.tagEndChar+t+this.indentate(n)+s:this.indentate(n)+"<"+e+i+r+">"+t+s}},lt.prototype.closeTag=function(t){let e="";return-1!==this.options.unpairedTags.indexOf(t)?this.options.suppressUnpairedNode||(e="/"):e=this.options.suppressEmptyNode?"/":`></${t}`,e},lt.prototype.buildTextValNode=function(t,e,i,n){if(!1!==this.options.cdataPropName&&e===this.options.cdataPropName)return this.indentate(n)+`<![CDATA[${t}]]>`+this.newLine;if(!1!==this.options.commentPropName&&e===this.options.commentPropName)return this.indentate(n)+`\x3c!--${t}--\x3e`+this.newLine;if("?"===e[0])return this.indentate(n)+"<"+e+i+"?"+this.tagEndChar;{let s=this.options.tagValueProcessor(e,t);return s=this.replaceEntitiesValue(s),""===s?this.indentate(n)+"<"+e+i+this.closeTag(e)+this.tagEndChar:this.indentate(n)+"<"+e+i+">"+s+"</"+e+this.tagEndChar}},lt.prototype.replaceEntitiesValue=function(t){if(t&&t.length>0&&this.options.processEntities)for(let e=0;e<this.options.entities.length;e++){const i=this.options.entities[e];t=t.replace(i.regex,i.val)}return t};const pt={validate:a};module.exports=e})();
+
+/***/ }),
+
+/***/ 69256:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+function createSlotClass(branding, construct, getters, methods, staticMethods) {
+  function Class(...args) {
+    if (!(this instanceof Class)) {
+      throw new TypeError(internal.invalidCallingContext);
+    }
+    setSlots(this, construct(...args));
+  }
+  function bindMethod(method, methodName) {
+    return Object.defineProperties((function(...args) {
+      return method.call(this, getSpecificSlots(this), ...args);
+    }), internal.createNameDescriptors(methodName));
+  }
+  function getSpecificSlots(obj) {
+    const slots = getSlots(obj);
+    if (!slots || slots.branding !== branding) {
+      throw new TypeError(internal.invalidCallingContext);
+    }
+    return slots;
+  }
+  return Object.defineProperties(Class.prototype, {
+    ...internal.createGetterDescriptors(internal.mapProps(bindMethod, getters)),
+    ...internal.createPropDescriptors(internal.mapProps(bindMethod, methods)),
+    ...internal.createStringTagDescriptors("Temporal." + branding)
+  }), Object.defineProperties(Class, {
+    ...internal.createPropDescriptors(staticMethods),
+    ...internal.createNameDescriptors(branding)
+  }), [ Class, slots => {
+    const instance = Object.create(Class.prototype);
+    return setSlots(instance, slots), instance;
+  }, getSpecificSlots ];
+}
+
+function rejectInvalidBag(bag) {
+  if (getSlots(bag) || void 0 !== bag.calendar || void 0 !== bag.timeZone) {
+    throw new TypeError(internal.invalidBag);
+  }
+  return bag;
+}
+
+function getCalendarIdFromBag(bag) {
+  return extractCalendarIdFromBag(bag) || internal.isoCalendarId;
+}
+
+function extractCalendarIdFromBag(bag) {
+  const {calendar: calendarArg} = bag;
+  if (void 0 !== calendarArg) {
+    return refineCalendarArg(calendarArg);
+  }
+}
+
+function refineCalendarArg(arg) {
+  if (internal.isObjectLike(arg)) {
+    const {calendar: calendar} = getSlots(arg) || {};
+    if (!calendar) {
+      throw new TypeError(internal.invalidCalendar(arg));
+    }
+    return calendar;
+  }
+  return (arg => internal.resolveCalendarId(internal.parseCalendarId(internal.requireString(arg))))(arg);
+}
+
+function createCalendarGetters(methodNameMap) {
+  const methods = {};
+  for (const methodName in methodNameMap) {
+    methods[methodName] = slots => {
+      const {calendar: calendar} = slots;
+      return internal.createNativeStandardOps(calendar)[methodName](slots);
+    };
+  }
+  return methods;
+}
+
+function neverValueOf() {
+  throw new TypeError(internal.forbiddenValueOf);
+}
+
+function refineTimeZoneArg(arg) {
+  if (internal.isObjectLike(arg)) {
+    const {timeZone: timeZone} = getSlots(arg) || {};
+    if (!timeZone) {
+      throw new TypeError(internal.invalidTimeZone(arg));
+    }
+    return timeZone;
+  }
+  return (arg => internal.resolveTimeZoneId(internal.parseTimeZoneId(internal.requireString(arg))))(arg);
+}
+
+function toDurationSlots(arg) {
+  if (internal.isObjectLike(arg)) {
+    const slots = getSlots(arg);
+    return slots && slots.branding === internal.DurationBranding ? slots : internal.refineDurationBag(arg);
+  }
+  return internal.parseDuration(arg);
+}
+
+function refinePublicRelativeTo(relativeTo) {
+  if (void 0 !== relativeTo) {
+    if (internal.isObjectLike(relativeTo)) {
+      const slots = getSlots(relativeTo) || {};
+      switch (slots.branding) {
+       case internal.ZonedDateTimeBranding:
+       case internal.PlainDateBranding:
+        return slots;
+
+       case internal.PlainDateTimeBranding:
+        return internal.createPlainDateSlots(slots);
+      }
+      const calendarId = getCalendarIdFromBag(relativeTo);
+      return {
+        ...internal.refineMaybeZonedDateTimeBag(refineTimeZoneArg, internal.queryNativeTimeZone, internal.createNativeStandardOps(calendarId), relativeTo),
+        calendar: calendarId
+      };
+    }
+    return internal.parseRelativeToSlots(relativeTo);
+  }
+}
+
+function toPlainTimeSlots(arg, options) {
+  if (internal.isObjectLike(arg)) {
+    const slots = getSlots(arg) || {};
+    switch (slots.branding) {
+     case internal.PlainTimeBranding:
+      return internal.refineOverflowOptions(options), slots;
+
+     case internal.PlainDateTimeBranding:
+      return internal.refineOverflowOptions(options), internal.createPlainTimeSlots(slots);
+
+     case internal.ZonedDateTimeBranding:
+      return internal.refineOverflowOptions(options), internal.zonedDateTimeToPlainTime(internal.queryNativeTimeZone, slots);
+    }
+    return internal.refinePlainTimeBag(arg, options);
+  }
+  const timeSlots = internal.parsePlainTime(arg);
+  return internal.refineOverflowOptions(options), timeSlots;
+}
+
+function optionalToPlainTimeFields(timeArg) {
+  return void 0 === timeArg ? void 0 : toPlainTimeSlots(timeArg);
+}
+
+function toPlainDateTimeSlots(arg, options) {
+  if (internal.isObjectLike(arg)) {
+    const slots = getSlots(arg) || {};
+    switch (slots.branding) {
+     case internal.PlainDateTimeBranding:
+      return internal.refineOverflowOptions(options), slots;
+
+     case internal.PlainDateBranding:
+      return internal.refineOverflowOptions(options), internal.createPlainDateTimeSlots({
+        ...slots,
+        ...internal.isoTimeFieldDefaults
+      });
+
+     case internal.ZonedDateTimeBranding:
+      return internal.refineOverflowOptions(options), internal.zonedDateTimeToPlainDateTime(internal.queryNativeTimeZone, slots);
+    }
+    return internal.refinePlainDateTimeBag(internal.createNativeStandardOps(getCalendarIdFromBag(arg)), arg, options);
+  }
+  const res = internal.parsePlainDateTime(arg);
+  return internal.refineOverflowOptions(options), res;
+}
+
+function toPlainMonthDaySlots(arg, options) {
+  if (internal.isObjectLike(arg)) {
+    const slots = getSlots(arg);
+    if (slots && slots.branding === internal.PlainMonthDayBranding) {
+      return internal.refineOverflowOptions(options), slots;
+    }
+    const calendarIdMaybe = extractCalendarIdFromBag(arg), calendarId = calendarIdMaybe || internal.isoCalendarId;
+    return internal.refinePlainMonthDayBag(internal.createNativeStandardOps(calendarId), !calendarIdMaybe, arg, options);
+  }
+  const res = internal.parsePlainMonthDay(internal.createNativeStandardOps, arg);
+  return internal.refineOverflowOptions(options), res;
+}
+
+function toPlainYearMonthSlots(arg, options) {
+  if (internal.isObjectLike(arg)) {
+    const slots = getSlots(arg);
+    return slots && slots.branding === internal.PlainYearMonthBranding ? (internal.refineOverflowOptions(options), 
+    slots) : internal.refinePlainYearMonthBag(internal.createNativeStandardOps(getCalendarIdFromBag(arg)), arg, options);
+  }
+  const res = internal.parsePlainYearMonth(internal.createNativeStandardOps, arg);
+  return internal.refineOverflowOptions(options), res;
+}
+
+function toPlainDateSlots(arg, options) {
+  if (internal.isObjectLike(arg)) {
+    const slots = getSlots(arg) || {};
+    switch (slots.branding) {
+     case internal.PlainDateBranding:
+      return internal.refineOverflowOptions(options), slots;
+
+     case internal.PlainDateTimeBranding:
+      return internal.refineOverflowOptions(options), internal.createPlainDateSlots(slots);
+
+     case internal.ZonedDateTimeBranding:
+      return internal.refineOverflowOptions(options), internal.zonedDateTimeToPlainDate(internal.queryNativeTimeZone, slots);
+    }
+    return internal.refinePlainDateBag(internal.createNativeStandardOps(getCalendarIdFromBag(arg)), arg, options);
+  }
+  const res = internal.parsePlainDate(arg);
+  return internal.refineOverflowOptions(options), res;
+}
+
+function toZonedDateTimeSlots(arg, options) {
+  if (internal.isObjectLike(arg)) {
+    const slots = getSlots(arg);
+    if (slots && slots.branding === internal.ZonedDateTimeBranding) {
+      return internal.refineZonedFieldOptions(options), slots;
+    }
+    const calendarId = getCalendarIdFromBag(arg);
+    return internal.refineZonedDateTimeBag(refineTimeZoneArg, internal.queryNativeTimeZone, internal.createNativeStandardOps(calendarId), calendarId, arg, options);
+  }
+  return internal.parseZonedDateTime(arg, options);
+}
+
+function adaptDateMethods(methods) {
+  return internal.mapProps((method => slots => method(slotsToIso(slots))), methods);
+}
+
+function slotsToIso(slots) {
+  return internal.zonedEpochSlotsToIso(slots, internal.queryNativeTimeZone);
+}
+
+function toInstantSlots(arg) {
+  if (internal.isObjectLike(arg)) {
+    const slots = getSlots(arg);
+    if (slots) {
+      switch (slots.branding) {
+       case internal.InstantBranding:
+        return slots;
+
+       case internal.ZonedDateTimeBranding:
+        return internal.createInstantSlots(slots.epochNanoseconds);
+      }
+    }
+  }
+  return internal.parseInstant(arg);
+}
+
+function createFormatMethod(methodName) {
+  return Object.defineProperties((function(...formattables) {
+    const prepFormat = internalsMap.get(this), [format, ...rawFormattables] = prepFormat(methodName.includes("Range"), ...formattables);
+    return format[methodName](...rawFormattables);
+  }), internal.createNameDescriptors(methodName));
+}
+
+function createProxiedMethod(methodName) {
+  return Object.defineProperties((function(...args) {
+    return internalsMap.get(this).rawFormat[methodName](...args);
+  }), internal.createNameDescriptors(methodName));
+}
+
+function createFormatPrepperForBranding(branding) {
+  const config = classFormatConfigs[branding];
+  if (!config) {
+    throw new TypeError(internal.invalidFormatType(branding));
+  }
+  return internal.createFormatPrepper(config, internal.memoize(internal.createFormatForPrep), 1);
+}
+
+var internal = __nccwpck_require__(29099);
+
+const slotsMap = new WeakMap, getSlots = slotsMap.get.bind(slotsMap), setSlots = slotsMap.set.bind(slotsMap), yearMonthOnlyRefiners = {
+  era: internal.requireStringOrUndefined,
+  eraYear: internal.requireIntegerOrUndefined,
+  year: internal.requireInteger,
+  month: internal.requirePositiveInteger,
+  daysInMonth: internal.requirePositiveInteger,
+  daysInYear: internal.requirePositiveInteger,
+  inLeapYear: internal.requireBoolean,
+  monthsInYear: internal.requirePositiveInteger
+}, monthOnlyRefiners = {
+  monthCode: internal.requireString
+}, dayOnlyRefiners = {
+  day: internal.requirePositiveInteger
+}, dateOnlyRefiners = {
+  dayOfWeek: internal.requirePositiveInteger,
+  dayOfYear: internal.requirePositiveInteger,
+  weekOfYear: internal.requirePositiveIntegerOrUndefined,
+  yearOfWeek: internal.requireIntegerOrUndefined,
+  daysInWeek: internal.requirePositiveInteger
+}, dateGetters = createCalendarGetters({
+  ...yearMonthOnlyRefiners,
+  ...monthOnlyRefiners,
+  ...dayOnlyRefiners,
+  ...dateOnlyRefiners
+}), yearMonthGetters = createCalendarGetters({
+  ...yearMonthOnlyRefiners,
+  ...monthOnlyRefiners
+}), monthDayGetters = createCalendarGetters({
+  ...monthOnlyRefiners,
+  ...dayOnlyRefiners
+}), calendarIdGetters = {
+  calendarId: slots => slots.calendar
+}, durationGetters = internal.mapPropNames((propName => slots => slots[propName]), internal.durationFieldNamesAsc.concat("sign")), timeGetters = internal.mapPropNames(((_name, i) => slots => slots[internal.isoTimeFieldNamesAsc[i]]), internal.timeFieldNamesAsc), epochGetters = {
+  epochMilliseconds: internal.getEpochMilli,
+  epochNanoseconds: internal.getEpochNano
+}, [Duration, createDuration, getDurationSlots] = createSlotClass(internal.DurationBranding, internal.constructDurationSlots, {
+  ...durationGetters,
+  blank: internal.getDurationBlank
+}, {
+  with: (slots, mod) => createDuration(internal.durationWithFields(slots, mod)),
+  negated: slots => createDuration(internal.negateDuration(slots)),
+  abs: slots => createDuration(internal.absDuration(slots)),
+  add: (slots, otherArg, options) => createDuration(internal.addDurations(refinePublicRelativeTo, internal.createNativeStandardOps, internal.queryNativeTimeZone, 0, slots, toDurationSlots(otherArg), options)),
+  subtract: (slots, otherArg, options) => createDuration(internal.addDurations(refinePublicRelativeTo, internal.createNativeStandardOps, internal.queryNativeTimeZone, 1, slots, toDurationSlots(otherArg), options)),
+  round: (slots, options) => createDuration(internal.roundDuration(refinePublicRelativeTo, internal.createNativeStandardOps, internal.queryNativeTimeZone, slots, options)),
+  total: (slots, options) => internal.totalDuration(refinePublicRelativeTo, internal.createNativeStandardOps, internal.queryNativeTimeZone, slots, options),
+  toLocaleString(slots, locales, options) {
+    return Intl.DurationFormat ? new Intl.DurationFormat(locales, options).format(this) : internal.formatDurationIso(slots);
+  },
+  toString: internal.formatDurationIso,
+  toJSON: slots => internal.formatDurationIso(slots),
+  valueOf: neverValueOf
+}, {
+  from: arg => createDuration(toDurationSlots(arg)),
+  compare: (durationArg0, durationArg1, options) => internal.compareDurations(refinePublicRelativeTo, internal.createNativeStandardOps, internal.queryNativeTimeZone, toDurationSlots(durationArg0), toDurationSlots(durationArg1), options)
+}), classFormatConfigs = {
+  Instant: internal.instantConfig,
+  PlainDateTime: internal.dateTimeConfig,
+  PlainDate: internal.dateConfig,
+  PlainTime: internal.timeConfig,
+  PlainYearMonth: internal.yearMonthConfig,
+  PlainMonthDay: internal.monthDayConfig
+}, prepInstantFormat = internal.createFormatPrepper(internal.instantConfig), prepZonedDateTimeFormat = internal.createFormatPrepper(internal.zonedConfig), prepPlainDateTimeFormat = internal.createFormatPrepper(internal.dateTimeConfig), prepPlainDateFormat = internal.createFormatPrepper(internal.dateConfig), prepPlainTimeFormat = internal.createFormatPrepper(internal.timeConfig), prepPlainYearMonthFormat = internal.createFormatPrepper(internal.yearMonthConfig), prepPlainMonthDayFormat = internal.createFormatPrepper(internal.monthDayConfig), [PlainTime, createPlainTime] = createSlotClass(internal.PlainTimeBranding, internal.constructPlainTimeSlots, timeGetters, {
+  with(_slots, mod, options) {
+    return createPlainTime(internal.plainTimeWithFields(this, rejectInvalidBag(mod), options));
+  },
+  add: (slots, durationArg) => createPlainTime(internal.movePlainTime(0, slots, toDurationSlots(durationArg))),
+  subtract: (slots, durationArg) => createPlainTime(internal.movePlainTime(1, slots, toDurationSlots(durationArg))),
+  until: (slots, otherArg, options) => createDuration(internal.diffPlainTimes(0, slots, toPlainTimeSlots(otherArg), options)),
+  since: (slots, otherArg, options) => createDuration(internal.diffPlainTimes(1, slots, toPlainTimeSlots(otherArg), options)),
+  round: (slots, options) => createPlainTime(internal.roundPlainTime(slots, options)),
+  equals: (slots, other) => internal.plainTimesEqual(slots, toPlainTimeSlots(other)),
+  toLocaleString(slots, locales, options) {
+    const [format, epochMilli] = prepPlainTimeFormat(locales, options, slots);
+    return format.format(epochMilli);
+  },
+  toString: internal.formatPlainTimeIso,
+  toJSON: slots => internal.formatPlainTimeIso(slots),
+  valueOf: neverValueOf
+}, {
+  from: (arg, options) => createPlainTime(toPlainTimeSlots(arg, options)),
+  compare: (arg0, arg1) => internal.compareIsoTimeFields(toPlainTimeSlots(arg0), toPlainTimeSlots(arg1))
+}), [PlainDateTime, createPlainDateTime] = createSlotClass(internal.PlainDateTimeBranding, internal.bindArgs(internal.constructPlainDateTimeSlots, internal.refineCalendarId), {
+  ...calendarIdGetters,
+  ...dateGetters,
+  ...timeGetters
+}, {
+  with: (slots, mod, options) => createPlainDateTime(internal.plainDateTimeWithFields(internal.createNativeStandardOps, slots, rejectInvalidBag(mod), options)),
+  withCalendar: (slots, calendarArg) => createPlainDateTime(internal.slotsWithCalendarId(slots, refineCalendarArg(calendarArg))),
+  withPlainTime: (slots, plainTimeArg) => createPlainDateTime(internal.plainDateTimeWithPlainTime(slots, optionalToPlainTimeFields(plainTimeArg))),
+  add: (slots, durationArg, options) => createPlainDateTime(internal.movePlainDateTime(internal.createNativeStandardOps, 0, slots, toDurationSlots(durationArg), options)),
+  subtract: (slots, durationArg, options) => createPlainDateTime(internal.movePlainDateTime(internal.createNativeStandardOps, 1, slots, toDurationSlots(durationArg), options)),
+  until: (slots, otherArg, options) => createDuration(internal.diffPlainDateTimes(internal.createNativeStandardOps, 0, slots, toPlainDateTimeSlots(otherArg), options)),
+  since: (slots, otherArg, options) => createDuration(internal.diffPlainDateTimes(internal.createNativeStandardOps, 1, slots, toPlainDateTimeSlots(otherArg), options)),
+  round: (slots, options) => createPlainDateTime(internal.roundPlainDateTime(slots, options)),
+  equals: (slots, otherArg) => internal.plainDateTimesEqual(slots, toPlainDateTimeSlots(otherArg)),
+  toZonedDateTime: (slots, timeZoneArg, options) => createZonedDateTime(internal.plainDateTimeToZonedDateTime(internal.queryNativeTimeZone, slots, refineTimeZoneArg(timeZoneArg), options)),
+  toPlainDate: slots => createPlainDate(internal.createPlainDateSlots(slots)),
+  toPlainTime: slots => createPlainTime(internal.createPlainTimeSlots(slots)),
+  toLocaleString(slots, locales, options) {
+    const [format, epochMilli] = prepPlainDateTimeFormat(locales, options, slots);
+    return format.format(epochMilli);
+  },
+  toString: internal.formatPlainDateTimeIso,
+  toJSON: slots => internal.formatPlainDateTimeIso(slots),
+  valueOf: neverValueOf
+}, {
+  from: (arg, options) => createPlainDateTime(toPlainDateTimeSlots(arg, options)),
+  compare: (arg0, arg1) => internal.compareIsoDateTimeFields(toPlainDateTimeSlots(arg0), toPlainDateTimeSlots(arg1))
+}), [PlainMonthDay, createPlainMonthDay, getPlainMonthDaySlots] = createSlotClass(internal.PlainMonthDayBranding, internal.bindArgs(internal.constructPlainMonthDaySlots, internal.refineCalendarId), {
+  ...calendarIdGetters,
+  ...monthDayGetters
+}, {
+  with: (slots, mod, options) => createPlainMonthDay(internal.plainMonthDayWithFields(internal.createNativeStandardOps, slots, rejectInvalidBag(mod), options)),
+  equals: (slots, otherArg) => internal.plainMonthDaysEqual(slots, toPlainMonthDaySlots(otherArg)),
+  toPlainDate(slots, bag) {
+    return createPlainDate(internal.plainMonthDayToPlainDate(internal.createNativeStandardOps, slots, this, bag));
+  },
+  toLocaleString(slots, locales, options) {
+    const [format, epochMilli] = prepPlainMonthDayFormat(locales, options, slots);
+    return format.format(epochMilli);
+  },
+  toString: internal.formatPlainMonthDayIso,
+  toJSON: slots => internal.formatPlainMonthDayIso(slots),
+  valueOf: neverValueOf
+}, {
+  from: (arg, options) => createPlainMonthDay(toPlainMonthDaySlots(arg, options))
+}), [PlainYearMonth, createPlainYearMonth, getPlainYearMonthSlots] = createSlotClass(internal.PlainYearMonthBranding, internal.bindArgs(internal.constructPlainYearMonthSlots, internal.refineCalendarId), {
+  ...calendarIdGetters,
+  ...yearMonthGetters
+}, {
+  with: (slots, mod, options) => createPlainYearMonth(internal.plainYearMonthWithFields(internal.createNativeStandardOps, slots, rejectInvalidBag(mod), options)),
+  add: (slots, durationArg, options) => createPlainYearMonth(internal.movePlainYearMonth(internal.createNativeStandardOps, 0, slots, toDurationSlots(durationArg), options)),
+  subtract: (slots, durationArg, options) => createPlainYearMonth(internal.movePlainYearMonth(internal.createNativeStandardOps, 1, slots, toDurationSlots(durationArg), options)),
+  until: (slots, otherArg, options) => createDuration(internal.diffPlainYearMonth(internal.createNativeStandardOps, 0, slots, toPlainYearMonthSlots(otherArg), options)),
+  since: (slots, otherArg, options) => createDuration(internal.diffPlainYearMonth(internal.createNativeStandardOps, 1, slots, toPlainYearMonthSlots(otherArg), options)),
+  equals: (slots, otherArg) => internal.plainYearMonthsEqual(slots, toPlainYearMonthSlots(otherArg)),
+  toPlainDate(slots, bag) {
+    return createPlainDate(internal.plainYearMonthToPlainDate(internal.createNativeStandardOps, slots, this, bag));
+  },
+  toLocaleString(slots, locales, options) {
+    const [format, epochMilli] = prepPlainYearMonthFormat(locales, options, slots);
+    return format.format(epochMilli);
+  },
+  toString: internal.formatPlainYearMonthIso,
+  toJSON: slots => internal.formatPlainYearMonthIso(slots),
+  valueOf: neverValueOf
+}, {
+  from: (arg, options) => createPlainYearMonth(toPlainYearMonthSlots(arg, options)),
+  compare: (arg0, arg1) => internal.compareIsoDateFields(toPlainYearMonthSlots(arg0), toPlainYearMonthSlots(arg1))
+}), [PlainDate, createPlainDate, getPlainDateSlots] = createSlotClass(internal.PlainDateBranding, internal.bindArgs(internal.constructPlainDateSlots, internal.refineCalendarId), {
+  ...calendarIdGetters,
+  ...dateGetters
+}, {
+  with: (slots, mod, options) => createPlainDate(internal.plainDateWithFields(internal.createNativeStandardOps, slots, rejectInvalidBag(mod), options)),
+  withCalendar: (slots, calendarArg) => createPlainDate(internal.slotsWithCalendarId(slots, refineCalendarArg(calendarArg))),
+  add: (slots, durationArg, options) => createPlainDate(internal.movePlainDate(internal.createNativeStandardOps, 0, slots, toDurationSlots(durationArg), options)),
+  subtract: (slots, durationArg, options) => createPlainDate(internal.movePlainDate(internal.createNativeStandardOps, 1, slots, toDurationSlots(durationArg), options)),
+  until: (slots, otherArg, options) => createDuration(internal.diffPlainDates(internal.createNativeStandardOps, 0, slots, toPlainDateSlots(otherArg), options)),
+  since: (slots, otherArg, options) => createDuration(internal.diffPlainDates(internal.createNativeStandardOps, 1, slots, toPlainDateSlots(otherArg), options)),
+  equals: (slots, otherArg) => internal.plainDatesEqual(slots, toPlainDateSlots(otherArg)),
+  toZonedDateTime(slots, options) {
+    const optionsObj = internal.isObjectLike(options) ? options : {
+      timeZone: options
+    };
+    return createZonedDateTime(internal.plainDateToZonedDateTime(refineTimeZoneArg, toPlainTimeSlots, internal.queryNativeTimeZone, slots, optionsObj));
+  },
+  toPlainDateTime: (slots, plainTimeArg) => createPlainDateTime(internal.plainDateToPlainDateTime(slots, optionalToPlainTimeFields(plainTimeArg))),
+  toPlainYearMonth(slots) {
+    return createPlainYearMonth(internal.plainDateToPlainYearMonth(internal.createNativeStandardOps, slots, this));
+  },
+  toPlainMonthDay(slots) {
+    return createPlainMonthDay(internal.plainDateToPlainMonthDay(internal.createNativeStandardOps, slots, this));
+  },
+  toLocaleString(slots, locales, options) {
+    const [format, epochMilli] = prepPlainDateFormat(locales, options, slots);
+    return format.format(epochMilli);
+  },
+  toString: internal.formatPlainDateIso,
+  toJSON: slots => internal.formatPlainDateIso(slots),
+  valueOf: neverValueOf
+}, {
+  from: (arg, options) => createPlainDate(toPlainDateSlots(arg, options)),
+  compare: (arg0, arg1) => internal.compareIsoDateFields(toPlainDateSlots(arg0), toPlainDateSlots(arg1))
+}), [ZonedDateTime, createZonedDateTime] = createSlotClass(internal.ZonedDateTimeBranding, internal.bindArgs(internal.constructZonedDateTimeSlots, internal.refineCalendarId, internal.refineTimeZoneId), {
+  ...epochGetters,
+  ...calendarIdGetters,
+  ...adaptDateMethods(dateGetters),
+  ...adaptDateMethods(timeGetters),
+  offset: slots => internal.formatOffsetNano(slotsToIso(slots).offsetNanoseconds),
+  offsetNanoseconds: slots => slotsToIso(slots).offsetNanoseconds,
+  timeZoneId: slots => slots.timeZone,
+  hoursInDay: slots => internal.computeZonedHoursInDay(internal.queryNativeTimeZone, slots)
+}, {
+  with: (slots, mod, options) => createZonedDateTime(internal.zonedDateTimeWithFields(internal.createNativeStandardOps, internal.queryNativeTimeZone, slots, rejectInvalidBag(mod), options)),
+  withCalendar: (slots, calendarArg) => createZonedDateTime(internal.slotsWithCalendarId(slots, refineCalendarArg(calendarArg))),
+  withTimeZone: (slots, timeZoneArg) => createZonedDateTime(internal.slotsWithTimeZoneId(slots, refineTimeZoneArg(timeZoneArg))),
+  withPlainTime: (slots, plainTimeArg) => createZonedDateTime(internal.zonedDateTimeWithPlainTime(internal.queryNativeTimeZone, slots, optionalToPlainTimeFields(plainTimeArg))),
+  add: (slots, durationArg, options) => createZonedDateTime(internal.moveZonedDateTime(internal.createNativeStandardOps, internal.queryNativeTimeZone, 0, slots, toDurationSlots(durationArg), options)),
+  subtract: (slots, durationArg, options) => createZonedDateTime(internal.moveZonedDateTime(internal.createNativeStandardOps, internal.queryNativeTimeZone, 1, slots, toDurationSlots(durationArg), options)),
+  until: (slots, otherArg, options) => createDuration(internal.createDurationSlots(internal.diffZonedDateTimes(internal.createNativeStandardOps, internal.queryNativeTimeZone, 0, slots, toZonedDateTimeSlots(otherArg), options))),
+  since: (slots, otherArg, options) => createDuration(internal.createDurationSlots(internal.diffZonedDateTimes(internal.createNativeStandardOps, internal.queryNativeTimeZone, 1, slots, toZonedDateTimeSlots(otherArg), options))),
+  round: (slots, options) => createZonedDateTime(internal.roundZonedDateTime(internal.queryNativeTimeZone, slots, options)),
+  startOfDay: slots => createZonedDateTime(internal.computeZonedStartOfDay(internal.queryNativeTimeZone, slots)),
+  equals: (slots, otherArg) => internal.zonedDateTimesEqual(slots, toZonedDateTimeSlots(otherArg)),
+  toInstant: slots => createInstant(internal.zonedDateTimeToInstant(slots)),
+  toPlainDateTime: slots => createPlainDateTime(internal.zonedDateTimeToPlainDateTime(internal.queryNativeTimeZone, slots)),
+  toPlainDate: slots => createPlainDate(internal.zonedDateTimeToPlainDate(internal.queryNativeTimeZone, slots)),
+  toPlainTime: slots => createPlainTime(internal.zonedDateTimeToPlainTime(internal.queryNativeTimeZone, slots)),
+  toLocaleString(slots, locales, options = {}) {
+    const [format, epochMilli] = prepZonedDateTimeFormat(locales, options, slots);
+    return format.format(epochMilli);
+  },
+  toString: (slots, options) => internal.formatZonedDateTimeIso(internal.queryNativeTimeZone, slots, options),
+  toJSON: slots => internal.formatZonedDateTimeIso(internal.queryNativeTimeZone, slots),
+  valueOf: neverValueOf,
+  getTimeZoneTransition(slots, options) {
+    const {timeZone: timeZoneId, epochNanoseconds: epochNano} = slots, direction = internal.refineDirectionOptions(options), newEpochNano = internal.queryNativeTimeZone(timeZoneId).getTransition(epochNano, direction);
+    return newEpochNano ? createZonedDateTime({
+      ...slots,
+      epochNanoseconds: newEpochNano
+    }) : null;
+  }
+}, {
+  from: (arg, options) => createZonedDateTime(toZonedDateTimeSlots(arg, options)),
+  compare: (arg0, arg1) => internal.compareZonedDateTimes(toZonedDateTimeSlots(arg0), toZonedDateTimeSlots(arg1))
+}), [Instant, createInstant, getInstantSlots] = createSlotClass(internal.InstantBranding, internal.constructInstantSlots, epochGetters, {
+  add: (slots, durationArg) => createInstant(internal.moveInstant(0, slots, toDurationSlots(durationArg))),
+  subtract: (slots, durationArg) => createInstant(internal.moveInstant(1, slots, toDurationSlots(durationArg))),
+  until: (slots, otherArg, options) => createDuration(internal.diffInstants(0, slots, toInstantSlots(otherArg), options)),
+  since: (slots, otherArg, options) => createDuration(internal.diffInstants(1, slots, toInstantSlots(otherArg), options)),
+  round: (slots, options) => createInstant(internal.roundInstant(slots, options)),
+  equals: (slots, otherArg) => internal.instantsEqual(slots, toInstantSlots(otherArg)),
+  toZonedDateTimeISO: (slots, timeZoneArg) => createZonedDateTime(internal.instantToZonedDateTime(slots, refineTimeZoneArg(timeZoneArg))),
+  toLocaleString(slots, locales, options) {
+    const [format, epochMilli] = prepInstantFormat(locales, options, slots);
+    return format.format(epochMilli);
+  },
+  toString: (slots, options) => internal.formatInstantIso(refineTimeZoneArg, internal.queryNativeTimeZone, slots, options),
+  toJSON: slots => internal.formatInstantIso(refineTimeZoneArg, internal.queryNativeTimeZone, slots),
+  valueOf: neverValueOf
+}, {
+  from: arg => createInstant(toInstantSlots(arg)),
+  fromEpochMilliseconds: epochMilli => createInstant(internal.epochMilliToInstant(epochMilli)),
+  fromEpochNanoseconds: epochNano => createInstant(internal.epochNanoToInstant(epochNano)),
+  compare: (a, b) => internal.compareInstants(toInstantSlots(a), toInstantSlots(b))
+}), Now = Object.defineProperties({}, {
+  ...internal.createStringTagDescriptors("Temporal.Now"),
+  ...internal.createPropDescriptors({
+    timeZoneId: () => internal.getCurrentTimeZoneId(),
+    instant: () => createInstant(internal.createInstantSlots(internal.getCurrentEpochNano())),
+    zonedDateTimeISO: (timeZoneArg = internal.getCurrentTimeZoneId()) => createZonedDateTime(internal.createZonedDateTimeSlots(internal.getCurrentEpochNano(), refineTimeZoneArg(timeZoneArg), internal.isoCalendarId)),
+    plainDateTimeISO: (timeZoneArg = internal.getCurrentTimeZoneId()) => createPlainDateTime(internal.createPlainDateTimeSlots(internal.getCurrentIsoDateTime(internal.queryNativeTimeZone(refineTimeZoneArg(timeZoneArg))), internal.isoCalendarId)),
+    plainDateISO: (timeZoneArg = internal.getCurrentTimeZoneId()) => createPlainDate(internal.createPlainDateSlots(internal.getCurrentIsoDateTime(internal.queryNativeTimeZone(refineTimeZoneArg(timeZoneArg))), internal.isoCalendarId)),
+    plainTimeISO: (timeZoneArg = internal.getCurrentTimeZoneId()) => createPlainTime(internal.createPlainTimeSlots(internal.getCurrentIsoDateTime(internal.queryNativeTimeZone(refineTimeZoneArg(timeZoneArg)))))
+  })
+}), Temporal = Object.defineProperties({}, {
+  ...internal.createStringTagDescriptors("Temporal"),
+  ...internal.createPropDescriptors({
+    PlainYearMonth: PlainYearMonth,
+    PlainMonthDay: PlainMonthDay,
+    PlainDate: PlainDate,
+    PlainTime: PlainTime,
+    PlainDateTime: PlainDateTime,
+    ZonedDateTime: ZonedDateTime,
+    Instant: Instant,
+    Duration: Duration,
+    Now: Now
+  })
+}), DateTimeFormat = function() {
+  function DateTimeFormatFunc(locales, options) {
+    return new DateTimeFormatNew(locales, options);
+  }
+  function DateTimeFormatNew(locales, options = Object.create(null)) {
+    internalsMap.set(this, ((locales, options) => {
+      const rawFormat = new internal.RawDateTimeFormat(locales, options), resolveOptions = rawFormat.resolvedOptions(), resolvedLocale = resolveOptions.locale, copiedOptions = internal.pluckProps(Object.keys(options), resolveOptions), queryFormatPrepperForBranding = internal.memoize(createFormatPrepperForBranding), prepFormat = (isRange, ...formattables) => {
+        if (isRange) {
+          if (2 !== formattables.length) {
+            throw new TypeError(internal.mismatchingFormatTypes);
+          }
+          for (const formattable of formattables) {
+            if (void 0 === formattable) {
+              throw new TypeError(internal.mismatchingFormatTypes);
+            }
+          }
+        }
+        isRange || void 0 !== formattables[0] || (formattables = []);
+        const formattableEssences = formattables.map((formattable => getSlots(formattable) || Number(formattable)));
+        let overallBranding, i = 0;
+        for (const formattableEssence of formattableEssences) {
+          const slotsBranding = "object" == typeof formattableEssence ? formattableEssence.branding : void 0;
+          if (i++ && slotsBranding !== overallBranding) {
+            throw new TypeError(internal.mismatchingFormatTypes);
+          }
+          overallBranding = slotsBranding;
+        }
+        return overallBranding ? queryFormatPrepperForBranding(overallBranding)(resolvedLocale, copiedOptions, ...formattableEssences) : [ rawFormat, ...formattableEssences ];
+      };
+      return prepFormat.rawFormat = rawFormat, prepFormat;
+    })(locales, options));
+  }
+  const members = internal.RawDateTimeFormat.prototype, memberDescriptors = Object.getOwnPropertyDescriptors(members), classDescriptors = Object.getOwnPropertyDescriptors(internal.RawDateTimeFormat);
+  for (const memberName in memberDescriptors) {
+    const memberDescriptor = memberDescriptors[memberName], formatLikeMethod = memberName.startsWith("format") && createFormatMethod(memberName);
+    "function" == typeof memberDescriptor.value ? memberDescriptor.value = "constructor" === memberName ? DateTimeFormatFunc : formatLikeMethod || createProxiedMethod(memberName) : formatLikeMethod && (memberDescriptor.get = function() {
+      if (!internalsMap.has(this)) {
+        throw new TypeError(internal.invalidCallingContext);
+      }
+      return (...args) => formatLikeMethod.apply(this, args);
+    }, Object.defineProperties(memberDescriptor.get, internal.createNameDescriptors(`get ${memberName}`)));
+  }
+  return classDescriptors.prototype.value = DateTimeFormatNew.prototype = Object.create({}, memberDescriptors), 
+  Object.defineProperties(DateTimeFormatFunc, classDescriptors), DateTimeFormatFunc;
+}(), internalsMap = new WeakMap, IntlExtended = Object.defineProperties(Object.create(Intl), internal.createPropDescriptors({
+  DateTimeFormat: DateTimeFormat
+}));
+
+exports.DateTimeFormat = DateTimeFormat, exports.IntlExtended = IntlExtended, exports.Temporal = Temporal, 
+exports.toTemporalInstant = function() {
+  const epochMilli = Date.prototype.valueOf.call(this);
+  return createInstant(internal.createInstantSlots(internal.numberToBigNano(internal.requireNumberIsInteger(epochMilli), internal.nanoInMilli)));
+};
+
+
+/***/ }),
+
+/***/ 29099:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+
+function clampProp(props, propName, min, max, overflow) {
+  return clampEntity(propName, ((props, propName) => {
+    const propVal = props[propName];
+    if (void 0 === propVal) {
+      throw new TypeError(missingField(propName));
+    }
+    return propVal;
+  })(props, propName), min, max, overflow);
+}
+
+function clampEntity(entityName, num, min, max, overflow, choices) {
+  const clamped = clampNumber(num, min, max);
+  if (overflow && num !== clamped) {
+    throw new RangeError(numberOutOfRange(entityName, num, min, max, choices));
+  }
+  return clamped;
+}
+
+function isObjectLike(arg) {
+  return null !== arg && /object|function/.test(typeof arg);
+}
+
+function memoize(generator, MapClass = Map) {
+  const map = new MapClass;
+  return (key, ...otherArgs) => {
+    if (map.has(key)) {
+      return map.get(key);
+    }
+    const val = generator(key, ...otherArgs);
+    return map.set(key, val), val;
+  };
+}
+
+function createPropDescriptors(propVals, readonly) {
+  return mapProps((value => ({
+    value: value,
+    configurable: 1,
+    writable: !readonly
+  })), propVals);
+}
+
+function zipProps(propNamesRev, args) {
+  const res = {};
+  let i = propNamesRev.length;
+  for (const arg of args) {
+    res[propNamesRev[--i]] = arg;
+  }
+  return res;
+}
+
+function mapProps(transformer, props, extraArg) {
+  const res = {};
+  for (const propName in props) {
+    res[propName] = transformer(props[propName], propName, extraArg);
+  }
+  return res;
+}
+
+function mapPropNames(generator, propNames, extraArg) {
+  const props = {};
+  for (let i = 0; i < propNames.length; i++) {
+    const propName = propNames[i];
+    props[propName] = generator(propName, i, extraArg);
+  }
+  return props;
+}
+
+function remapProps(oldNames, newNames, oldProps) {
+  const newProps = {};
+  for (let i = 0; i < oldNames.length; i++) {
+    newProps[newNames[i]] = oldProps[oldNames[i]];
+  }
+  return newProps;
+}
+
+function pluckProps(propNames, props) {
+  const res = Object.create(null);
+  for (const propName of propNames) {
+    res[propName] = props[propName];
+  }
+  return res;
+}
+
+function hasAnyPropsByName(props, names) {
+  for (const name of names) {
+    if (name in props) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+function allPropsEqual(propNames, props0, props1) {
+  for (const propName of propNames) {
+    if (props0[propName] !== props1[propName]) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+function zeroOutProps(propNames, clearUntilI, props) {
+  const copy = {
+    ...props
+  };
+  for (let i = 0; i < clearUntilI; i++) {
+    copy[propNames[i]] = 0;
+  }
+  return copy;
+}
+
+function bindArgs(f, ...boundArgs) {
+  return (...dynamicArgs) => f(...boundArgs, ...dynamicArgs);
+}
+
+function capitalize(s) {
+  return s[0].toUpperCase() + s.substring(1);
+}
+
+function sortStrings(strs) {
+  return strs.slice().sort();
+}
+
+function padNumber(digits, num) {
+  return String(num).padStart(digits, "0");
+}
+
+function compareNumbers(a, b) {
+  return Math.sign(a - b);
+}
+
+function clampNumber(num, min, max) {
+  return Math.min(Math.max(num, min), max);
+}
+
+function divModFloor(num, divisor) {
+  return [ Math.floor(num / divisor), modFloor(num, divisor) ];
+}
+
+function modFloor(num, divisor) {
+  return (num % divisor + divisor) % divisor;
+}
+
+function divModTrunc(num, divisor) {
+  return [ divTrunc(num, divisor), modTrunc(num, divisor) ];
+}
+
+function divTrunc(num, divisor) {
+  return Math.trunc(num / divisor) || 0;
+}
+
+function modTrunc(num, divisor) {
+  return num % divisor || 0;
+}
+
+function hasHalf(num) {
+  return .5 === Math.abs(num % 1);
+}
+
+function givenFieldsToBigNano(fields, largestUnit, fieldNames) {
+  let timeNano = 0, days = 0;
+  for (let unit = 0; unit <= largestUnit; unit++) {
+    const fieldVal = fields[fieldNames[unit]], unitNano = unitNanoMap[unit], unitInDay = nanoInUtcDay / unitNano, [unitDays, leftoverUnits] = divModTrunc(fieldVal, unitInDay);
+    timeNano += leftoverUnits * unitNano, days += unitDays;
+  }
+  const [timeDays, leftoverNano] = divModTrunc(timeNano, nanoInUtcDay);
+  return [ days + timeDays, leftoverNano ];
+}
+
+function nanoToGivenFields(nano, largestUnit, fieldNames) {
+  const fields = {};
+  for (let unit = largestUnit; unit >= 0; unit--) {
+    const divisor = unitNanoMap[unit];
+    fields[fieldNames[unit]] = divTrunc(nano, divisor), nano = modTrunc(nano, divisor);
+  }
+  return fields;
+}
+
+function requirePositiveInteger(arg) {
+  return requireNumberIsPositive(requireInteger(arg));
+}
+
+function requireInteger(arg) {
+  return requireNumberIsInteger(requireNumber(arg));
+}
+
+function requirePropDefined(optionName, optionVal) {
+  if (null == optionVal) {
+    throw new RangeError(missingField(optionName));
+  }
+  return optionVal;
+}
+
+function requireObjectLike(arg) {
+  if (!isObjectLike(arg)) {
+    throw new TypeError(invalidObject);
+  }
+  return arg;
+}
+
+function requireType(typeName, arg, entityName = typeName) {
+  if (typeof arg !== typeName) {
+    throw new TypeError(invalidEntity(entityName, arg));
+  }
+  return arg;
+}
+
+function requireNumberIsInteger(num, entityName = "number") {
+  if (!Number.isInteger(num)) {
+    throw new RangeError(expectedInteger(entityName, num));
+  }
+  return num || 0;
+}
+
+function requireNumberIsPositive(num, entityName = "number") {
+  if (num <= 0) {
+    throw new RangeError(expectedPositive(entityName, num));
+  }
+  return num;
+}
+
+function toString(arg) {
+  if ("symbol" == typeof arg) {
+    throw new TypeError(forbiddenSymbolToString);
+  }
+  return String(arg);
+}
+
+function toStringViaPrimitive(arg, entityName) {
+  return isObjectLike(arg) ? String(arg) : requireString(arg, entityName);
+}
+
+function toBigInt(bi) {
+  if ("string" == typeof bi) {
+    return BigInt(bi);
+  }
+  if ("bigint" != typeof bi) {
+    throw new TypeError(invalidBigInt(bi));
+  }
+  return bi;
+}
+
+function toNumber(arg, entityName = "number") {
+  if ("bigint" == typeof arg) {
+    throw new TypeError(forbiddenBigIntToNumber(entityName));
+  }
+  if (arg = Number(arg), !Number.isFinite(arg)) {
+    throw new RangeError(expectedFinite(entityName, arg));
+  }
+  return arg;
+}
+
+function toInteger(arg, entityName) {
+  return Math.trunc(toNumber(arg, entityName)) || 0;
+}
+
+function toStrictInteger(arg, entityName) {
+  return requireNumberIsInteger(toNumber(arg, entityName), entityName);
+}
+
+function toPositiveInteger(arg, entityName) {
+  return requireNumberIsPositive(toInteger(arg, entityName), entityName);
+}
+
+function createBigNano(days, timeNano) {
+  let [extraDays, newTimeNano] = divModTrunc(timeNano, nanoInUtcDay), newDays = days + extraDays;
+  const newDaysSign = Math.sign(newDays);
+  return newDaysSign && newDaysSign === -Math.sign(newTimeNano) && (newDays -= newDaysSign, 
+  newTimeNano += newDaysSign * nanoInUtcDay), [ newDays, newTimeNano ];
+}
+
+function addBigNanos(a, b, sign = 1) {
+  return createBigNano(a[0] + b[0] * sign, a[1] + b[1] * sign);
+}
+
+function moveBigNano(a, b) {
+  return createBigNano(a[0], a[1] + b);
+}
+
+function diffBigNanos(a, b) {
+  return addBigNanos(b, a, -1);
+}
+
+function compareBigNanos(a, b) {
+  return compareNumbers(a[0], b[0]) || compareNumbers(a[1], b[1]);
+}
+
+function bigNanoOutside(subject, rangeStart, rangeEndExcl) {
+  return -1 === compareBigNanos(subject, rangeStart) || 1 === compareBigNanos(subject, rangeEndExcl);
+}
+
+function bigIntToBigNano(num, multiplierNano = 1) {
+  const wholeInDay = BigInt(nanoInUtcDay / multiplierNano);
+  return [ Number(num / wholeInDay), Number(num % wholeInDay) * multiplierNano ];
+}
+
+function numberToBigNano(num, multiplierNano = 1) {
+  const wholeInDay = nanoInUtcDay / multiplierNano, [days, remainder] = divModTrunc(num, wholeInDay);
+  return [ days, remainder * multiplierNano ];
+}
+
+function bigNanoToNumber(bigNano, divisorNano = 1, exact) {
+  const [days, timeNano] = bigNano, [whole, remainderNano] = divModTrunc(timeNano, divisorNano);
+  return days * (nanoInUtcDay / divisorNano) + (whole + (exact ? remainderNano / divisorNano : 0));
+}
+
+function divModBigNano(bigNano, divisorNano, divModFunc = divModFloor) {
+  const [days, timeNano] = bigNano, [whole, remainderNano] = divModFunc(timeNano, divisorNano);
+  return [ days * (nanoInUtcDay / divisorNano) + whole, remainderNano ];
+}
+
+function checkIsoYearMonthInBounds(isoFields) {
+  return clampProp(isoFields, "isoYear", isoYearMin, isoYearMax, 1), isoFields.isoYear === isoYearMin ? clampProp(isoFields, "isoMonth", 4, 12, 1) : isoFields.isoYear === isoYearMax && clampProp(isoFields, "isoMonth", 1, 9, 1), 
+  isoFields;
+}
+
+function checkIsoDateInBounds(isoFields) {
+  return checkIsoDateTimeInBounds({
+    ...isoFields,
+    ...isoTimeFieldDefaults,
+    isoHour: 12
+  }), isoFields;
+}
+
+function checkIsoDateTimeInBounds(isoFields) {
+  const isoYear = clampProp(isoFields, "isoYear", isoYearMin, isoYearMax, 1), nudge = isoYear === isoYearMin ? 1 : isoYear === isoYearMax ? -1 : 0;
+  return nudge && checkEpochNanoInBounds(isoToEpochNano({
+    ...isoFields,
+    isoDay: isoFields.isoDay + nudge,
+    isoNanosecond: isoFields.isoNanosecond - nudge
+  })), isoFields;
+}
+
+function checkEpochNanoInBounds(epochNano) {
+  if (!epochNano || bigNanoOutside(epochNano, epochNanoMin, epochNanoMax)) {
+    throw new RangeError(outOfBoundsDate);
+  }
+  return epochNano;
+}
+
+function isoTimeFieldsToNano(isoTimeFields) {
+  return givenFieldsToBigNano(isoTimeFields, 5, isoTimeFieldNamesAsc)[1];
+}
+
+function nanoToIsoTimeAndDay(nano) {
+  const [dayDelta, timeNano] = divModFloor(nano, nanoInUtcDay);
+  return [ nanoToGivenFields(timeNano, 5, isoTimeFieldNamesAsc), dayDelta ];
+}
+
+function epochNanoToSecMod(epochNano) {
+  return divModBigNano(epochNano, nanoInSec);
+}
+
+function isoToEpochMilli(isoDateTimeFields) {
+  return isoArgsToEpochMilli(isoDateTimeFields.isoYear, isoDateTimeFields.isoMonth, isoDateTimeFields.isoDay, isoDateTimeFields.isoHour, isoDateTimeFields.isoMinute, isoDateTimeFields.isoSecond, isoDateTimeFields.isoMillisecond);
+}
+
+function isoToEpochNano(isoFields) {
+  const epochMilli = isoToEpochMilli(isoFields);
+  if (void 0 !== epochMilli) {
+    const [days, milliRemainder] = divModTrunc(epochMilli, milliInDay);
+    return [ days, milliRemainder * nanoInMilli + (isoFields.isoMicrosecond || 0) * nanoInMicro + (isoFields.isoNanosecond || 0) ];
+  }
+}
+
+function isoToEpochNanoWithOffset(isoFields, offsetNano) {
+  const [newIsoTimeFields, dayDelta] = nanoToIsoTimeAndDay(isoTimeFieldsToNano(isoFields) - offsetNano);
+  return checkEpochNanoInBounds(isoToEpochNano({
+    ...isoFields,
+    isoDay: isoFields.isoDay + dayDelta,
+    ...newIsoTimeFields
+  }));
+}
+
+function isoArgsToEpochSec(...args) {
+  return isoArgsToEpochMilli(...args) / milliInSec;
+}
+
+function isoArgsToEpochMilli(...args) {
+  const [legacyDate, daysNudged] = isoToLegacyDate(...args), epochMilli = legacyDate.valueOf();
+  if (!isNaN(epochMilli)) {
+    return epochMilli - daysNudged * milliInDay;
+  }
+}
+
+function isoToLegacyDate(isoYear, isoMonth = 1, isoDay = 1, isoHour = 0, isoMinute = 0, isoSec = 0, isoMilli = 0) {
+  const daysNudged = isoYear === isoYearMin ? 1 : isoYear === isoYearMax ? -1 : 0, legacyDate = new Date;
+  return legacyDate.setUTCHours(isoHour, isoMinute, isoSec, isoMilli), legacyDate.setUTCFullYear(isoYear, isoMonth - 1, isoDay + daysNudged), 
+  [ legacyDate, daysNudged ];
+}
+
+function epochNanoToIso(epochNano, offsetNano) {
+  let [days, timeNano] = moveBigNano(epochNano, offsetNano);
+  timeNano < 0 && (timeNano += nanoInUtcDay, days -= 1);
+  const [timeMilli, nanoRemainder] = divModFloor(timeNano, nanoInMilli), [isoMicrosecond, isoNanosecond] = divModFloor(nanoRemainder, nanoInMicro);
+  return epochMilliToIso(days * milliInDay + timeMilli, isoMicrosecond, isoNanosecond);
+}
+
+function epochMilliToIso(epochMilli, isoMicrosecond = 0, isoNanosecond = 0) {
+  const daysOver = Math.ceil(Math.max(0, Math.abs(epochMilli) - maxMilli) / milliInDay) * Math.sign(epochMilli), legacyDate = new Date(epochMilli - daysOver * milliInDay);
+  return zipProps(isoDateTimeFieldNamesAsc, [ legacyDate.getUTCFullYear(), legacyDate.getUTCMonth() + 1, legacyDate.getUTCDate() + daysOver, legacyDate.getUTCHours(), legacyDate.getUTCMinutes(), legacyDate.getUTCSeconds(), legacyDate.getUTCMilliseconds(), isoMicrosecond, isoNanosecond ]);
+}
+
+function hashIntlFormatParts(intlFormat, epochMilli) {
+  if (epochMilli < -maxMilli) {
+    throw new RangeError(outOfBoundsDate);
+  }
+  const parts = intlFormat.formatToParts(epochMilli), hash = {};
+  for (const part of parts) {
+    hash[part.type] = part.value;
+  }
+  return hash;
+}
+
+function computeIsoDateParts(isoFields) {
+  return [ isoFields.isoYear, isoFields.isoMonth, isoFields.isoDay ];
+}
+
+function computeIsoMonthCodeParts(_isoYear, isoMonth) {
+  return [ isoMonth, 0 ];
+}
+
+function computeIsoMonthsInYear() {
+  return isoMonthsInYear;
+}
+
+function computeIsoDaysInMonth(isoYear, isoMonth) {
+  switch (isoMonth) {
+   case 2:
+    return computeIsoInLeapYear(isoYear) ? 29 : 28;
+
+   case 4:
+   case 6:
+   case 9:
+   case 11:
+    return 30;
+  }
+  return 31;
+}
+
+function computeIsoDaysInYear(isoYear) {
+  return computeIsoInLeapYear(isoYear) ? 366 : 365;
+}
+
+function computeIsoInLeapYear(isoYear) {
+  return isoYear % 4 == 0 && (isoYear % 100 != 0 || isoYear % 400 == 0);
+}
+
+function computeIsoDayOfWeek(isoDateFields) {
+  const [legacyDate, daysNudged] = isoToLegacyDate(isoDateFields.isoYear, isoDateFields.isoMonth, isoDateFields.isoDay);
+  return modFloor(legacyDate.getUTCDay() - daysNudged, 7) || 7;
+}
+
+function computeIsoEraParts(isoFields) {
+  return this.id === gregoryCalendarId ? (({isoYear: isoYear}) => isoYear < 1 ? [ "gregory-inverse", 1 - isoYear ] : [ "gregory", isoYear ])(isoFields) : "japanese" === this.id ? queryJapaneseEraParts(isoFields) : [];
+}
+
+function checkIsoDateTimeFields(isoDateTimeFields) {
+  return checkIsoDateFields(isoDateTimeFields), constrainIsoTimeFields(isoDateTimeFields, 1), 
+  isoDateTimeFields;
+}
+
+function checkIsoDateFields(isoInternals) {
+  return constrainIsoDateFields(isoInternals, 1), isoInternals;
+}
+
+function isIsoDateFieldsValid(isoFields) {
+  return allPropsEqual(isoDateFieldNamesAsc, isoFields, constrainIsoDateFields(isoFields));
+}
+
+function constrainIsoDateFields(isoFields, overflow) {
+  const {isoYear: isoYear} = isoFields, isoMonth = clampProp(isoFields, "isoMonth", 1, computeIsoMonthsInYear(), overflow);
+  return {
+    isoYear: isoYear,
+    isoMonth: isoMonth,
+    isoDay: clampProp(isoFields, "isoDay", 1, computeIsoDaysInMonth(isoYear, isoMonth), overflow)
+  };
+}
+
+function constrainIsoTimeFields(isoTimeFields, overflow) {
+  return zipProps(isoTimeFieldNamesAsc, [ clampProp(isoTimeFields, "isoHour", 0, 23, overflow), clampProp(isoTimeFields, "isoMinute", 0, 59, overflow), clampProp(isoTimeFields, "isoSecond", 0, 59, overflow), clampProp(isoTimeFields, "isoMillisecond", 0, 999, overflow), clampProp(isoTimeFields, "isoMicrosecond", 0, 999, overflow), clampProp(isoTimeFields, "isoNanosecond", 0, 999, overflow) ]);
+}
+
+function refineOverflowOptions(options) {
+  return void 0 === options ? 0 : refineOverflow(requireObjectLike(options));
+}
+
+function refineZonedFieldOptions(options, defaultOffsetDisambig = 0) {
+  options = normalizeOptions(options);
+  const epochDisambig = refineEpochDisambig(options), offsetDisambig = refineOffsetDisambig(options, defaultOffsetDisambig);
+  return [ refineOverflow(options), offsetDisambig, epochDisambig ];
+}
+
+function refineDiffOptions(roundingModeInvert, options, defaultLargestUnit, maxUnit = 9, minUnit = 0, defaultRoundingMode = 4) {
+  options = normalizeOptions(options);
+  let largestUnit = refineLargestUnit(options, maxUnit, minUnit), roundingInc = parseRoundingIncInteger(options), roundingMode = refineRoundingMode(options, defaultRoundingMode);
+  const smallestUnit = refineSmallestUnit(options, maxUnit, minUnit, 1);
+  return null == largestUnit ? largestUnit = Math.max(defaultLargestUnit, smallestUnit) : checkLargestSmallestUnit(largestUnit, smallestUnit), 
+  roundingInc = refineRoundingInc(roundingInc, smallestUnit, 1), roundingModeInvert && (roundingMode = (roundingMode => roundingMode < 4 ? (roundingMode + 2) % 4 : roundingMode)(roundingMode)), 
+  [ largestUnit, smallestUnit, roundingInc, roundingMode ];
+}
+
+function refineRoundingOptions(options, maxUnit = 6, solarMode) {
+  let roundingInc = parseRoundingIncInteger(options = normalizeOptionsOrString(options, smallestUnitStr));
+  const roundingMode = refineRoundingMode(options, 7);
+  let smallestUnit = refineSmallestUnit(options, maxUnit);
+  return smallestUnit = requirePropDefined(smallestUnitStr, smallestUnit), roundingInc = refineRoundingInc(roundingInc, smallestUnit, void 0, solarMode), 
+  [ smallestUnit, roundingInc, roundingMode ];
+}
+
+function refineDateDisplayOptions(options) {
+  return refineCalendarDisplay(normalizeOptions(options));
+}
+
+function refineTimeDisplayOptions(options, maxSmallestUnit) {
+  return refineTimeDisplayTuple(normalizeOptions(options), maxSmallestUnit);
+}
+
+function refineTimeDisplayTuple(options, maxSmallestUnit = 4) {
+  const subsecDigits = refineSubsecDigits(options);
+  return [ refineRoundingMode(options, 4), ...refineSmallestUnitAndSubsecDigits(refineSmallestUnit(options, maxSmallestUnit), subsecDigits) ];
+}
+
+function refineSmallestUnitAndSubsecDigits(smallestUnit, subsecDigits) {
+  return null != smallestUnit ? [ unitNanoMap[smallestUnit], smallestUnit < 4 ? 9 - 3 * smallestUnit : -1 ] : [ void 0 === subsecDigits ? 1 : 10 ** (9 - subsecDigits), subsecDigits ];
+}
+
+function parseRoundingIncInteger(options) {
+  const roundingInc = options[roundingIncName];
+  return void 0 === roundingInc ? 1 : toInteger(roundingInc, roundingIncName);
+}
+
+function refineRoundingInc(roundingInc, smallestUnit, allowManyLargeUnits, solarMode) {
+  const upUnitNano = solarMode ? nanoInUtcDay : unitNanoMap[smallestUnit + 1];
+  if (upUnitNano) {
+    const unitNano = unitNanoMap[smallestUnit];
+    if (upUnitNano % ((roundingInc = clampEntity(roundingIncName, roundingInc, 1, upUnitNano / unitNano - (solarMode ? 0 : 1), 1)) * unitNano)) {
+      throw new RangeError(invalidEntity(roundingIncName, roundingInc));
+    }
+  } else {
+    roundingInc = clampEntity(roundingIncName, roundingInc, 1, allowManyLargeUnits ? 10 ** 9 : 1, 1);
+  }
+  return roundingInc;
+}
+
+function refineSubsecDigits(options) {
+  let subsecDigits = options[subsecDigitsName];
+  if (void 0 !== subsecDigits) {
+    if ("number" != typeof subsecDigits) {
+      if ("auto" === toString(subsecDigits)) {
+        return;
+      }
+      throw new RangeError(invalidEntity(subsecDigitsName, subsecDigits));
+    }
+    subsecDigits = clampEntity(subsecDigitsName, Math.floor(subsecDigits), 0, 9, 1);
+  }
+  return subsecDigits;
+}
+
+function normalizeOptions(options) {
+  return void 0 === options ? {} : requireObjectLike(options);
+}
+
+function normalizeOptionsOrString(options, optionName) {
+  return "string" == typeof options ? {
+    [optionName]: options
+  } : requireObjectLike(options);
+}
+
+function fabricateOverflowOptions(overflow) {
+  return {
+    overflow: overflowMapNames[overflow]
+  };
+}
+
+function refineUnitOption(optionName, options, maxUnit = 9, minUnit = 0, ensureDefined) {
+  let unitStr = options[optionName];
+  if (void 0 === unitStr) {
+    return ensureDefined ? minUnit : void 0;
+  }
+  if (unitStr = toString(unitStr), "auto" === unitStr) {
+    return ensureDefined ? minUnit : null;
+  }
+  let unit = unitNameMap[unitStr];
+  if (void 0 === unit && (unit = durationFieldIndexes[unitStr]), void 0 === unit) {
+    throw new RangeError(invalidChoice(optionName, unitStr, unitNameMap));
+  }
+  return clampEntity(optionName, unit, minUnit, maxUnit, 1, unitNamesAsc), unit;
+}
+
+function refineChoiceOption(optionName, enumNameMap, options, defaultChoice = 0) {
+  const enumArg = options[optionName];
+  if (void 0 === enumArg) {
+    return defaultChoice;
+  }
+  const enumStr = toString(enumArg), enumNum = enumNameMap[enumStr];
+  if (void 0 === enumNum) {
+    throw new RangeError(invalidChoice(optionName, enumStr, enumNameMap));
+  }
+  return enumNum;
+}
+
+function checkLargestSmallestUnit(largestUnit, smallestUnit) {
+  if (smallestUnit > largestUnit) {
+    throw new RangeError(flippedSmallestLargestUnit);
+  }
+}
+
+function createInstantSlots(epochNano) {
+  return {
+    branding: InstantBranding,
+    epochNanoseconds: epochNano
+  };
+}
+
+function createZonedDateTimeSlots(epochNano, timeZoneId, calendarId) {
+  return {
+    branding: ZonedDateTimeBranding,
+    calendar: calendarId,
+    timeZone: timeZoneId,
+    epochNanoseconds: epochNano
+  };
+}
+
+function createPlainDateTimeSlots(isoFields, calendar = isoFields.calendar) {
+  return {
+    branding: PlainDateTimeBranding,
+    calendar: calendar,
+    ...pluckProps(isoDateTimeFieldNamesAlpha, isoFields)
+  };
+}
+
+function createPlainDateSlots(isoFields, calendar = isoFields.calendar) {
+  return {
+    branding: PlainDateBranding,
+    calendar: calendar,
+    ...pluckProps(isoDateFieldNamesAlpha, isoFields)
+  };
+}
+
+function createPlainYearMonthSlots(isoFields, calendar = isoFields.calendar) {
+  return {
+    branding: PlainYearMonthBranding,
+    calendar: calendar,
+    ...pluckProps(isoDateFieldNamesAlpha, isoFields)
+  };
+}
+
+function createPlainMonthDaySlots(isoFields, calendar = isoFields.calendar) {
+  return {
+    branding: PlainMonthDayBranding,
+    calendar: calendar,
+    ...pluckProps(isoDateFieldNamesAlpha, isoFields)
+  };
+}
+
+function createPlainTimeSlots(isoFields) {
+  return {
+    branding: PlainTimeBranding,
+    ...pluckProps(isoTimeFieldNamesAlpha, isoFields)
+  };
+}
+
+function createDurationSlots(durationFields) {
+  return {
+    branding: DurationBranding,
+    sign: computeDurationSign(durationFields),
+    ...pluckProps(durationFieldNamesAlpha, durationFields)
+  };
+}
+
+function getEpochMilli(slots) {
+  return divModBigNano(slots.epochNanoseconds, nanoInMilli)[0];
+}
+
+function extractEpochNano(slots) {
+  return slots.epochNanoseconds;
+}
+
+function totalDayTimeDuration(durationFields, totalUnit) {
+  return bigNanoToNumber(durationFieldsToBigNano(durationFields), unitNanoMap[totalUnit], 1);
+}
+
+function clampRelativeDuration(calendarOps, durationFields, clampUnit, clampDistance, marker, markerToEpochNano, moveMarker) {
+  const unitName = durationFieldNamesAsc[clampUnit], durationPlusDistance = {
+    ...durationFields,
+    [unitName]: durationFields[unitName] + clampDistance
+  }, marker0 = moveMarker(calendarOps, marker, durationFields), marker1 = moveMarker(calendarOps, marker, durationPlusDistance);
+  return [ markerToEpochNano(marker0), markerToEpochNano(marker1) ];
+}
+
+function computeEpochNanoFrac(epochNanoProgress, epochNano0, epochNano1) {
+  const denom = bigNanoToNumber(diffBigNanos(epochNano0, epochNano1));
+  if (!denom) {
+    throw new RangeError(invalidProtocolResults);
+  }
+  return bigNanoToNumber(diffBigNanos(epochNano0, epochNanoProgress)) / denom;
+}
+
+function roundDateTime(isoFields, smallestUnit, roundingInc, roundingMode) {
+  return roundDateTimeToNano(isoFields, computeNanoInc(smallestUnit, roundingInc), roundingMode);
+}
+
+function roundDateTimeToNano(isoFields, nanoInc, roundingMode) {
+  const [roundedIsoFields, dayDelta] = roundTimeToNano(isoFields, nanoInc, roundingMode);
+  return checkIsoDateTimeInBounds({
+    ...moveByDays(isoFields, dayDelta),
+    ...roundedIsoFields
+  });
+}
+
+function roundTimeToNano(isoFields, nanoInc, roundingMode) {
+  return nanoToIsoTimeAndDay(roundByInc(isoTimeFieldsToNano(isoFields), nanoInc, roundingMode));
+}
+
+function roundToMinute(offsetNano) {
+  return roundByInc(offsetNano, nanoInMinute, 7);
+}
+
+function computeNanoInc(smallestUnit, roundingInc) {
+  return unitNanoMap[smallestUnit] * roundingInc;
+}
+
+function computeDayInterval(isoFields) {
+  const isoFields0 = computeDayFloor(isoFields);
+  return [ isoFields0, moveByDays(isoFields0, 1) ];
+}
+
+function computeDayFloor(isoFields) {
+  return clearIsoFields(6, isoFields);
+}
+
+function roundDayTimeDurationByInc(durationFields, nanoInc, roundingMode) {
+  const maxUnit = Math.min(getMaxDurationUnit(durationFields), 6);
+  return nanoToDurationDayTimeFields(roundBigNanoByInc(durationFieldsToBigNano(durationFields, maxUnit), nanoInc, roundingMode), maxUnit);
+}
+
+function roundRelativeDuration(durationFields, endEpochNano, largestUnit, smallestUnit, roundingInc, roundingMode, calendarOps, marker, markerToEpochNano, moveMarker) {
+  if (0 === smallestUnit && 1 === roundingInc) {
+    return durationFields;
+  }
+  const nudgeFunc = isUniformUnit(smallestUnit, marker) ? isZonedEpochSlots(marker) && smallestUnit < 6 && largestUnit >= 6 ? nudgeZonedTimeDuration : nudgeDayTimeDuration : nudgeRelativeDuration;
+  let [roundedDurationFields, roundedEpochNano, grewBigUnit] = nudgeFunc(durationFields, endEpochNano, largestUnit, smallestUnit, roundingInc, roundingMode, calendarOps, marker, markerToEpochNano, moveMarker);
+  return grewBigUnit && 7 !== smallestUnit && (roundedDurationFields = ((durationFields, endEpochNano, largestUnit, smallestUnit, calendarOps, marker, markerToEpochNano, moveMarker) => {
+    const sign = computeDurationSign(durationFields);
+    for (let currentUnit = smallestUnit + 1; currentUnit <= largestUnit; currentUnit++) {
+      if (7 === currentUnit && 7 !== largestUnit) {
+        continue;
+      }
+      const baseDurationFields = clearDurationFields(currentUnit, durationFields);
+      baseDurationFields[durationFieldNamesAsc[currentUnit]] += sign;
+      const beyondThresholdNano = bigNanoToNumber(diffBigNanos(markerToEpochNano(moveMarker(calendarOps, marker, baseDurationFields)), endEpochNano));
+      if (beyondThresholdNano && Math.sign(beyondThresholdNano) !== sign) {
+        break;
+      }
+      durationFields = baseDurationFields;
+    }
+    return durationFields;
+  })(roundedDurationFields, roundedEpochNano, largestUnit, Math.max(6, smallestUnit), calendarOps, marker, markerToEpochNano, moveMarker)), 
+  roundedDurationFields;
+}
+
+function roundBigNano(bigNano, smallestUnit, roundingInc, roundingMode, useDayOrigin) {
+  if (6 === smallestUnit) {
+    const daysExact = (bigNano => bigNano[0] + bigNano[1] / nanoInUtcDay)(bigNano);
+    return [ roundByInc(daysExact, roundingInc, roundingMode), 0 ];
+  }
+  return roundBigNanoByInc(bigNano, computeNanoInc(smallestUnit, roundingInc), roundingMode, useDayOrigin);
+}
+
+function roundBigNanoByInc(bigNano, nanoInc, roundingMode, useDayOrigin) {
+  let [days, timeNano] = bigNano;
+  useDayOrigin && timeNano < 0 && (timeNano += nanoInUtcDay, days -= 1);
+  const [dayDelta, roundedTimeNano] = divModFloor(roundByInc(timeNano, nanoInc, roundingMode), nanoInUtcDay);
+  return createBigNano(days + dayDelta, roundedTimeNano);
+}
+
+function roundByInc(num, inc, roundingMode) {
+  return roundWithMode(num / inc, roundingMode) * inc;
+}
+
+function roundWithMode(num, roundingMode) {
+  return roundingModeFuncs[roundingMode](num);
+}
+
+function nudgeDayTimeDuration(durationFields, endEpochNano, largestUnit, smallestUnit, roundingInc, roundingMode) {
+  const sign = computeDurationSign(durationFields), bigNano = durationFieldsToBigNano(durationFields), roundedBigNano = roundBigNano(bigNano, smallestUnit, roundingInc, roundingMode), nanoDiff = diffBigNanos(bigNano, roundedBigNano), expandedBigUnit = Math.sign(roundedBigNano[0] - bigNano[0]) === sign, roundedDayTimeFields = nanoToDurationDayTimeFields(roundedBigNano, Math.min(largestUnit, 6));
+  return [ {
+    ...durationFields,
+    ...roundedDayTimeFields
+  }, addBigNanos(endEpochNano, nanoDiff), expandedBigUnit ];
+}
+
+function nudgeZonedTimeDuration(durationFields, endEpochNano, _largestUnit, smallestUnit, roundingInc, roundingMode, calendarOps, marker, markerToEpochNano, moveMarker) {
+  const sign = computeDurationSign(durationFields) || 1, timeNano = bigNanoToNumber(durationFieldsToBigNano(durationFields, 5)), nanoInc = computeNanoInc(smallestUnit, roundingInc);
+  let roundedTimeNano = roundByInc(timeNano, nanoInc, roundingMode);
+  const [dayEpochNano0, dayEpochNano1] = clampRelativeDuration(calendarOps, {
+    ...durationFields,
+    ...durationTimeFieldDefaults
+  }, 6, sign, marker, markerToEpochNano, moveMarker), beyondDayNano = roundedTimeNano - bigNanoToNumber(diffBigNanos(dayEpochNano0, dayEpochNano1));
+  let dayDelta = 0;
+  beyondDayNano && Math.sign(beyondDayNano) !== sign ? endEpochNano = moveBigNano(dayEpochNano0, roundedTimeNano) : (dayDelta += sign, 
+  roundedTimeNano = roundByInc(beyondDayNano, nanoInc, roundingMode), endEpochNano = moveBigNano(dayEpochNano1, roundedTimeNano));
+  const durationTimeFields = nanoToDurationTimeFields(roundedTimeNano);
+  return [ {
+    ...durationFields,
+    ...durationTimeFields,
+    days: durationFields.days + dayDelta
+  }, endEpochNano, Boolean(dayDelta) ];
+}
+
+function nudgeRelativeDuration(durationFields, endEpochNano, _largestUnit, smallestUnit, roundingInc, roundingMode, calendarOps, marker, markerToEpochNano, moveMarker) {
+  const sign = computeDurationSign(durationFields), smallestUnitFieldName = durationFieldNamesAsc[smallestUnit], baseDurationFields = clearDurationFields(smallestUnit, durationFields);
+  7 === smallestUnit && (durationFields = {
+    ...durationFields,
+    weeks: durationFields.weeks + Math.trunc(durationFields.days / 7)
+  });
+  const truncedVal = divTrunc(durationFields[smallestUnitFieldName], roundingInc) * roundingInc;
+  baseDurationFields[smallestUnitFieldName] = truncedVal;
+  const [epochNano0, epochNano1] = clampRelativeDuration(calendarOps, baseDurationFields, smallestUnit, roundingInc * sign, marker, markerToEpochNano, moveMarker), exactVal = truncedVal + computeEpochNanoFrac(endEpochNano, epochNano0, epochNano1) * sign * roundingInc, roundedVal = roundByInc(exactVal, roundingInc, roundingMode), expanded = Math.sign(roundedVal - exactVal) === sign;
+  return baseDurationFields[smallestUnitFieldName] = roundedVal, [ baseDurationFields, expanded ? epochNano1 : epochNano0, expanded ];
+}
+
+function formatDateLikeIso(calendarId, formatSimple, isoFields, calendarDisplay) {
+  const showCalendar = calendarDisplay > 1 || 0 === calendarDisplay && calendarId !== isoCalendarId;
+  return 1 === calendarDisplay ? calendarId === isoCalendarId ? formatSimple(isoFields) : formatIsoDateFields(isoFields) : showCalendar ? formatIsoDateFields(isoFields) + formatCalendarId(calendarId, 2 === calendarDisplay) : formatSimple(isoFields);
+}
+
+function formatDurationFragments(fragObj) {
+  const parts = [];
+  for (const fragName in fragObj) {
+    const fragVal = fragObj[fragName];
+    fragVal && parts.push(fragVal, fragName);
+  }
+  return parts.join("");
+}
+
+function formatIsoDateTimeFields(isoDateTimeFields, subsecDigits) {
+  return formatIsoDateFields(isoDateTimeFields) + "T" + formatIsoTimeFields(isoDateTimeFields, subsecDigits);
+}
+
+function formatIsoDateFields(isoDateFields) {
+  return formatIsoYearMonthFields(isoDateFields) + "-" + padNumber2(isoDateFields.isoDay);
+}
+
+function formatIsoYearMonthFields(isoDateFields) {
+  const {isoYear: isoYear} = isoDateFields;
+  return (isoYear < 0 || isoYear > 9999 ? getSignStr(isoYear) + padNumber(6, Math.abs(isoYear)) : padNumber(4, isoYear)) + "-" + padNumber2(isoDateFields.isoMonth);
+}
+
+function formatIsoMonthDayFields(isoDateFields) {
+  return padNumber2(isoDateFields.isoMonth) + "-" + padNumber2(isoDateFields.isoDay);
+}
+
+function formatIsoTimeFields(isoTimeFields, subsecDigits) {
+  const parts = [ padNumber2(isoTimeFields.isoHour), padNumber2(isoTimeFields.isoMinute) ];
+  return -1 !== subsecDigits && parts.push(padNumber2(isoTimeFields.isoSecond) + ((isoMillisecond, isoMicrosecond, isoNanosecond, subsecDigits) => formatSubsecNano(isoMillisecond * nanoInMilli + isoMicrosecond * nanoInMicro + isoNanosecond, subsecDigits))(isoTimeFields.isoMillisecond, isoTimeFields.isoMicrosecond, isoTimeFields.isoNanosecond, subsecDigits)), 
+  parts.join(":");
+}
+
+function formatOffsetNano(offsetNano, offsetDisplay = 0) {
+  if (1 === offsetDisplay) {
+    return "";
+  }
+  const [hour, nanoRemainder0] = divModFloor(Math.abs(offsetNano), nanoInHour), [minute, nanoRemainder1] = divModFloor(nanoRemainder0, nanoInMinute), [second, nanoRemainder2] = divModFloor(nanoRemainder1, nanoInSec);
+  return getSignStr(offsetNano) + padNumber2(hour) + ":" + padNumber2(minute) + (second || nanoRemainder2 ? ":" + padNumber2(second) + formatSubsecNano(nanoRemainder2) : "");
+}
+
+function formatCalendar(calendarId, calendarDisplay) {
+  return 1 !== calendarDisplay && (calendarDisplay > 1 || 0 === calendarDisplay && calendarId !== isoCalendarId) ? formatCalendarId(calendarId, 2 === calendarDisplay) : "";
+}
+
+function formatCalendarId(calendarId, isCritical) {
+  return "[" + (isCritical ? "!" : "") + "u-ca=" + calendarId + "]";
+}
+
+function formatSubsecNano(totalNano, subsecDigits) {
+  let s = padNumber(9, totalNano);
+  return s = void 0 === subsecDigits ? s.replace(trailingZerosRE, "") : s.slice(0, subsecDigits), 
+  s ? "." + s : "";
+}
+
+function getSignStr(num) {
+  return num < 0 ? "-" : "+";
+}
+
+function formatDurationNumber(n, force) {
+  return n || force ? n.toLocaleString("fullwide", {
+    useGrouping: 0
+  }) : "";
+}
+
+function getMatchingInstantFor(timeZoneOps, isoFields, offsetNano, offsetDisambig = 0, epochDisambig = 0, epochFuzzy, hasZ) {
+  if (void 0 !== offsetNano && 1 === offsetDisambig && (1 === offsetDisambig || hasZ)) {
+    return isoToEpochNanoWithOffset(isoFields, offsetNano);
+  }
+  const possibleEpochNanos = timeZoneOps.getPossibleInstantsFor(isoFields);
+  if (void 0 !== offsetNano && 3 !== offsetDisambig) {
+    const matchingEpochNano = ((possibleEpochNanos, isoDateTimeFields, offsetNano, fuzzy) => {
+      const zonedEpochNano = isoToEpochNano(isoDateTimeFields);
+      fuzzy && (offsetNano = roundToMinute(offsetNano));
+      for (const possibleEpochNano of possibleEpochNanos) {
+        let possibleOffsetNano = bigNanoToNumber(diffBigNanos(possibleEpochNano, zonedEpochNano));
+        if (fuzzy && (possibleOffsetNano = roundToMinute(possibleOffsetNano)), possibleOffsetNano === offsetNano) {
+          return possibleEpochNano;
+        }
+      }
+    })(possibleEpochNanos, isoFields, offsetNano, epochFuzzy);
+    if (void 0 !== matchingEpochNano) {
+      return matchingEpochNano;
+    }
+    if (0 === offsetDisambig) {
+      throw new RangeError(invalidOffsetForTimeZone);
+    }
+  }
+  return hasZ ? isoToEpochNano(isoFields) : getSingleInstantFor(timeZoneOps, isoFields, epochDisambig, possibleEpochNanos);
+}
+
+function getSingleInstantFor(timeZoneOps, isoFields, disambig = 0, possibleEpochNanos = timeZoneOps.getPossibleInstantsFor(isoFields)) {
+  if (1 === possibleEpochNanos.length) {
+    return possibleEpochNanos[0];
+  }
+  if (1 === disambig) {
+    throw new RangeError(ambigOffset);
+  }
+  if (possibleEpochNanos.length) {
+    return possibleEpochNanos[3 === disambig ? 1 : 0];
+  }
+  const zonedEpochNano = isoToEpochNano(isoFields), gapNano = ((timeZoneOps, zonedEpochNano) => {
+    const startOffsetNano = timeZoneOps.getOffsetNanosecondsFor(moveBigNano(zonedEpochNano, -nanoInUtcDay));
+    return (gapNano => {
+      if (gapNano > nanoInUtcDay) {
+        throw new RangeError(outOfBoundsDstGap);
+      }
+      return gapNano;
+    })(timeZoneOps.getOffsetNanosecondsFor(moveBigNano(zonedEpochNano, nanoInUtcDay)) - startOffsetNano);
+  })(timeZoneOps, zonedEpochNano), shiftNano = gapNano * (2 === disambig ? -1 : 1);
+  return (possibleEpochNanos = timeZoneOps.getPossibleInstantsFor(epochNanoToIso(zonedEpochNano, shiftNano)))[2 === disambig ? 0 : possibleEpochNanos.length - 1];
+}
+
+function getStartOfDayInstantFor(timeZoneOps, isoFields) {
+  const possibleEpochNanos = timeZoneOps.getPossibleInstantsFor(isoFields);
+  if (possibleEpochNanos.length) {
+    return possibleEpochNanos[0];
+  }
+  const zonedEpochNanoDayBefore = moveBigNano(isoToEpochNano(isoFields), -nanoInUtcDay);
+  return timeZoneOps.getTransition(zonedEpochNanoDayBefore, 1);
+}
+
+function moveZonedEpochs(timeZoneOps, calendarOps, slots, durationFields, options) {
+  const timeOnlyNano = durationFieldsToBigNano(durationFields, 5);
+  let epochNano = slots.epochNanoseconds;
+  if (durationHasDateParts(durationFields)) {
+    const isoDateTimeFields = zonedEpochSlotsToIso(slots, timeZoneOps);
+    epochNano = addBigNanos(getSingleInstantFor(timeZoneOps, {
+      ...moveDate(calendarOps, isoDateTimeFields, {
+        ...durationFields,
+        ...durationTimeFieldDefaults
+      }, options),
+      ...pluckProps(isoTimeFieldNamesAsc, isoDateTimeFields)
+    }), timeOnlyNano);
+  } else {
+    epochNano = addBigNanos(epochNano, timeOnlyNano), refineOverflowOptions(options);
+  }
+  return {
+    epochNanoseconds: checkEpochNanoInBounds(epochNano)
+  };
+}
+
+function moveDateTime(calendarOps, isoDateTimeFields, durationFields, options) {
+  const [movedIsoTimeFields, dayDelta] = moveTime(isoDateTimeFields, durationFields);
+  return checkIsoDateTimeInBounds({
+    ...moveDate(calendarOps, isoDateTimeFields, {
+      ...durationFields,
+      ...durationTimeFieldDefaults,
+      days: durationFields.days + dayDelta
+    }, options),
+    ...movedIsoTimeFields
+  });
+}
+
+function moveDate(calendarOps, isoDateFields, durationFields, options) {
+  if (durationFields.years || durationFields.months || durationFields.weeks) {
+    return calendarOps.dateAdd(isoDateFields, durationFields, options);
+  }
+  refineOverflowOptions(options);
+  const days = durationFields.days + durationFieldsToBigNano(durationFields, 5)[0];
+  return days ? checkIsoDateInBounds(moveByDays(isoDateFields, days)) : isoDateFields;
+}
+
+function moveToDayOfMonthUnsafe(calendarOps, isoFields, dayOfMonth = 1) {
+  return moveByDays(isoFields, dayOfMonth - calendarOps.day(isoFields));
+}
+
+function moveTime(isoFields, durationFields) {
+  const [durDays, durTimeNano] = durationFieldsToBigNano(durationFields, 5), [newIsoFields, overflowDays] = nanoToIsoTimeAndDay(isoTimeFieldsToNano(isoFields) + durTimeNano);
+  return [ newIsoFields, durDays + overflowDays ];
+}
+
+function moveByDays(isoFields, days) {
+  return days ? {
+    ...isoFields,
+    ...epochMilliToIso(isoToEpochMilli(isoFields) + days * milliInDay)
+  } : isoFields;
+}
+
+function createMarkerSystem(getCalendarOps, getTimeZoneOps, relativeToSlots) {
+  const calendarOps = getCalendarOps(relativeToSlots.calendar);
+  return isZonedEpochSlots(relativeToSlots) ? [ relativeToSlots, calendarOps, getTimeZoneOps(relativeToSlots.timeZone) ] : [ {
+    ...relativeToSlots,
+    ...isoTimeFieldDefaults
+  }, calendarOps ];
+}
+
+function createMarkerToEpochNano(timeZoneOps) {
+  return timeZoneOps ? extractEpochNano : isoToEpochNano;
+}
+
+function createMoveMarker(timeZoneOps) {
+  return timeZoneOps ? bindArgs(moveZonedEpochs, timeZoneOps) : moveDateTime;
+}
+
+function createDiffMarkers(timeZoneOps) {
+  return timeZoneOps ? bindArgs(diffZonedEpochsExact, timeZoneOps) : diffDateTimesExact;
+}
+
+function isZonedEpochSlots(marker) {
+  return marker && marker.epochNanoseconds;
+}
+
+function isUniformUnit(unit, marker) {
+  return unit <= 6 - (isZonedEpochSlots(marker) ? 1 : 0);
+}
+
+function negateDuration(slots) {
+  return createDurationSlots(negateDurationFields(slots));
+}
+
+function negateDurationFields(fields) {
+  const res = {};
+  for (const fieldName of durationFieldNamesAsc) {
+    res[fieldName] = -1 * fields[fieldName] || 0;
+  }
+  return res;
+}
+
+function computeDurationSign(fields, fieldNames = durationFieldNamesAsc) {
+  let sign = 0;
+  for (const fieldName of fieldNames) {
+    const fieldSign = Math.sign(fields[fieldName]);
+    if (fieldSign) {
+      if (sign && sign !== fieldSign) {
+        throw new RangeError(forbiddenDurationSigns);
+      }
+      sign = fieldSign;
+    }
+  }
+  return sign;
+}
+
+function checkDurationUnits(fields) {
+  for (const calendarUnit of durationCalendarFieldNamesAsc) {
+    clampEntity(calendarUnit, fields[calendarUnit], -maxCalendarUnit, maxCalendarUnit, 1);
+  }
+  return checkDurationTimeUnit(bigNanoToNumber(durationFieldsToBigNano(fields), nanoInSec)), 
+  fields;
+}
+
+function checkDurationTimeUnit(n) {
+  if (!Number.isSafeInteger(n)) {
+    throw new RangeError(outOfBoundsDuration);
+  }
+}
+
+function durationFieldsToBigNano(fields, largestUnit = 6) {
+  return givenFieldsToBigNano(fields, largestUnit, durationFieldNamesAsc);
+}
+
+function nanoToDurationDayTimeFields(bigNano, largestUnit = 6) {
+  const [days, timeNano] = bigNano, dayTimeFields = nanoToGivenFields(timeNano, largestUnit, durationFieldNamesAsc);
+  if (dayTimeFields[durationFieldNamesAsc[largestUnit]] += days * (nanoInUtcDay / unitNanoMap[largestUnit]), 
+  !Number.isFinite(dayTimeFields[durationFieldNamesAsc[largestUnit]])) {
+    throw new RangeError(outOfBoundsDate);
+  }
+  return dayTimeFields;
+}
+
+function nanoToDurationTimeFields(nano, largestUnit = 5) {
+  return nanoToGivenFields(nano, largestUnit, durationFieldNamesAsc);
+}
+
+function durationHasDateParts(fields) {
+  return Boolean(computeDurationSign(fields, durationDateFieldNamesAsc));
+}
+
+function getMaxDurationUnit(fields) {
+  let unit = 9;
+  for (;unit > 0 && !fields[durationFieldNamesAsc[unit]]; unit--) {}
+  return unit;
+}
+
+function createSplitTuple(startEpochSec, endEpochSec) {
+  return [ startEpochSec, endEpochSec ];
+}
+
+function computePeriod(epochSec) {
+  const startEpochSec = Math.floor(epochSec / periodDur) * periodDur;
+  return [ startEpochSec, startEpochSec + periodDur ];
+}
+
+function parseOffsetNano(s) {
+  const offsetNano = parseOffsetNanoMaybe(s);
+  if (void 0 === offsetNano) {
+    throw new RangeError(failedParse(s));
+  }
+  return offsetNano;
+}
+
+function parsePlainDate(s, isPlainYearMonth, isPlainMonthDay) {
+  let organized = parseDateTimeLike(requireString(s));
+  if (!organized || organized.hasZ) {
+    throw new RangeError(failedParse(s));
+  }
+  return isPlainYearMonth ? organized.calendar === isoCalendarId && (organized = -271821 === organized.isoYear && 4 === organized.isoMonth ? {
+    ...organized,
+    isoDay: 20,
+    ...isoTimeFieldDefaults
+  } : {
+    ...organized,
+    isoDay: 1,
+    ...isoTimeFieldDefaults
+  }) : isPlainMonthDay && organized.calendar === isoCalendarId && (organized = {
+    ...organized,
+    isoYear: isoEpochFirstLeapYear
+  }), createPlainDateSlots(organized.hasTime ? finalizeDateTime(organized) : finalizeDate(organized));
+}
+
+function requireIsoCalendar(organized) {
+  if (organized.calendar !== isoCalendarId) {
+    throw new RangeError(invalidSubstring(organized.calendar));
+  }
+}
+
+function finalizeZonedDateTime(organized, offsetNano, offsetDisambig = 0, epochDisambig = 0) {
+  const timeZoneId = resolveTimeZoneId(organized.timeZone), timeZoneImpl = queryNativeTimeZone(timeZoneId);
+  let epochNano;
+  return checkIsoDateTimeFields(organized), epochNano = organized.hasTime ? getMatchingInstantFor(timeZoneImpl, organized, offsetNano, offsetDisambig, epochDisambig, !timeZoneImpl.offsetNano, organized.hasZ) : getStartOfDayInstantFor(timeZoneImpl, organized), 
+  createZonedDateTimeSlots(epochNano, timeZoneId, resolveCalendarId(organized.calendar));
+}
+
+function finalizeDateTime(organized) {
+  return resolveSlotsCalendar(checkIsoDateTimeInBounds(checkIsoDateTimeFields(organized)));
+}
+
+function finalizeDate(organized) {
+  return resolveSlotsCalendar(checkIsoDateInBounds(checkIsoDateFields(organized)));
+}
+
+function resolveSlotsCalendar(organized) {
+  return {
+    ...organized,
+    calendar: resolveCalendarId(organized.calendar)
+  };
+}
+
+function parseDateTimeLike(s) {
+  const parts = dateTimeRegExp.exec(s);
+  return parts ? (parts => {
+    const zOrOffset = parts[10], hasZ = "Z" === (zOrOffset || "").toUpperCase();
+    return {
+      isoYear: organizeIsoYearParts(parts),
+      isoMonth: parseInt(parts[4]),
+      isoDay: parseInt(parts[5]),
+      ...organizeTimeParts(parts.slice(5)),
+      ...organizeAnnotationParts(parts[16]),
+      hasTime: Boolean(parts[6]),
+      hasZ: hasZ,
+      offset: hasZ ? void 0 : zOrOffset
+    };
+  })(parts) : void 0;
+}
+
+function parseYearMonthOnly(s) {
+  const parts = yearMonthRegExp.exec(s);
+  return parts ? (parts => ({
+    isoYear: organizeIsoYearParts(parts),
+    isoMonth: parseInt(parts[4]),
+    isoDay: 1,
+    ...organizeAnnotationParts(parts[5])
+  }))(parts) : void 0;
+}
+
+function parseMonthDayOnly(s) {
+  const parts = monthDayRegExp.exec(s);
+  return parts ? (parts => ({
+    isoYear: isoEpochFirstLeapYear,
+    isoMonth: parseInt(parts[1]),
+    isoDay: parseInt(parts[2]),
+    ...organizeAnnotationParts(parts[3])
+  }))(parts) : void 0;
+}
+
+function parseOffsetNanoMaybe(s, onlyHourMinute) {
+  const parts = offsetRegExp.exec(s);
+  return parts ? ((parts, onlyHourMinute) => {
+    const firstSubMinutePart = parts[4] || parts[5];
+    if (onlyHourMinute && firstSubMinutePart) {
+      throw new RangeError(invalidSubstring(firstSubMinutePart));
+    }
+    return (offsetNano => {
+      if (Math.abs(offsetNano) >= nanoInUtcDay) {
+        throw new RangeError(outOfBoundsOffset);
+      }
+      return offsetNano;
+    })((parseInt0(parts[2]) * nanoInHour + parseInt0(parts[3]) * nanoInMinute + parseInt0(parts[4]) * nanoInSec + parseSubsecNano(parts[5] || "")) * parseSign(parts[1]));
+  })(parts, onlyHourMinute) : void 0;
+}
+
+function organizeIsoYearParts(parts) {
+  const yearSign = parseSign(parts[1]), year = parseInt(parts[2] || parts[3]);
+  if (yearSign < 0 && !year) {
+    throw new RangeError(invalidSubstring(-0));
+  }
+  return yearSign * year;
+}
+
+function organizeTimeParts(parts) {
+  const isoSecond = parseInt0(parts[3]);
+  return {
+    ...nanoToIsoTimeAndDay(parseSubsecNano(parts[4] || ""))[0],
+    isoHour: parseInt0(parts[1]),
+    isoMinute: parseInt0(parts[2]),
+    isoSecond: 60 === isoSecond ? 59 : isoSecond
+  };
+}
+
+function organizeAnnotationParts(s) {
+  let calendarIsCritical, timeZoneId;
+  const calendarIds = [];
+  if (s.replace(annotationRegExp, ((whole, criticalStr, mainStr) => {
+    const isCritical = Boolean(criticalStr), [val, name] = mainStr.split("=").reverse();
+    if (name) {
+      if ("u-ca" === name) {
+        calendarIds.push(val), calendarIsCritical || (calendarIsCritical = isCritical);
+      } else if (isCritical || /[A-Z]/.test(name)) {
+        throw new RangeError(invalidSubstring(whole));
+      }
+    } else {
+      if (timeZoneId) {
+        throw new RangeError(invalidSubstring(whole));
+      }
+      timeZoneId = val;
+    }
+    return "";
+  })), calendarIds.length > 1 && calendarIsCritical) {
+    throw new RangeError(invalidSubstring(s));
+  }
+  return {
+    timeZone: timeZoneId,
+    calendar: calendarIds[0] || isoCalendarId
+  };
+}
+
+function parseSubsecNano(fracStr) {
+  return parseInt(fracStr.padEnd(9, "0"));
+}
+
+function createRegExp(meat) {
+  return new RegExp(`^${meat}$`, "i");
+}
+
+function parseSign(s) {
+  return s && "+" !== s ? -1 : 1;
+}
+
+function parseInt0(s) {
+  return void 0 === s ? 0 : parseInt(s);
+}
+
+function resolveTimeZoneId(id) {
+  const essence = getTimeZoneEssence(id);
+  return "number" == typeof essence ? formatOffsetNano(essence) : essence ? (id => {
+    if (badCharactersRegExp.test(id)) {
+      throw new RangeError(invalidTimeZone(id));
+    }
+    if (icuRegExp.test(id)) {
+      throw new RangeError(forbiddenIcuTimeZone);
+    }
+    return id.toLowerCase().split("/").map(((part, partI) => (part.length <= 3 || /\d/.test(part)) && !/etc|yap/.test(part) ? part.toUpperCase() : part.replace(/baja|dumont|[a-z]+/g, ((a, i) => a.length <= 2 && !partI || "in" === a || "chat" === a ? a.toUpperCase() : a.length > 2 || !i ? capitalize(a).replace(/island|noronha|murdo|rivadavia|urville/, capitalize) : a)))).join("/");
+  })(id) : utcTimeZoneId;
+}
+
+function getTimeZoneAtomic(id) {
+  const essence = getTimeZoneEssence(id);
+  return "number" == typeof essence ? essence : essence ? essence.resolvedOptions().timeZone : utcTimeZoneId;
+}
+
+function getTimeZoneEssence(id) {
+  const offsetNano = parseOffsetNanoMaybe(id = id.toUpperCase(), 1);
+  return void 0 !== offsetNano ? offsetNano : id !== utcTimeZoneId ? queryTimeZoneIntlFormat(id) : void 0;
+}
+
+function compareInstants(instantSlots0, instantSlots1) {
+  return compareBigNanos(instantSlots0.epochNanoseconds, instantSlots1.epochNanoseconds);
+}
+
+function compareZonedDateTimes(zonedDateTimeSlots0, zonedDateTimeSlots1) {
+  return compareBigNanos(zonedDateTimeSlots0.epochNanoseconds, zonedDateTimeSlots1.epochNanoseconds);
+}
+
+function compareIsoDateTimeFields(isoFields0, isoFields1) {
+  return compareIsoDateFields(isoFields0, isoFields1) || compareIsoTimeFields(isoFields0, isoFields1);
+}
+
+function compareIsoDateFields(isoFields0, isoFields1) {
+  return compareNumbers(isoToEpochMilli(isoFields0), isoToEpochMilli(isoFields1));
+}
+
+function compareIsoTimeFields(isoFields0, isoFields1) {
+  return compareNumbers(isoTimeFieldsToNano(isoFields0), isoTimeFieldsToNano(isoFields1));
+}
+
+function isTimeZoneIdsEqual(a, b) {
+  if (a === b) {
+    return 1;
+  }
+  try {
+    return getTimeZoneAtomic(a) === getTimeZoneAtomic(b);
+  } catch (_a) {}
+}
+
+function diffDateLike(invert, getCalendarOps, startIsoFields, endIsoFields, largestUnit, smallestUnit, roundingInc, roundingMode, smallestPrecision = 6) {
+  const startEpochNano = isoToEpochNano(startIsoFields), endEpochNano = isoToEpochNano(endIsoFields);
+  if (void 0 === startEpochNano || void 0 === endEpochNano) {
+    throw new RangeError(outOfBoundsDate);
+  }
+  let durationFields;
+  if (compareBigNanos(endEpochNano, startEpochNano)) {
+    if (6 === largestUnit) {
+      durationFields = diffEpochNanos(startEpochNano, endEpochNano, largestUnit, smallestUnit, roundingInc, roundingMode);
+    } else {
+      const calendarOps = getCalendarOps();
+      durationFields = calendarOps.dateUntil(startIsoFields, endIsoFields, largestUnit), 
+      smallestUnit === smallestPrecision && 1 === roundingInc || (durationFields = roundRelativeDuration(durationFields, endEpochNano, largestUnit, smallestUnit, roundingInc, roundingMode, calendarOps, startIsoFields, isoToEpochNano, moveDate));
+    }
+  } else {
+    durationFields = durationFieldDefaults;
+  }
+  return createDurationSlots(invert ? negateDurationFields(durationFields) : durationFields);
+}
+
+function diffZonedEpochsExact(timeZoneOps, calendarOps, slots0, slots1, largestUnit, origOptions) {
+  const sign = compareBigNanos(slots1.epochNanoseconds, slots0.epochNanoseconds);
+  return sign ? largestUnit < 6 ? diffEpochNanosExact(slots0.epochNanoseconds, slots1.epochNanoseconds, largestUnit) : diffZonedEpochsBig(calendarOps, timeZoneOps, slots0, slots1, sign, largestUnit, origOptions) : durationFieldDefaults;
+}
+
+function diffDateTimesExact(calendarOps, startIsoFields, endIsoFields, largestUnit, origOptions) {
+  const startEpochNano = isoToEpochNano(startIsoFields), endEpochNano = isoToEpochNano(endIsoFields), sign = compareBigNanos(endEpochNano, startEpochNano);
+  return sign ? largestUnit <= 6 ? diffEpochNanosExact(startEpochNano, endEpochNano, largestUnit) : diffDateTimesBig(calendarOps, startIsoFields, endIsoFields, sign, largestUnit, origOptions) : durationFieldDefaults;
+}
+
+function diffZonedEpochsBig(calendarOps, timeZoneOps, slots0, slots1, sign, largestUnit, origOptions) {
+  const [isoFields0, isoFields1, remainderNano] = ((timeZoneOps, slots0, slots1, sign) => {
+    function updateMid() {
+      return midIsoFields = {
+        ...moveByDays(endIsoFields, dayCorrection++ * -sign),
+        ...startIsoTimeFields
+      }, midEpochNano = getSingleInstantFor(timeZoneOps, midIsoFields), compareBigNanos(endEpochNano, midEpochNano) === -sign;
+    }
+    const startIsoFields = zonedEpochSlotsToIso(slots0, timeZoneOps), startIsoTimeFields = pluckProps(isoTimeFieldNamesAsc, startIsoFields), endIsoFields = zonedEpochSlotsToIso(slots1, timeZoneOps), endEpochNano = slots1.epochNanoseconds;
+    let dayCorrection = 0;
+    const timeDiffNano = diffTimes(startIsoFields, endIsoFields);
+    let midIsoFields, midEpochNano;
+    if (Math.sign(timeDiffNano) === -sign && dayCorrection++, updateMid() && (-1 === sign || updateMid())) {
+      throw new RangeError(invalidProtocolResults);
+    }
+    const remainderNano = bigNanoToNumber(diffBigNanos(midEpochNano, endEpochNano));
+    return [ startIsoFields, midIsoFields, remainderNano ];
+  })(timeZoneOps, slots0, slots1, sign);
+  var startIsoFields, endIsoFields;
+  return {
+    ...6 === largestUnit ? (startIsoFields = isoFields0, endIsoFields = isoFields1, 
+    {
+      ...durationFieldDefaults,
+      days: diffDays(startIsoFields, endIsoFields)
+    }) : calendarOps.dateUntil(isoFields0, isoFields1, largestUnit, origOptions),
+    ...nanoToDurationTimeFields(remainderNano)
+  };
+}
+
+function diffDateTimesBig(calendarOps, startIsoFields, endIsoFields, sign, largestUnit, origOptions) {
+  const [startIsoDate, endIsoDate, timeNano] = ((startIsoDateTime, endIsoDateTime, sign) => {
+    let endIsoDate = endIsoDateTime, timeDiffNano = diffTimes(startIsoDateTime, endIsoDateTime);
+    return Math.sign(timeDiffNano) === -sign && (endIsoDate = moveByDays(endIsoDateTime, -sign), 
+    timeDiffNano += nanoInUtcDay * sign), [ startIsoDateTime, endIsoDate, timeDiffNano ];
+  })(startIsoFields, endIsoFields, sign);
+  return {
+    ...calendarOps.dateUntil(startIsoDate, endIsoDate, largestUnit, origOptions),
+    ...nanoToDurationTimeFields(timeNano)
+  };
+}
+
+function diffEpochNanos(startEpochNano, endEpochNano, largestUnit, smallestUnit, roundingInc, roundingMode) {
+  return {
+    ...durationFieldDefaults,
+    ...nanoToDurationDayTimeFields(roundBigNano(diffBigNanos(startEpochNano, endEpochNano), smallestUnit, roundingInc, roundingMode), largestUnit)
+  };
+}
+
+function diffEpochNanosExact(startEpochNano, endEpochNano, largestUnit) {
+  return {
+    ...durationFieldDefaults,
+    ...nanoToDurationDayTimeFields(diffBigNanos(startEpochNano, endEpochNano), largestUnit)
+  };
+}
+
+function diffDays(startIsoFields, endIsoFields) {
+  return diffEpochMilliByDay(isoToEpochMilli(startIsoFields), isoToEpochMilli(endIsoFields));
+}
+
+function diffEpochMilliByDay(epochMilli0, epochMilli1) {
+  return Math.trunc((epochMilli1 - epochMilli0) / milliInDay);
+}
+
+function diffTimes(isoTime0, isoTime1) {
+  return isoTimeFieldsToNano(isoTime1) - isoTimeFieldsToNano(isoTime0);
+}
+
+function getCommonCalendarId(a, b) {
+  if (a !== b) {
+    throw new RangeError(mismatchingCalendars);
+  }
+  return a;
+}
+
+function computeNativeWeekOfYear(isoFields) {
+  return this.weekParts(isoFields)[0];
+}
+
+function computeNativeYearOfWeek(isoFields) {
+  return this.weekParts(isoFields)[1];
+}
+
+function computeNativeDayOfYear(isoFields) {
+  const [year] = this.dateParts(isoFields);
+  return diffEpochMilliByDay(this.epochMilli(year), isoToEpochMilli(isoFields)) + 1;
+}
+
+function parseMonthCode(monthCode) {
+  const m = monthCodeRegExp.exec(monthCode);
+  if (!m) {
+    throw new RangeError(invalidMonthCode(monthCode));
+  }
+  return [ parseInt(m[1]), Boolean(m[2]) ];
+}
+
+function formatMonthCode(monthCodeNumber, isLeapMonth) {
+  return "M" + padNumber2(monthCodeNumber) + (isLeapMonth ? "L" : "");
+}
+
+function monthCodeNumberToMonth(monthCodeNumber, isLeapMonth, leapMonth) {
+  return monthCodeNumber + (isLeapMonth || leapMonth && monthCodeNumber >= leapMonth ? 1 : 0);
+}
+
+function monthToMonthCodeNumber(month, leapMonth) {
+  return month - (leapMonth && month >= leapMonth ? 1 : 0);
+}
+
+function eraYearToYear(eraYear, eraOrigin) {
+  return (eraOrigin + eraYear) * (Math.sign(eraOrigin) || 1) || 0;
+}
+
+function getCalendarEraOrigins(native) {
+  return eraOriginsByCalendarId[getCalendarIdBase(native)];
+}
+
+function getCalendarLeapMonthMeta(native) {
+  return leapMonthMetas[getCalendarIdBase(native)];
+}
+
+function getCalendarIdBase(native) {
+  return computeCalendarIdBase(native.id || isoCalendarId);
+}
+
+function createIntlFieldCache(epochMilliToIntlFields) {
+  return memoize((isoDateFields => {
+    const epochMilli = isoToEpochMilli(isoDateFields);
+    return epochMilliToIntlFields(epochMilli);
+  }), WeakMap);
+}
+
+function createIntlYearDataCache(epochMilliToIntlFields) {
+  const yearCorrection = epochMilliToIntlFields(0).year - isoEpochOriginYear;
+  return memoize((year => {
+    let intlFields, epochMilli = isoArgsToEpochMilli(year - yearCorrection), iterations = 0;
+    const millisReversed = [], monthStringsReversed = [];
+    do {
+      epochMilli += 400 * milliInDay;
+    } while ((intlFields = epochMilliToIntlFields(epochMilli)).year <= year);
+    do {
+      if (epochMilli += (1 - intlFields.day) * milliInDay, intlFields.year === year && (millisReversed.push(epochMilli), 
+      monthStringsReversed.push(intlFields.monthString)), epochMilli -= milliInDay, ++iterations > 100 || epochMilli < -maxMilli) {
+        throw new RangeError(invalidProtocolResults);
+      }
+    } while ((intlFields = epochMilliToIntlFields(epochMilli)).year >= year);
+    return {
+      monthEpochMillis: millisReversed.reverse(),
+      monthStringToIndex: mapPropNamesToIndex(monthStringsReversed.reverse())
+    };
+  }));
+}
+
+function parseIntlYear(intlParts, calendarIdBase) {
+  let era, eraYear, year = parseIntlPartsYear(intlParts);
+  if (intlParts.era) {
+    const eraOrigins = eraOriginsByCalendarId[calendarIdBase], eraRemaps = eraRemapsByCalendarId[calendarIdBase] || {};
+    void 0 !== eraOrigins && (era = "islamic" === calendarIdBase ? "ah" : intlParts.era.normalize("NFD").toLowerCase().replace(/[^a-z0-9]/g, ""), 
+    "bc" === era || "b" === era ? era = "bce" : "ad" === era || "a" === era ? era = "ce" : "beforeroc" === era && (era = "broc"), 
+    era = eraRemaps[era] || era, eraYear = year, year = eraYearToYear(eraYear, eraOrigins[era] || 0));
+  }
+  return {
+    era: era,
+    eraYear: eraYear,
+    year: year
+  };
+}
+
+function parseIntlPartsYear(intlParts) {
+  return parseInt(intlParts.relatedYear || intlParts.year);
+}
+
+function computeIntlDateParts(isoFields) {
+  const {year: year, monthString: monthString, day: day} = this.queryFields(isoFields), {monthStringToIndex: monthStringToIndex} = this.queryYearData(year);
+  return [ year, monthStringToIndex[monthString] + 1, day ];
+}
+
+function computeIntlEpochMilli(year, month = 1, day = 1) {
+  return this.queryYearData(year).monthEpochMillis[month - 1] + (day - 1) * milliInDay;
+}
+
+function computeIntlMonthCodeParts(year, month) {
+  const leapMonth = computeIntlLeapMonth.call(this, year);
+  return [ monthToMonthCodeNumber(month, leapMonth), leapMonth === month ];
+}
+
+function computeIntlLeapMonth(year) {
+  const currentMonthStrings = queryMonthStrings(this, year), prevMonthStrings = queryMonthStrings(this, year - 1), currentLength = currentMonthStrings.length;
+  if (currentLength > prevMonthStrings.length) {
+    const leapMonthMeta = getCalendarLeapMonthMeta(this);
+    if (leapMonthMeta < 0) {
+      return -leapMonthMeta;
+    }
+    for (let i = 0; i < currentLength; i++) {
+      if (currentMonthStrings[i] !== prevMonthStrings[i]) {
+        return i + 1;
+      }
+    }
+  }
+}
+
+function computeIntlDaysInYear(year) {
+  return diffEpochMilliByDay(computeIntlEpochMilli.call(this, year), computeIntlEpochMilli.call(this, year + 1));
+}
+
+function computeIntlDaysInMonth(year, month) {
+  const {monthEpochMillis: monthEpochMillis} = this.queryYearData(year);
+  let nextMonth = month + 1, nextMonthEpochMilli = monthEpochMillis;
+  return nextMonth > monthEpochMillis.length && (nextMonth = 1, nextMonthEpochMilli = this.queryYearData(year + 1).monthEpochMillis), 
+  diffEpochMilliByDay(monthEpochMillis[month - 1], nextMonthEpochMilli[nextMonth - 1]);
+}
+
+function computeIntlMonthsInYear(year) {
+  return this.queryYearData(year).monthEpochMillis.length;
+}
+
+function computeIntlEraParts(isoFields) {
+  const intlFields = this.queryFields(isoFields);
+  return [ intlFields.era, intlFields.eraYear ];
+}
+
+function queryMonthStrings(intlCalendar, year) {
+  return Object.keys(intlCalendar.queryYearData(year).monthStringToIndex);
+}
+
+function resolveCalendarId(id) {
+  if ((id = id.toLowerCase()) !== isoCalendarId && id !== gregoryCalendarId) {
+    const canonId = queryCalendarIntlFormat(id).resolvedOptions().calendar;
+    if (computeCalendarIdBase(id) !== computeCalendarIdBase(canonId)) {
+      throw new RangeError(invalidCalendar(id));
+    }
+    return canonId;
+  }
+  return id;
+}
+
+function computeCalendarIdBase(id) {
+  return "islamicc" === id && (id = "islamic"), id.split("-")[0];
+}
+
+function createNativeOpsCreator(isoOps, intlOps) {
+  return calendarId => calendarId === isoCalendarId ? isoOps : calendarId === gregoryCalendarId || "japanese" === calendarId ? Object.assign(Object.create(isoOps), {
+    id: calendarId
+  }) : Object.assign(Object.create(intlOps), queryIntlCalendar(calendarId));
+}
+
+function refineCalendarFields(calendarOps, bag, validFieldNames, requiredFieldNames = [], forcedValidFieldNames = []) {
+  return refineFields(bag, [ ...calendarOps.fields(validFieldNames), ...forcedValidFieldNames ].sort(), requiredFieldNames);
+}
+
+function refineFields(bag, validFieldNames, requiredFieldNames, disallowEmpty = !requiredFieldNames) {
+  const res = {};
+  let prevFieldName, anyMatching = 0;
+  for (const fieldName of validFieldNames) {
+    if (fieldName === prevFieldName) {
+      throw new RangeError(duplicateFields(fieldName));
+    }
+    if ("constructor" === fieldName || "__proto__" === fieldName) {
+      throw new RangeError(forbiddenField(fieldName));
+    }
+    let fieldVal = bag[fieldName];
+    if (void 0 !== fieldVal) {
+      anyMatching = 1, builtinRefiners[fieldName] && (fieldVal = builtinRefiners[fieldName](fieldVal, fieldName)), 
+      res[fieldName] = fieldVal;
+    } else if (requiredFieldNames) {
+      if (requiredFieldNames.includes(fieldName)) {
+        throw new TypeError(missingField(fieldName));
+      }
+      res[fieldName] = timeFieldDefaults[fieldName];
+    }
+    prevFieldName = fieldName;
+  }
+  if (disallowEmpty && !anyMatching) {
+    throw new TypeError(noValidFields(validFieldNames));
+  }
+  return res;
+}
+
+function refineTimeBag(fields, overflow) {
+  return constrainIsoTimeFields(timeFieldsToIso({
+    ...timeFieldDefaults,
+    ...fields
+  }), overflow);
+}
+
+function convertToIso(calendarOps, input, inputFieldNames, extra, extraFieldNames) {
+  input = pluckProps(inputFieldNames = calendarOps.fields(inputFieldNames), input), 
+  extra = refineFields(extra, extraFieldNames = calendarOps.fields(extraFieldNames), []);
+  let mergedFields = calendarOps.mergeFields(input, extra);
+  return mergedFields = refineFields(mergedFields, [ ...inputFieldNames, ...extraFieldNames ].sort(), []), 
+  calendarOps.dateFromFields(mergedFields);
+}
+
+function refineYear(calendarNative, fields) {
+  const eraOrigins = getCalendarEraOrigins(calendarNative), eraRemaps = eraRemapsByCalendarId[calendarNative.id || ""] || {};
+  let {era: era, eraYear: eraYear, year: year} = fields;
+  if (void 0 !== era || void 0 !== eraYear) {
+    if (void 0 === era || void 0 === eraYear) {
+      throw new TypeError(mismatchingEraParts);
+    }
+    if (!eraOrigins) {
+      throw new RangeError(forbiddenEraParts);
+    }
+    const eraOrigin = eraOrigins[eraRemaps[era] || era];
+    if (void 0 === eraOrigin) {
+      throw new RangeError(invalidEra(era));
+    }
+    const yearByEra = eraYearToYear(eraYear, eraOrigin);
+    if (void 0 !== year && year !== yearByEra) {
+      throw new RangeError(mismatchingYearAndEra);
+    }
+    year = yearByEra;
+  } else if (void 0 === year) {
+    throw new TypeError(missingYear(eraOrigins));
+  }
+  return year;
+}
+
+function refineMonth(calendarNative, fields, year, overflow) {
+  let {month: month, monthCode: monthCode} = fields;
+  if (void 0 !== monthCode) {
+    const monthByCode = ((calendarNative, monthCode, year, overflow) => {
+      const leapMonth = calendarNative.leapMonth(year), [monthCodeNumber, wantsLeapMonth] = parseMonthCode(monthCode);
+      let month = monthCodeNumberToMonth(monthCodeNumber, wantsLeapMonth, leapMonth);
+      if (wantsLeapMonth) {
+        const leapMonthMeta = getCalendarLeapMonthMeta(calendarNative);
+        if (void 0 === leapMonthMeta) {
+          throw new RangeError(invalidLeapMonth);
+        }
+        if (leapMonthMeta > 0) {
+          if (month > leapMonthMeta) {
+            throw new RangeError(invalidLeapMonth);
+          }
+          if (void 0 === leapMonth) {
+            if (1 === overflow) {
+              throw new RangeError(invalidLeapMonth);
+            }
+            month--;
+          }
+        } else {
+          if (month !== -leapMonthMeta) {
+            throw new RangeError(invalidLeapMonth);
+          }
+          if (void 0 === leapMonth && 1 === overflow) {
+            throw new RangeError(invalidLeapMonth);
+          }
+        }
+      }
+      return month;
+    })(calendarNative, monthCode, year, overflow);
+    if (void 0 !== month && month !== monthByCode) {
+      throw new RangeError(mismatchingMonthAndCode);
+    }
+    month = monthByCode, overflow = 1;
+  } else if (void 0 === month) {
+    throw new TypeError(missingMonth);
+  }
+  return clampEntity("month", month, 1, calendarNative.monthsInYearPart(year), overflow);
+}
+
+function refineDay(calendarNative, fields, month, year, overflow) {
+  return clampProp(fields, "day", 1, calendarNative.daysInMonthParts(year, month), overflow);
+}
+
+function spliceFields(dest, additional, allPropNames, deletablePropNames) {
+  let anyMatching = 0;
+  const nonMatchingPropNames = [];
+  for (const propName of allPropNames) {
+    void 0 !== additional[propName] ? anyMatching = 1 : nonMatchingPropNames.push(propName);
+  }
+  if (Object.assign(dest, additional), anyMatching) {
+    for (const deletablePropName of deletablePropNames || nonMatchingPropNames) {
+      delete dest[deletablePropName];
+    }
+  }
+}
+
+function computeDateEssentials(slots) {
+  const calendarOps = createNativePartOps(slots.calendar), [year, month, day] = calendarOps.dateParts(slots), [monthCodeNumber, isLeapMonth] = calendarOps.monthCodeParts(year, month);
+  return {
+    year: year,
+    monthCode: formatMonthCode(monthCodeNumber, isLeapMonth),
+    day: day
+  };
+}
+
+function createOptionsTransformer(standardNames, fallbacks, exclusions) {
+  const excludedNameSet = new Set(exclusions);
+  return (options, strictOptions) => {
+    const hasAnyExclusions = exclusions && hasAnyPropsByName(options, exclusions);
+    if (!hasAnyPropsByName(options = ((propNames, props) => {
+      const filteredProps = {};
+      for (const propName in props) {
+        propNames.has(propName) || (filteredProps[propName] = props[propName]);
+      }
+      return filteredProps;
+    })(excludedNameSet, options), standardNames)) {
+      if (strictOptions && hasAnyExclusions) {
+        throw new TypeError("Invalid formatting options");
+      }
+      options = {
+        ...fallbacks,
+        ...options
+      };
+    }
+    return exclusions && (options.timeZone = utcTimeZoneId, [ "full", "long" ].includes(options.timeStyle) && (options.timeStyle = "medium")), 
+    options;
+  };
+}
+
+function createFormatForPrep(forcedTimeZoneId, locales, options, transformOptions, strictOptions) {
+  if (options = transformOptions(options, strictOptions), forcedTimeZoneId) {
+    if (void 0 !== options.timeZone) {
+      throw new TypeError(forbiddenFormatTimeZone);
+    }
+    options.timeZone = forcedTimeZoneId;
+  }
+  return new RawDateTimeFormat(locales, options);
+}
+
+function toEpochMillis(config, resolvedOptions, slotsList) {
+  const [, slotsToEpochMilli, strictCalendarCheck] = config;
+  return slotsList.map((slots => (slots.calendar && ((internalCalendarId, resolvedCalendarId, strictCalendarCheck) => {
+    if ((strictCalendarCheck || internalCalendarId !== isoCalendarId) && internalCalendarId !== resolvedCalendarId) {
+      throw new RangeError(mismatchingCalendars);
+    }
+  })(slots.calendar, resolvedOptions.calendar, strictCalendarCheck), slotsToEpochMilli(slots, resolvedOptions))));
+}
+
+function getCurrentEpochNano() {
+  return numberToBigNano(Date.now(), nanoInMilli);
+}
+
+const expectedInteger = (entityName, num) => `Non-integer ${entityName}: ${num}`, expectedPositive = (entityName, num) => `Non-positive ${entityName}: ${num}`, expectedFinite = (entityName, num) => `Non-finite ${entityName}: ${num}`, forbiddenBigIntToNumber = entityName => `Cannot convert bigint to ${entityName}`, invalidBigInt = arg => `Invalid bigint: ${arg}`, forbiddenSymbolToString = "Cannot convert Symbol to string", invalidObject = "Invalid object", numberOutOfRange = (entityName, val, min, max, choices) => choices ? numberOutOfRange(entityName, choices[val], choices[min], choices[max]) : invalidEntity(entityName, val) + `; must be between ${min}-${max}`, invalidEntity = (fieldName, val) => `Invalid ${fieldName}: ${val}`, missingField = fieldName => `Missing ${fieldName}`, forbiddenField = fieldName => `Invalid field ${fieldName}`, duplicateFields = fieldName => `Duplicate field ${fieldName}`, noValidFields = validFields => "No valid fields: " + validFields.join(), invalidChoice = (fieldName, val, choiceMap) => invalidEntity(fieldName, val) + "; must be " + Object.keys(choiceMap).join(), forbiddenEraParts = "Forbidden era/eraYear", mismatchingEraParts = "Mismatching era/eraYear", mismatchingYearAndEra = "Mismatching year/eraYear", invalidEra = era => `Invalid era: ${era}`, missingYear = allowEra => "Missing year" + (allowEra ? "/era/eraYear" : ""), invalidMonthCode = monthCode => `Invalid monthCode: ${monthCode}`, mismatchingMonthAndCode = "Mismatching month/monthCode", missingMonth = "Missing month/monthCode", invalidLeapMonth = "Invalid leap month", invalidProtocolResults = "Invalid protocol results", invalidCalendar = calendarId => invalidEntity("Calendar", calendarId), mismatchingCalendars = "Mismatching Calendars", invalidTimeZone = calendarId => invalidEntity("TimeZone", calendarId), forbiddenIcuTimeZone = "Forbidden ICU TimeZone", outOfBoundsOffset = "Out-of-bounds offset", outOfBoundsDstGap = "Out-of-bounds TimeZone gap", invalidOffsetForTimeZone = "Invalid TimeZone offset", ambigOffset = "Ambiguous offset", outOfBoundsDate = "Out-of-bounds date", outOfBoundsDuration = "Out-of-bounds duration", forbiddenDurationSigns = "Cannot mix duration signs", flippedSmallestLargestUnit = "smallestUnit > largestUnit", failedParse = s => `Cannot parse: ${s}`, invalidSubstring = substring => `Invalid substring: ${substring}`, forbiddenFormatTimeZone = "Cannot specify TimeZone", mapPropNamesToIndex = bindArgs(mapPropNames, ((_propVal, i) => i)), mapPropNamesToConstant = bindArgs(mapPropNames, ((_propVal, _i, constant) => constant)), padNumber2 = bindArgs(padNumber, 2), unitNameMap = {
+  nanosecond: 0,
+  microsecond: 1,
+  millisecond: 2,
+  second: 3,
+  minute: 4,
+  hour: 5,
+  day: 6,
+  week: 7,
+  month: 8,
+  year: 9
+}, unitNamesAsc = Object.keys(unitNameMap), milliInDay = 864e5, milliInSec = 1e3, nanoInMicro = 1e3, nanoInMilli = 1e6, nanoInSec = 1e9, nanoInMinute = 6e10, nanoInHour = 36e11, nanoInUtcDay = 864e11, unitNanoMap = [ 1, nanoInMicro, nanoInMilli, nanoInSec, nanoInMinute, nanoInHour, nanoInUtcDay ], timeFieldNamesAsc = unitNamesAsc.slice(0, 6), timeFieldNamesAlpha = sortStrings(timeFieldNamesAsc), timeZoneFieldNames = [ "timeZone" ], timeAndOffsetFieldNames = [ ...timeFieldNamesAsc, "offset" ], timeAndZoneFieldNames = [ ...timeAndOffsetFieldNames, ...timeZoneFieldNames ], eraYearFieldNames = [ "era", "eraYear" ], allYearFieldNames = [ ...eraYearFieldNames, "year" ], yearFieldNames = [ "year" ], monthCodeFieldNames = [ "monthCode" ], monthFieldNames = [ "month", ...monthCodeFieldNames ], dayFieldNames = [ "day" ], yearMonthFieldNames = [ ...monthFieldNames, ...yearFieldNames ], yearMonthCodeFieldNames = [ ...monthCodeFieldNames, ...yearFieldNames ], dateFieldNamesAlpha = [ ...dayFieldNames, ...yearMonthFieldNames ], monthDayFieldNames = [ ...dayFieldNames, ...monthFieldNames ], monthCodeDayFieldNames = [ ...dayFieldNames, ...monthCodeFieldNames ], timeFieldDefaults = mapPropNamesToConstant(timeFieldNamesAsc, 0), isoCalendarId = "iso8601", gregoryCalendarId = "gregory", eraOriginsByCalendarId = {
+  [gregoryCalendarId]: {
+    "gregory-inverse": -1,
+    gregory: 0
+  },
+  japanese: {
+    "japanese-inverse": -1,
+    japanese: 0,
+    meiji: 1867,
+    taisho: 1911,
+    showa: 1925,
+    heisei: 1988,
+    reiwa: 2018
+  },
+  ethiopic: {
+    ethioaa: 0,
+    ethiopic: 5500
+  },
+  coptic: {
+    "coptic-inverse": -1,
+    coptic: 0
+  },
+  roc: {
+    "roc-inverse": -1,
+    roc: 0
+  },
+  buddhist: {
+    be: 0
+  },
+  islamic: {
+    ah: 0
+  },
+  indian: {
+    saka: 0
+  },
+  persian: {
+    ap: 0
+  }
+}, eraRemapsByCalendarId = {
+  [gregoryCalendarId]: {
+    bce: "gregory-inverse",
+    ce: "gregory"
+  },
+  japanese: {
+    bce: "japanese-inverse",
+    ce: "japanese"
+  },
+  ethiopic: {
+    era0: "ethioaa",
+    era1: "ethiopic"
+  },
+  coptic: {
+    era0: "coptic-inverse",
+    era1: "coptic"
+  },
+  roc: {
+    broc: "roc-inverse",
+    minguo: "roc"
+  }
+}, leapMonthMetas = {
+  chinese: 13,
+  dangi: 13,
+  hebrew: -6
+}, requireString = bindArgs(requireType, "string"), requireBoolean = bindArgs(requireType, "boolean"), requireNumber = bindArgs(requireType, "number"), durationFieldNamesAsc = unitNamesAsc.map((unitName => unitName + "s")), durationFieldNamesAlpha = sortStrings(durationFieldNamesAsc), durationTimeFieldNamesAsc = durationFieldNamesAsc.slice(0, 6), durationDateFieldNamesAsc = durationFieldNamesAsc.slice(6), durationCalendarFieldNamesAsc = durationDateFieldNamesAsc.slice(1), durationFieldIndexes = mapPropNamesToIndex(durationFieldNamesAsc), durationFieldDefaults = mapPropNamesToConstant(durationFieldNamesAsc, 0), durationTimeFieldDefaults = mapPropNamesToConstant(durationTimeFieldNamesAsc, 0), clearDurationFields = bindArgs(zeroOutProps, durationFieldNamesAsc), isoTimeFieldNamesAsc = [ "isoNanosecond", "isoMicrosecond", "isoMillisecond", "isoSecond", "isoMinute", "isoHour" ], isoDateFieldNamesAsc = [ "isoDay", "isoMonth", "isoYear" ], isoDateTimeFieldNamesAsc = [ ...isoTimeFieldNamesAsc, ...isoDateFieldNamesAsc ], isoDateFieldNamesAlpha = sortStrings(isoDateFieldNamesAsc), isoTimeFieldNamesAlpha = sortStrings(isoTimeFieldNamesAsc), isoDateTimeFieldNamesAlpha = sortStrings(isoDateTimeFieldNamesAsc), isoTimeFieldDefaults = mapPropNamesToConstant(isoTimeFieldNamesAlpha, 0), clearIsoFields = bindArgs(zeroOutProps, isoDateTimeFieldNamesAsc), maxMilli = 1e8 * milliInDay, epochNanoMax = [ 1e8, 0 ], epochNanoMin = [ -1e8, 0 ], isoYearMax = 275760, isoYearMin = -271821, RawDateTimeFormat = Intl.DateTimeFormat, isoEpochOriginYear = 1970, isoEpochFirstLeapYear = 1972, isoMonthsInYear = 12, primaryJapaneseEraMilli = isoArgsToEpochMilli(1868, 9, 8), queryJapaneseEraParts = memoize((isoFields => {
+  const epochMilli = isoToEpochMilli(isoFields);
+  if (epochMilli < primaryJapaneseEraMilli) {
+    const {isoYear: isoYear} = isoFields;
+    return isoYear < 1 ? [ "japanese-inverse", 1 - isoYear ] : [ "japanese", isoYear ];
+  }
+  const intlParts = hashIntlFormatParts(queryCalendarIntlFormat("japanese"), epochMilli), {era: era, eraYear: eraYear} = parseIntlYear(intlParts, "japanese");
+  return [ era, eraYear ];
+}), WeakMap), smallestUnitStr = "smallestUnit", roundingIncName = "roundingIncrement", subsecDigitsName = "fractionalSecondDigits", overflowMap = {
+  constrain: 0,
+  reject: 1
+}, overflowMapNames = Object.keys(overflowMap), directionMap = {
+  previous: -1,
+  next: 1
+}, refineSmallestUnit = bindArgs(refineUnitOption, smallestUnitStr), refineLargestUnit = bindArgs(refineUnitOption, "largestUnit"), refineTotalUnit = bindArgs(refineUnitOption, "unit"), refineOverflow = bindArgs(refineChoiceOption, "overflow", overflowMap), refineEpochDisambig = bindArgs(refineChoiceOption, "disambiguation", {
+  compatible: 0,
+  reject: 1,
+  earlier: 2,
+  later: 3
+}), refineOffsetDisambig = bindArgs(refineChoiceOption, "offset", {
+  reject: 0,
+  use: 1,
+  prefer: 2,
+  ignore: 3
+}), refineCalendarDisplay = bindArgs(refineChoiceOption, "calendarName", {
+  auto: 0,
+  never: 1,
+  critical: 2,
+  always: 3
+}), refineTimeZoneDisplay = bindArgs(refineChoiceOption, "timeZoneName", {
+  auto: 0,
+  never: 1,
+  critical: 2
+}), refineOffsetDisplay = bindArgs(refineChoiceOption, "offset", {
+  auto: 0,
+  never: 1
+}), refineRoundingMode = bindArgs(refineChoiceOption, "roundingMode", {
+  floor: 0,
+  halfFloor: 1,
+  ceil: 2,
+  halfCeil: 3,
+  trunc: 4,
+  halfTrunc: 5,
+  expand: 6,
+  halfExpand: 7,
+  halfEven: 8
+}), PlainYearMonthBranding = "PlainYearMonth", PlainMonthDayBranding = "PlainMonthDay", PlainDateBranding = "PlainDate", PlainDateTimeBranding = "PlainDateTime", PlainTimeBranding = "PlainTime", ZonedDateTimeBranding = "ZonedDateTime", InstantBranding = "Instant", DurationBranding = "Duration", roundingModeFuncs = [ Math.floor, num => hasHalf(num) ? Math.floor(num) : Math.round(num), Math.ceil, num => hasHalf(num) ? Math.ceil(num) : Math.round(num), Math.trunc, num => hasHalf(num) ? Math.trunc(num) || 0 : Math.round(num), num => num < 0 ? Math.floor(num) : Math.ceil(num), num => Math.sign(num) * Math.round(Math.abs(num)) || 0, num => hasHalf(num) ? (num = Math.trunc(num) || 0) + num % 2 : Math.round(num) ], utcTimeZoneId = "UTC", periodDur = 5184e3, minPossibleTransition = isoArgsToEpochSec(1847), maxPossibleTransition = isoArgsToEpochSec((new Date).getUTCFullYear() + 10), trailingZerosRE = /0+$/, zonedEpochSlotsToIso = memoize(((slots, getTimeZoneOps) => {
+  const {epochNanoseconds: epochNanoseconds} = slots, offsetNanoseconds = (getTimeZoneOps.getOffsetNanosecondsFor ? getTimeZoneOps : getTimeZoneOps(slots.timeZone)).getOffsetNanosecondsFor(epochNanoseconds), isoDateTimeFields = epochNanoToIso(epochNanoseconds, offsetNanoseconds);
+  return {
+    calendar: slots.calendar,
+    ...isoDateTimeFields,
+    offsetNanoseconds: offsetNanoseconds
+  };
+}), WeakMap), maxCalendarUnit = 2 ** 32 - 1, queryNativeTimeZone = memoize((timeZoneId => {
+  const essence = getTimeZoneEssence(timeZoneId);
+  return "object" == typeof essence ? new IntlTimeZone(essence) : new FixedTimeZone(essence || 0);
+}));
+
+class FixedTimeZone {
+  constructor(offsetNano) {
+    this.offsetNano = offsetNano;
+  }
+  getOffsetNanosecondsFor() {
+    return this.offsetNano;
+  }
+  getPossibleInstantsFor(isoDateTimeFields) {
+    return (isoFields => {
+      const bigNano = isoToEpochNano({
+        ...isoFields,
+        ...isoTimeFieldDefaults
+      });
+      if (!bigNano || Math.abs(bigNano[0]) > 1e8) {
+        throw new RangeError(outOfBoundsDate);
+      }
+    })(isoDateTimeFields), [ isoToEpochNanoWithOffset(isoDateTimeFields, this.offsetNano) ];
+  }
+  getTransition() {}
+}
+
+class IntlTimeZone {
+  constructor(format) {
+    this.tzStore = (computeOffsetSec => {
+      function getOffsetSec(epochSec) {
+        const clampedEpochSec = clampNumber(epochSec, minTransition, maxTransition), [startEpochSec, endEpochSec] = computePeriod(clampedEpochSec), startOffsetSec = getSample(startEpochSec), endOffsetSec = getSample(endEpochSec);
+        return startOffsetSec === endOffsetSec ? startOffsetSec : pinch(getSplit(startEpochSec, endEpochSec), startOffsetSec, endOffsetSec, epochSec);
+      }
+      function pinch(split, startOffsetSec, endOffsetSec, forEpochSec) {
+        let offsetSec, splitDurSec;
+        for (;(void 0 === forEpochSec || void 0 === (offsetSec = forEpochSec < split[0] ? startOffsetSec : forEpochSec >= split[1] ? endOffsetSec : void 0)) && (splitDurSec = split[1] - split[0]); ) {
+          const middleEpochSec = split[0] + Math.floor(splitDurSec / 2);
+          computeOffsetSec(middleEpochSec) === endOffsetSec ? split[1] = middleEpochSec : split[0] = middleEpochSec + 1;
+        }
+        return offsetSec;
+      }
+      const getSample = memoize(computeOffsetSec), getSplit = memoize(createSplitTuple);
+      let minTransition = minPossibleTransition, maxTransition = maxPossibleTransition;
+      return {
+        getPossibleEpochSec(zonedEpochSec) {
+          const wideOffsetSec0 = getOffsetSec(zonedEpochSec - 86400), wideOffsetSec1 = getOffsetSec(zonedEpochSec + 86400), wideUtcEpochSec0 = zonedEpochSec - wideOffsetSec0, wideUtcEpochSec1 = zonedEpochSec - wideOffsetSec1;
+          if (wideOffsetSec0 === wideOffsetSec1) {
+            return [ wideUtcEpochSec0 ];
+          }
+          const narrowOffsetSec0 = getOffsetSec(wideUtcEpochSec0);
+          return narrowOffsetSec0 === getOffsetSec(wideUtcEpochSec1) ? [ zonedEpochSec - narrowOffsetSec0 ] : wideOffsetSec0 > wideOffsetSec1 ? [ wideUtcEpochSec0, wideUtcEpochSec1 ] : [];
+        },
+        getOffsetSec: getOffsetSec,
+        getTransition(epochSec, direction) {
+          const clampedEpochSec = clampNumber(epochSec, minTransition, maxTransition);
+          let [startEpochSec, endEpochSec] = computePeriod(clampedEpochSec);
+          const inc = periodDur * direction, inBounds = direction < 0 ? () => endEpochSec > minTransition || (minTransition = clampedEpochSec, 
+          0) : () => startEpochSec < maxTransition || (maxTransition = clampedEpochSec, 0);
+          for (;inBounds(); ) {
+            const startOffsetSec = getSample(startEpochSec), endOffsetSec = getSample(endEpochSec);
+            if (startOffsetSec !== endOffsetSec) {
+              const split = getSplit(startEpochSec, endEpochSec);
+              pinch(split, startOffsetSec, endOffsetSec);
+              const transitionEpochSec = split[0];
+              if ((compareNumbers(transitionEpochSec, epochSec) || 1) === direction) {
+                return transitionEpochSec;
+              }
+            }
+            startEpochSec += inc, endEpochSec += inc;
+          }
+        }
+      };
+    })((format => epochSec => {
+      const intlParts = hashIntlFormatParts(format, epochSec * milliInSec);
+      return isoArgsToEpochSec(parseIntlPartsYear(intlParts), parseInt(intlParts.month), parseInt(intlParts.day), parseInt(intlParts.hour), parseInt(intlParts.minute), parseInt(intlParts.second)) - epochSec;
+    })(format));
+  }
+  getOffsetNanosecondsFor(epochNano) {
+    return this.tzStore.getOffsetSec((epochNano => epochNanoToSecMod(epochNano)[0])(epochNano)) * nanoInSec;
+  }
+  getPossibleInstantsFor(isoFields) {
+    const [zonedEpochSec, subsecNano] = [ isoArgsToEpochSec((isoDateTimeFields = isoFields).isoYear, isoDateTimeFields.isoMonth, isoDateTimeFields.isoDay, isoDateTimeFields.isoHour, isoDateTimeFields.isoMinute, isoDateTimeFields.isoSecond), isoDateTimeFields.isoMillisecond * nanoInMilli + isoDateTimeFields.isoMicrosecond * nanoInMicro + isoDateTimeFields.isoNanosecond ];
+    var isoDateTimeFields;
+    return this.tzStore.getPossibleEpochSec(zonedEpochSec).map((epochSec => checkEpochNanoInBounds(moveBigNano(numberToBigNano(epochSec, nanoInSec), subsecNano))));
+  }
+  getTransition(epochNano, direction) {
+    const [epochSec, subsecNano] = epochNanoToSecMod(epochNano), resEpochSec = this.tzStore.getTransition(epochSec + (direction > 0 || subsecNano ? 1 : 0), direction);
+    if (void 0 !== resEpochSec) {
+      return numberToBigNano(resEpochSec, nanoInSec);
+    }
+  }
+}
+
+const timeRegExpStr = "(\\d{2})(?::?(\\d{2})(?::?(\\d{2})(?:[.,](\\d{1,9}))?)?)?", offsetRegExpStr = "([+-])" + timeRegExpStr, dateTimeRegExpStr = "(?:(?:([+-])(\\d{6}))|(\\d{4}))-?(\\d{2})-?(\\d{2})(?:[T ]" + timeRegExpStr + "(Z|" + offsetRegExpStr + ")?)?", yearMonthRegExp = createRegExp("(?:(?:([+-])(\\d{6}))|(\\d{4}))-?(\\d{2})((?:\\[(!?)([^\\]]*)\\]){0,9})"), monthDayRegExp = createRegExp("(?:--)?(\\d{2})-?(\\d{2})((?:\\[(!?)([^\\]]*)\\]){0,9})"), dateTimeRegExp = createRegExp(dateTimeRegExpStr + "((?:\\[(!?)([^\\]]*)\\]){0,9})"), timeRegExp = createRegExp("T?" + timeRegExpStr + "(?:" + offsetRegExpStr + ")?((?:\\[(!?)([^\\]]*)\\]){0,9})"), offsetRegExp = createRegExp(offsetRegExpStr), annotationRegExp = new RegExp("\\[(!?)([^\\]]*)\\]", "g"), durationRegExp = createRegExp("([+-])?P(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(?:T(?:(\\d+)(?:[.,](\\d{1,9}))?H)?(?:(\\d+)(?:[.,](\\d{1,9}))?M)?(?:(\\d+)(?:[.,](\\d{1,9}))?S)?)?"), queryTimeZoneIntlFormat = memoize((id => new RawDateTimeFormat("en-GB", {
+  timeZone: id,
+  era: "short",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric"
+}))), icuRegExp = /^(AC|AE|AG|AR|AS|BE|BS|CA|CN|CS|CT|EA|EC|IE|IS|JS|MI|NE|NS|PL|PN|PR|PS|SS|VS)T$/, badCharactersRegExp = /[^\w\/:+-]+/, monthCodeRegExp = /^M(\d{2})(L?)$/, queryIntlCalendar = memoize((calendarId => {
+  function epochMilliToIntlFields(epochMilli) {
+    return ((intlParts, calendarIdBase) => ({
+      ...parseIntlYear(intlParts, calendarIdBase),
+      monthString: intlParts.month,
+      day: parseInt(intlParts.day)
+    }))(hashIntlFormatParts(intlFormat, epochMilli), calendarIdBase);
+  }
+  const intlFormat = queryCalendarIntlFormat(calendarId), calendarIdBase = computeCalendarIdBase(calendarId);
+  return {
+    id: calendarId,
+    queryFields: createIntlFieldCache(epochMilliToIntlFields),
+    queryYearData: createIntlYearDataCache(epochMilliToIntlFields)
+  };
+})), queryCalendarIntlFormat = memoize((id => new RawDateTimeFormat("en-GB", {
+  calendar: id,
+  timeZone: utcTimeZoneId,
+  era: "short",
+  year: "numeric",
+  month: "short",
+  day: "numeric"
+}))), nativeStandardBase = {
+  dateAdd(isoDateFields, durationFields, options) {
+    const overflow = refineOverflowOptions(options);
+    let epochMilli, {years: years, months: months, weeks: weeks, days: days} = durationFields;
+    if (days += durationFieldsToBigNano(durationFields, 5)[0], years || months) {
+      epochMilli = ((moveOps, isoDateFields, years, months, overflow) => {
+        let [year, month, day] = moveOps.dateParts(isoDateFields);
+        if (years) {
+          const [monthCodeNumber, isLeapMonth] = moveOps.monthCodeParts(year, month);
+          year += years, month = monthCodeNumberToMonth(monthCodeNumber, isLeapMonth, moveOps.leapMonth(year)), 
+          month = clampEntity("month", month, 1, moveOps.monthsInYearPart(year), overflow);
+        }
+        return months && ([year, month] = moveOps.monthAdd(year, month, months)), day = clampEntity("day", day, 1, moveOps.daysInMonthParts(year, month), overflow), 
+        moveOps.epochMilli(year, month, day);
+      })(this, isoDateFields, years, months, overflow);
+    } else {
+      if (!weeks && !days) {
+        return isoDateFields;
+      }
+      epochMilli = isoToEpochMilli(isoDateFields);
+    }
+    if (void 0 === epochMilli) {
+      throw new RangeError(outOfBoundsDate);
+    }
+    return epochMilli += (7 * weeks + days) * milliInDay, checkIsoDateInBounds(epochMilliToIso(epochMilli));
+  },
+  dateUntil(startIsoFields, endIsoFields, largestUnit) {
+    if (largestUnit <= 7) {
+      let weeks = 0, days = diffDays({
+        ...startIsoFields,
+        ...isoTimeFieldDefaults
+      }, {
+        ...endIsoFields,
+        ...isoTimeFieldDefaults
+      });
+      return 7 === largestUnit && ([weeks, days] = divModTrunc(days, 7)), {
+        ...durationFieldDefaults,
+        weeks: weeks,
+        days: days
+      };
+    }
+    const yearMonthDayStart = this.dateParts(startIsoFields), yearMonthDayEnd = this.dateParts(endIsoFields);
+    let [years, months, days] = ((calendarNative, year0, month0, day0, year1, month1, day1) => {
+      let yearDiff = year1 - year0, monthDiff = month1 - month0, dayDiff = day1 - day0;
+      if (yearDiff || monthDiff) {
+        const sign = Math.sign(yearDiff || monthDiff);
+        let daysInMonth1 = calendarNative.daysInMonthParts(year1, month1), dayCorrect = 0;
+        if (Math.sign(dayDiff) === -sign) {
+          const origDaysInMonth1 = daysInMonth1;
+          [year1, month1] = calendarNative.monthAdd(year1, month1, -sign), yearDiff = year1 - year0, 
+          monthDiff = month1 - month0, daysInMonth1 = calendarNative.daysInMonthParts(year1, month1), 
+          dayCorrect = sign < 0 ? -origDaysInMonth1 : daysInMonth1;
+        }
+        if (dayDiff = day1 - Math.min(day0, daysInMonth1) + dayCorrect, yearDiff) {
+          const [monthCodeNumber0, isLeapYear0] = calendarNative.monthCodeParts(year0, month0), [monthCodeNumber1, isLeapYear1] = calendarNative.monthCodeParts(year1, month1);
+          if (monthDiff = monthCodeNumber1 - monthCodeNumber0 || Number(isLeapYear1) - Number(isLeapYear0), 
+          Math.sign(monthDiff) === -sign) {
+            const monthCorrect = sign < 0 && -calendarNative.monthsInYearPart(year1);
+            yearDiff = (year1 -= sign) - year0, monthDiff = month1 - monthCodeNumberToMonth(monthCodeNumber0, isLeapYear0, calendarNative.leapMonth(year1)) + (monthCorrect || calendarNative.monthsInYearPart(year1));
+          }
+        }
+      }
+      return [ yearDiff, monthDiff, dayDiff ];
+    })(this, ...yearMonthDayStart, ...yearMonthDayEnd);
+    return 8 === largestUnit && (months += this.monthsInYearSpan(years, yearMonthDayStart[0]), 
+    years = 0), {
+      ...durationFieldDefaults,
+      years: years,
+      months: months,
+      days: days
+    };
+  },
+  dateFromFields(fields, options) {
+    const overflow = refineOverflowOptions(options), year = refineYear(this, fields), month = refineMonth(this, fields, year, overflow), day = refineDay(this, fields, month, year, overflow);
+    return createPlainDateSlots(checkIsoDateInBounds(this.isoFields(year, month, day)), this.id || isoCalendarId);
+  },
+  yearMonthFromFields(fields, options) {
+    const overflow = refineOverflowOptions(options), year = refineYear(this, fields), month = refineMonth(this, fields, year, overflow);
+    return createPlainYearMonthSlots(checkIsoYearMonthInBounds(this.isoFields(year, month, 1)), this.id || isoCalendarId);
+  },
+  monthDayFromFields(fields, options) {
+    const overflow = refineOverflowOptions(options);
+    let day, monthCodeNumber, isLeapMonth, yearMaybe = void 0 !== fields.eraYear || void 0 !== fields.year ? refineYear(this, fields) : void 0;
+    const isIso = !this.id;
+    if (void 0 === yearMaybe && isIso && (yearMaybe = isoEpochFirstLeapYear), void 0 !== yearMaybe) {
+      const month = refineMonth(this, fields, yearMaybe, overflow);
+      day = refineDay(this, fields, month, yearMaybe, overflow);
+      const leapMonth = this.leapMonth(yearMaybe);
+      monthCodeNumber = monthToMonthCodeNumber(month, leapMonth), isLeapMonth = month === leapMonth;
+    } else {
+      if (void 0 === fields.monthCode) {
+        throw new TypeError(missingMonth);
+      }
+      if ([monthCodeNumber, isLeapMonth] = parseMonthCode(fields.monthCode), this.id && this.id !== gregoryCalendarId && "japanese" !== this.id) {
+        if (this.id && "coptic" === computeCalendarIdBase(this.id) && 0 === overflow) {
+          const maxLengthOfMonthCodeInAnyYear = isLeapMonth || 13 !== monthCodeNumber ? 30 : 6;
+          day = fields.day, day = clampNumber(day, 1, maxLengthOfMonthCodeInAnyYear);
+        } else if (this.id && "chinese" === computeCalendarIdBase(this.id) && 0 === overflow) {
+          const maxLengthOfMonthCodeInAnyYear = !isLeapMonth || 1 !== monthCodeNumber && 9 !== monthCodeNumber && 10 !== monthCodeNumber && 11 !== monthCodeNumber && 12 !== monthCodeNumber ? 30 : 29;
+          day = fields.day, day = clampNumber(day, 1, maxLengthOfMonthCodeInAnyYear);
+        } else {
+          day = fields.day;
+        }
+      } else {
+        day = refineDay(this, fields, refineMonth(this, fields, isoEpochFirstLeapYear, overflow), isoEpochFirstLeapYear, overflow);
+      }
+    }
+    const res = this.yearMonthForMonthDay(monthCodeNumber, isLeapMonth, day);
+    if (!res) {
+      throw new RangeError("Cannot guess year");
+    }
+    const [finalYear, finalMonth] = res;
+    return createPlainMonthDaySlots(checkIsoDateInBounds(this.isoFields(finalYear, finalMonth, day)), this.id || isoCalendarId);
+  },
+  fields(fieldNames) {
+    return getCalendarEraOrigins(this) && fieldNames.includes("year") ? [ ...fieldNames, ...eraYearFieldNames ] : fieldNames;
+  },
+  mergeFields(baseFields, additionalFields) {
+    const merged = Object.assign(Object.create(null), baseFields);
+    return spliceFields(merged, additionalFields, monthFieldNames), getCalendarEraOrigins(this) && (spliceFields(merged, additionalFields, allYearFieldNames), 
+    "japanese" === this.id && spliceFields(merged, additionalFields, monthDayFieldNames, eraYearFieldNames)), 
+    merged;
+  },
+  inLeapYear(isoFields) {
+    const [year] = this.dateParts(isoFields);
+    return this.inLeapYearPart(year);
+  },
+  monthsInYear(isoFields) {
+    const [year] = this.dateParts(isoFields);
+    return this.monthsInYearPart(year);
+  },
+  daysInMonth(isoFields) {
+    const [year, month] = this.dateParts(isoFields);
+    return this.daysInMonthParts(year, month);
+  },
+  daysInYear(isoFields) {
+    const [year] = this.dateParts(isoFields);
+    return this.daysInYearPart(year);
+  },
+  dayOfYear: computeNativeDayOfYear,
+  era(isoFields) {
+    return this.eraParts(isoFields)[0];
+  },
+  eraYear(isoFields) {
+    return this.eraParts(isoFields)[1];
+  },
+  monthCode(isoFields) {
+    const [year, month] = this.dateParts(isoFields), [monthCodeNumber, isLeapMonth] = this.monthCodeParts(year, month);
+    return formatMonthCode(monthCodeNumber, isLeapMonth);
+  },
+  dayOfWeek: computeIsoDayOfWeek,
+  daysInWeek() {
+    return 7;
+  }
+}, isoPartOps = {
+  dateParts: computeIsoDateParts,
+  eraParts: computeIsoEraParts,
+  monthCodeParts: computeIsoMonthCodeParts
+}, isoWeekOps = {
+  dayOfYear: computeNativeDayOfYear,
+  dateParts: computeIsoDateParts,
+  epochMilli: isoArgsToEpochMilli,
+  weekOfYear: computeNativeWeekOfYear,
+  yearOfWeek: computeNativeYearOfWeek,
+  weekParts(isoDateFields) {
+    function computeWeekShift(yDayOfWeek) {
+      return (7 - yDayOfWeek < minDaysInWeek ? 7 : 0) - yDayOfWeek;
+    }
+    function computeWeeksInYear(delta) {
+      const daysInYear = computeIsoDaysInYear(yearOfWeek + delta), sign = delta || 1, y1WeekShift = computeWeekShift(modFloor(y0DayOfWeek + daysInYear * sign, 7));
+      return weeksInYear = (daysInYear + (y1WeekShift - y0WeekShift) * sign) / 7;
+    }
+    const minDaysInWeek = this.id ? 1 : 4, isoDayOfWeek = computeIsoDayOfWeek(isoDateFields), isoDayOfYear = this.dayOfYear(isoDateFields), dayOfWeek = modFloor(isoDayOfWeek - 1, 7), dayOfYear = isoDayOfYear - 1, y0DayOfWeek = modFloor(dayOfWeek - dayOfYear, 7), y0WeekShift = computeWeekShift(y0DayOfWeek);
+    let weeksInYear, weekOfYear = Math.floor((dayOfYear - y0WeekShift) / 7) + 1, yearOfWeek = isoDateFields.isoYear;
+    return weekOfYear ? weekOfYear > computeWeeksInYear(0) && (weekOfYear = 1, yearOfWeek++) : (weekOfYear = computeWeeksInYear(-1), 
+    yearOfWeek--), [ weekOfYear, yearOfWeek, weeksInYear ];
+  }
+}, isoStandardOps = {
+  ...nativeStandardBase,
+  ...isoWeekOps,
+  dateParts: computeIsoDateParts,
+  eraParts: computeIsoEraParts,
+  monthCodeParts: computeIsoMonthCodeParts,
+  yearMonthForMonthDay(monthCodeNumber, isLeapMonth) {
+    if (!isLeapMonth) {
+      return [ isoEpochFirstLeapYear, monthCodeNumber ];
+    }
+  },
+  inLeapYearPart: computeIsoInLeapYear,
+  leapMonth() {},
+  monthsInYearPart: computeIsoMonthsInYear,
+  monthsInYearSpan: yearDelta => yearDelta * isoMonthsInYear,
+  daysInMonthParts: computeIsoDaysInMonth,
+  daysInYearPart: computeIsoDaysInYear,
+  isoFields(year, month, day) {
+    return {
+      isoYear: year,
+      isoMonth: month,
+      isoDay: day
+    };
+  },
+  epochMilli: isoArgsToEpochMilli,
+  monthAdd(year, month, monthDelta) {
+    return year += divTrunc(monthDelta, isoMonthsInYear), (month += modTrunc(monthDelta, isoMonthsInYear)) < 1 ? (year--, 
+    month += isoMonthsInYear) : month > isoMonthsInYear && (year++, month -= isoMonthsInYear), 
+    [ year, month ];
+  },
+  year(isoFields) {
+    return isoFields.isoYear;
+  },
+  month(isoFields) {
+    return isoFields.isoMonth;
+  },
+  day: isoFields => isoFields.isoDay
+}, intlPartOps = {
+  dateParts: computeIntlDateParts,
+  eraParts: computeIntlEraParts,
+  monthCodeParts: computeIntlMonthCodeParts
+}, intlWeekOps = {
+  dayOfYear: computeNativeDayOfYear,
+  dateParts: computeIntlDateParts,
+  epochMilli: computeIntlEpochMilli,
+  weekOfYear: computeNativeWeekOfYear,
+  yearOfWeek: computeNativeYearOfWeek,
+  weekParts() {
+    return [];
+  }
+}, intlStandardOps = {
+  ...nativeStandardBase,
+  ...intlWeekOps,
+  dateParts: computeIntlDateParts,
+  eraParts: computeIntlEraParts,
+  monthCodeParts: computeIntlMonthCodeParts,
+  yearMonthForMonthDay(monthCodeNumber, isLeapMonth, day) {
+    const startIsoYear = this.id && "chinese" === computeCalendarIdBase(this.id) ? ((monthCodeNumber, isLeapMonth, day) => {
+      if (isLeapMonth) {
+        switch (monthCodeNumber) {
+         case 1:
+          return 1651;
+
+         case 2:
+          return day < 30 ? 1947 : 1765;
+
+         case 3:
+          return day < 30 ? 1966 : 1955;
+
+         case 4:
+          return day < 30 ? 1963 : 1944;
+
+         case 5:
+          return day < 30 ? 1971 : 1952;
+
+         case 6:
+          return day < 30 ? 1960 : 1941;
+
+         case 7:
+          return day < 30 ? 1968 : 1938;
+
+         case 8:
+          return day < 30 ? 1957 : 1718;
+
+         case 9:
+          return 1832;
+
+         case 10:
+          return 1870;
+
+         case 11:
+          return 1814;
+
+         case 12:
+          return 1890;
+        }
+      }
+      return 1972;
+    })(monthCodeNumber, isLeapMonth, day) : isoEpochFirstLeapYear;
+    let [startYear, startMonth, startDay] = computeIntlDateParts.call(this, {
+      isoYear: startIsoYear,
+      isoMonth: isoMonthsInYear,
+      isoDay: 31
+    });
+    const startYearLeapMonth = computeIntlLeapMonth.call(this, startYear), startMonthIsLeap = startMonth === startYearLeapMonth;
+    1 === (compareNumbers(monthCodeNumber, monthToMonthCodeNumber(startMonth, startYearLeapMonth)) || compareNumbers(Number(isLeapMonth), Number(startMonthIsLeap)) || compareNumbers(day, startDay)) && startYear--;
+    for (let yearMove = 0; yearMove < 100; yearMove++) {
+      const tryYear = startYear - yearMove, tryLeapMonth = computeIntlLeapMonth.call(this, tryYear), tryMonth = monthCodeNumberToMonth(monthCodeNumber, isLeapMonth, tryLeapMonth);
+      if (isLeapMonth === (tryMonth === tryLeapMonth) && day <= computeIntlDaysInMonth.call(this, tryYear, tryMonth)) {
+        return [ tryYear, tryMonth ];
+      }
+    }
+  },
+  inLeapYearPart(year) {
+    const days = computeIntlDaysInYear.call(this, year);
+    return days > computeIntlDaysInYear.call(this, year - 1) && days > computeIntlDaysInYear.call(this, year + 1);
+  },
+  leapMonth: computeIntlLeapMonth,
+  monthsInYearPart: computeIntlMonthsInYear,
+  monthsInYearSpan(yearDelta, yearStart) {
+    const yearEnd = yearStart + yearDelta, yearSign = Math.sign(yearDelta), yearCorrection = yearSign < 0 ? -1 : 0;
+    let months = 0;
+    for (let year = yearStart; year !== yearEnd; year += yearSign) {
+      months += computeIntlMonthsInYear.call(this, year + yearCorrection);
+    }
+    return months;
+  },
+  daysInMonthParts: computeIntlDaysInMonth,
+  daysInYearPart: computeIntlDaysInYear,
+  isoFields(year, month, day) {
+    return epochMilliToIso(computeIntlEpochMilli.call(this, year, month, day));
+  },
+  epochMilli: computeIntlEpochMilli,
+  monthAdd(year, month, monthDelta) {
+    if (monthDelta) {
+      if (month += monthDelta, !Number.isSafeInteger(month)) {
+        throw new RangeError(outOfBoundsDate);
+      }
+      if (monthDelta < 0) {
+        for (;month < 1; ) {
+          month += computeIntlMonthsInYear.call(this, --year);
+        }
+      } else {
+        let monthsInYear;
+        for (;month > (monthsInYear = computeIntlMonthsInYear.call(this, year)); ) {
+          month -= monthsInYear, year++;
+        }
+      }
+    }
+    return [ year, month ];
+  },
+  year(isoFields) {
+    return this.queryFields(isoFields).year;
+  },
+  month(isoFields) {
+    const {year: year, monthString: monthString} = this.queryFields(isoFields), {monthStringToIndex: monthStringToIndex} = this.queryYearData(year);
+    return monthStringToIndex[monthString] + 1;
+  },
+  day(isoFields) {
+    return this.queryFields(isoFields).day;
+  }
+}, createNativePartOps = createNativeOpsCreator(isoPartOps, intlPartOps), createNativeStandardOps = createNativeOpsCreator(isoStandardOps, intlStandardOps), builtinRefiners = {
+  ...{
+    era: toStringViaPrimitive,
+    eraYear: toInteger,
+    year: toInteger,
+    month: toPositiveInteger,
+    monthCode(monthCode) {
+      const s = toStringViaPrimitive(monthCode);
+      return parseMonthCode(s), s;
+    },
+    day: toPositiveInteger
+  },
+  ...mapPropNamesToConstant(timeFieldNamesAsc, toInteger),
+  ...mapPropNamesToConstant(durationFieldNamesAsc, toStrictInteger),
+  offset(offsetString) {
+    const s = toStringViaPrimitive(offsetString);
+    return parseOffsetNano(s), s;
+  }
+}, timeFieldsToIso = bindArgs(remapProps, timeFieldNamesAsc, isoTimeFieldNamesAsc), isoTimeFieldsToCal = bindArgs(remapProps, isoTimeFieldNamesAsc, timeFieldNamesAsc), timeZoneNameStrs = [ "timeZoneName" ], monthDayFallbacks = {
+  month: "numeric",
+  day: "numeric"
+}, yearMonthFallbacks = {
+  year: "numeric",
+  month: "numeric"
+}, dateFallbacks = {
+  ...yearMonthFallbacks,
+  day: "numeric"
+}, timeFallbacks = {
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric"
+}, dateTimeFallbacks = {
+  ...dateFallbacks,
+  ...timeFallbacks
+}, zonedFallbacks = {
+  ...dateTimeFallbacks,
+  timeZoneName: "short"
+}, yearMonthFallbackNames = Object.keys(yearMonthFallbacks), monthDayFallbackNames = Object.keys(monthDayFallbacks), dateFallbackNames = Object.keys(dateFallbacks), timeFallbackNames = Object.keys(timeFallbacks), dateStyleNames = [ "dateStyle" ], yearMonthStandardNames = [ ...yearMonthFallbackNames, ...dateStyleNames ], monthDayStandardNames = [ ...monthDayFallbackNames, ...dateStyleNames ], dateStandardNames = [ ...dateFallbackNames, ...dateStyleNames, "weekday" ], timeStandardNames = [ ...timeFallbackNames, "dayPeriod", "timeStyle", "fractionalSecondDigits" ], dateTimeStandardNames = [ ...dateStandardNames, ...timeStandardNames ], dateExclusions = [ ...timeZoneNameStrs, ...timeStandardNames ], timeExclusions = [ ...timeZoneNameStrs, ...dateStandardNames ], yearMonthExclusions = [ ...timeZoneNameStrs, "day", "weekday", ...timeStandardNames ], monthDayExclusions = [ ...timeZoneNameStrs, "year", "weekday", ...timeStandardNames ], transformInstantOptions = createOptionsTransformer(dateTimeStandardNames, dateTimeFallbacks), transformZonedOptions = createOptionsTransformer(dateTimeStandardNames, zonedFallbacks), transformDateTimeOptions = createOptionsTransformer(dateTimeStandardNames, dateTimeFallbacks, timeZoneNameStrs), transformDateOptions = createOptionsTransformer(dateStandardNames, dateFallbacks, dateExclusions), transformTimeOptions = createOptionsTransformer(timeStandardNames, timeFallbacks, timeExclusions), transformYearMonthOptions = createOptionsTransformer(yearMonthStandardNames, yearMonthFallbacks, yearMonthExclusions), transformMonthDayOptions = createOptionsTransformer(monthDayStandardNames, monthDayFallbacks, monthDayExclusions), emptyOptions = {}, nonBuggyIsoResolve = new RawDateTimeFormat(void 0, {
+  calendar: isoCalendarId
+}).resolvedOptions().calendar === isoCalendarId, instantConfig = [ transformInstantOptions, getEpochMilli ], zonedConfig = [ transformZonedOptions, getEpochMilli, 0, (slots0, slots1) => {
+  const timeZoneId = slots0.timeZone;
+  if (slots1 && slots1.timeZone !== timeZoneId) {
+    throw new RangeError("Mismatching TimeZones");
+  }
+  return timeZoneId;
+} ], dateTimeConfig = [ transformDateTimeOptions, isoToEpochMilli ], dateConfig = [ transformDateOptions, isoToEpochMilli ], timeConfig = [ transformTimeOptions, isoFields => isoTimeFieldsToNano(isoFields) / nanoInMilli ], yearMonthConfig = [ transformYearMonthOptions, isoToEpochMilli, nonBuggyIsoResolve ], monthDayConfig = [ transformMonthDayOptions, isoToEpochMilli, nonBuggyIsoResolve ];
+
+let currentTimeZoneId;
+
+exports.DurationBranding = DurationBranding, exports.InstantBranding = InstantBranding, 
+exports.PlainDateBranding = PlainDateBranding, exports.PlainDateTimeBranding = PlainDateTimeBranding, 
+exports.PlainMonthDayBranding = PlainMonthDayBranding, exports.PlainTimeBranding = PlainTimeBranding, 
+exports.PlainYearMonthBranding = PlainYearMonthBranding, exports.RawDateTimeFormat = RawDateTimeFormat, 
+exports.ZonedDateTimeBranding = ZonedDateTimeBranding, exports.absDuration = slots => -1 === slots.sign ? negateDuration(slots) : slots, 
+exports.addDurations = (refineRelativeTo, getCalendarOps, getTimeZoneOps, doSubtract, slots, otherSlots, options) => {
+  const relativeToSlots = refineRelativeTo(normalizeOptions(options).relativeTo), maxUnit = Math.max(getMaxDurationUnit(slots), getMaxDurationUnit(otherSlots));
+  if (isUniformUnit(maxUnit, relativeToSlots)) {
+    return createDurationSlots(checkDurationUnits(((a, b, largestUnit, doSubtract) => {
+      const combined = addBigNanos(durationFieldsToBigNano(a), durationFieldsToBigNano(b), doSubtract ? -1 : 1);
+      if (!Number.isFinite(combined[0])) {
+        throw new RangeError(outOfBoundsDate);
+      }
+      return {
+        ...durationFieldDefaults,
+        ...nanoToDurationDayTimeFields(combined, largestUnit)
+      };
+    })(slots, otherSlots, maxUnit, doSubtract)));
+  }
+  if (!relativeToSlots) {
+    throw new RangeError("Missing relativeTo");
+  }
+  doSubtract && (otherSlots = negateDurationFields(otherSlots));
+  const [marker, calendarOps, timeZoneOps] = createMarkerSystem(getCalendarOps, getTimeZoneOps, relativeToSlots), moveMarker = createMoveMarker(timeZoneOps), diffMarkers = createDiffMarkers(timeZoneOps), midMarker = moveMarker(calendarOps, marker, slots);
+  return createDurationSlots(diffMarkers(calendarOps, marker, moveMarker(calendarOps, midMarker, otherSlots), maxUnit));
+}, exports.bindArgs = bindArgs, exports.compareDurations = (refineRelativeTo, getCalendarOps, getTimeZoneOps, durationSlots0, durationSlots1, options) => {
+  const relativeToSlots = refineRelativeTo(normalizeOptions(options).relativeTo), maxUnit = Math.max(getMaxDurationUnit(durationSlots0), getMaxDurationUnit(durationSlots1));
+  if (allPropsEqual(durationFieldNamesAsc, durationSlots0, durationSlots1)) {
+    return 0;
+  }
+  if (isUniformUnit(maxUnit, relativeToSlots)) {
+    return compareBigNanos(durationFieldsToBigNano(durationSlots0), durationFieldsToBigNano(durationSlots1));
+  }
+  if (!relativeToSlots) {
+    throw new RangeError("Missing relativeTo");
+  }
+  const [marker, calendarOps, timeZoneOps] = createMarkerSystem(getCalendarOps, getTimeZoneOps, relativeToSlots), markerToEpochNano = createMarkerToEpochNano(timeZoneOps), moveMarker = createMoveMarker(timeZoneOps);
+  return compareBigNanos(markerToEpochNano(moveMarker(calendarOps, marker, durationSlots0)), markerToEpochNano(moveMarker(calendarOps, marker, durationSlots1)));
+}, exports.compareInstants = compareInstants, exports.compareIsoDateFields = compareIsoDateFields, 
+exports.compareIsoDateTimeFields = compareIsoDateTimeFields, exports.compareIsoTimeFields = compareIsoTimeFields, 
+exports.compareZonedDateTimes = compareZonedDateTimes, exports.computeZonedHoursInDay = (getTimeZoneOps, slots) => {
+  const timeZoneOps = getTimeZoneOps(slots.timeZone), isoFields = zonedEpochSlotsToIso(slots, timeZoneOps), [isoFields0, isoFields1] = computeDayInterval(isoFields), hoursExact = bigNanoToNumber(diffBigNanos(getStartOfDayInstantFor(timeZoneOps, isoFields0), getStartOfDayInstantFor(timeZoneOps, isoFields1)), nanoInHour, 1);
+  if (hoursExact <= 0) {
+    throw new RangeError(invalidProtocolResults);
+  }
+  return hoursExact;
+}, exports.computeZonedStartOfDay = (getTimeZoneOps, slots) => {
+  const {timeZone: timeZone, calendar: calendar} = slots;
+  return createZonedDateTimeSlots(((computeAlignment, timeZoneOps, slots) => getStartOfDayInstantFor(timeZoneOps, computeAlignment(zonedEpochSlotsToIso(slots, timeZoneOps))))(computeDayFloor, getTimeZoneOps(timeZone), slots), timeZone, calendar);
+}, exports.constructDurationSlots = (years = 0, months = 0, weeks = 0, days = 0, hours = 0, minutes = 0, seconds = 0, milliseconds = 0, microseconds = 0, nanoseconds = 0) => createDurationSlots(checkDurationUnits(mapProps(toStrictInteger, zipProps(durationFieldNamesAsc, [ years, months, weeks, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds ])))), 
+exports.constructInstantSlots = epochNano => createInstantSlots(checkEpochNanoInBounds(bigIntToBigNano(toBigInt(epochNano)))), 
+exports.constructPlainDateSlots = (refineCalendarArg, isoYear, isoMonth, isoDay, calendarArg = isoCalendarId) => createPlainDateSlots(checkIsoDateInBounds(checkIsoDateFields(mapProps(toInteger, {
+  isoYear: isoYear,
+  isoMonth: isoMonth,
+  isoDay: isoDay
+}))), refineCalendarArg(calendarArg)), exports.constructPlainDateTimeSlots = (refineCalendarArg, isoYear, isoMonth, isoDay, isoHour = 0, isoMinute = 0, isoSecond = 0, isoMillisecond = 0, isoMicrosecond = 0, isoNanosecond = 0, calendarArg = isoCalendarId) => createPlainDateTimeSlots(checkIsoDateTimeInBounds(checkIsoDateTimeFields(mapProps(toInteger, zipProps(isoDateTimeFieldNamesAsc, [ isoYear, isoMonth, isoDay, isoHour, isoMinute, isoSecond, isoMillisecond, isoMicrosecond, isoNanosecond ])))), refineCalendarArg(calendarArg)), 
+exports.constructPlainMonthDaySlots = (refineCalendarArg, isoMonth, isoDay, calendarArg = isoCalendarId, referenceIsoYear = isoEpochFirstLeapYear) => {
+  const isoMonthInt = toInteger(isoMonth), isoDayInt = toInteger(isoDay), calendarId = refineCalendarArg(calendarArg);
+  return createPlainMonthDaySlots(checkIsoDateInBounds(checkIsoDateFields({
+    isoYear: toInteger(referenceIsoYear),
+    isoMonth: isoMonthInt,
+    isoDay: isoDayInt
+  })), calendarId);
+}, exports.constructPlainTimeSlots = (isoHour = 0, isoMinute = 0, isoSecond = 0, isoMillisecond = 0, isoMicrosecond = 0, isoNanosecond = 0) => createPlainTimeSlots(constrainIsoTimeFields(mapProps(toInteger, zipProps(isoTimeFieldNamesAsc, [ isoHour, isoMinute, isoSecond, isoMillisecond, isoMicrosecond, isoNanosecond ])), 1)), 
+exports.constructPlainYearMonthSlots = (refineCalendarArg, isoYear, isoMonth, calendarArg = isoCalendarId, referenceIsoDay = 1) => {
+  const isoYearInt = toInteger(isoYear), isoMonthInt = toInteger(isoMonth), calendarId = refineCalendarArg(calendarArg);
+  return createPlainYearMonthSlots(checkIsoYearMonthInBounds(checkIsoDateFields({
+    isoYear: isoYearInt,
+    isoMonth: isoMonthInt,
+    isoDay: toInteger(referenceIsoDay)
+  })), calendarId);
+}, exports.constructZonedDateTimeSlots = (refineCalendarArg, refineTimeZoneArg, epochNano, timeZoneArg, calendarArg = isoCalendarId) => createZonedDateTimeSlots(checkEpochNanoInBounds(bigIntToBigNano(toBigInt(epochNano))), refineTimeZoneArg(timeZoneArg), refineCalendarArg(calendarArg)), 
+exports.createDurationSlots = createDurationSlots, exports.createFormatForPrep = createFormatForPrep, 
+exports.createFormatPrepper = (config, queryFormat = createFormatForPrep, strictOptions = 0) => {
+  const [transformOptions, , , getForcedTimeZoneId] = config;
+  return (locales, options = emptyOptions, ...slotsList) => {
+    const subformat = queryFormat(getForcedTimeZoneId && getForcedTimeZoneId(...slotsList), locales, options, transformOptions, strictOptions), resolvedOptions = subformat.resolvedOptions();
+    return [ subformat, ...toEpochMillis(config, resolvedOptions, slotsList) ];
+  };
+}, exports.createGetterDescriptors = getters => mapProps((getter => ({
+  get: getter,
+  configurable: 1
+})), getters), exports.createInstantSlots = createInstantSlots, exports.createNameDescriptors = name => createPropDescriptors({
+  name: name
+}, 1), exports.createNativeStandardOps = createNativeStandardOps, exports.createPlainDateSlots = createPlainDateSlots, 
+exports.createPlainDateTimeSlots = createPlainDateTimeSlots, exports.createPlainTimeSlots = createPlainTimeSlots, 
+exports.createPropDescriptors = createPropDescriptors, exports.createStringTagDescriptors = value => ({
+  [Symbol.toStringTag]: {
+    value: value,
+    configurable: 1
+  }
+}), exports.createZonedDateTimeSlots = createZonedDateTimeSlots, exports.dateConfig = dateConfig, 
+exports.dateTimeConfig = dateTimeConfig, exports.diffInstants = (invert, instantSlots0, instantSlots1, options) => {
+  const optionsTuple = refineDiffOptions(invert, options, 3, 5), durationFields = diffEpochNanos(instantSlots0.epochNanoseconds, instantSlots1.epochNanoseconds, ...optionsTuple);
+  return createDurationSlots(invert ? negateDurationFields(durationFields) : durationFields);
+}, exports.diffPlainDateTimes = (getCalendarOps, invert, plainDateTimeSlots0, plainDateTimeSlots1, options) => {
+  const calendarId = getCommonCalendarId(plainDateTimeSlots0.calendar, plainDateTimeSlots1.calendar), [largestUnit, smallestUnit, roundingInc, roundingMode] = refineDiffOptions(invert, options, 6), startEpochNano = isoToEpochNano(plainDateTimeSlots0), endEpochNano = isoToEpochNano(plainDateTimeSlots1), sign = compareBigNanos(endEpochNano, startEpochNano);
+  let durationFields;
+  if (sign) {
+    if (largestUnit <= 6) {
+      durationFields = diffEpochNanos(startEpochNano, endEpochNano, largestUnit, smallestUnit, roundingInc, roundingMode);
+    } else {
+      const calendarOps = getCalendarOps(calendarId);
+      durationFields = diffDateTimesBig(calendarOps, plainDateTimeSlots0, plainDateTimeSlots1, sign, largestUnit, options), 
+      durationFields = roundRelativeDuration(durationFields, endEpochNano, largestUnit, smallestUnit, roundingInc, roundingMode, calendarOps, plainDateTimeSlots0, isoToEpochNano, moveDateTime);
+    }
+  } else {
+    durationFields = durationFieldDefaults;
+  }
+  return createDurationSlots(invert ? negateDurationFields(durationFields) : durationFields);
+}, exports.diffPlainDates = (getCalendarOps, invert, plainDateSlots0, plainDateSlots1, options) => {
+  const calendarId = getCommonCalendarId(plainDateSlots0.calendar, plainDateSlots1.calendar);
+  return diffDateLike(invert, (() => getCalendarOps(calendarId)), plainDateSlots0, plainDateSlots1, ...refineDiffOptions(invert, options, 6, 9, 6));
+}, exports.diffPlainTimes = (invert, plainTimeSlots0, plainTimeSlots1, options) => {
+  const [largestUnit, smallestUnit, roundingInc, roundingMode] = refineDiffOptions(invert, options, 5, 5), timeDiffNano = roundByInc(diffTimes(plainTimeSlots0, plainTimeSlots1), computeNanoInc(smallestUnit, roundingInc), roundingMode), durationFields = {
+    ...durationFieldDefaults,
+    ...nanoToDurationTimeFields(timeDiffNano, largestUnit)
+  };
+  return createDurationSlots(invert ? negateDurationFields(durationFields) : durationFields);
+}, exports.diffPlainYearMonth = (getCalendarOps, invert, plainYearMonthSlots0, plainYearMonthSlots1, options) => {
+  const calendarId = getCommonCalendarId(plainYearMonthSlots0.calendar, plainYearMonthSlots1.calendar), optionsTuple = refineDiffOptions(invert, options, 9, 9, 8), calendarOps = getCalendarOps(calendarId), firstOfMonth0 = moveToDayOfMonthUnsafe(calendarOps, plainYearMonthSlots0), firstOfMonth1 = moveToDayOfMonthUnsafe(calendarOps, plainYearMonthSlots1);
+  return firstOfMonth0.isoYear === firstOfMonth1.isoYear && firstOfMonth0.isoMonth === firstOfMonth1.isoMonth && firstOfMonth0.isoDay === firstOfMonth1.isoDay ? createDurationSlots(durationFieldDefaults) : diffDateLike(invert, (() => calendarOps), checkIsoDateInBounds(firstOfMonth0), checkIsoDateInBounds(firstOfMonth1), ...optionsTuple, 8);
+}, exports.diffZonedDateTimes = (getCalendarOps, getTimeZoneOps, invert, slots0, slots1, options) => {
+  const calendarId = getCommonCalendarId(slots0.calendar, slots1.calendar), [largestUnit, smallestUnit, roundingInc, roundingMode] = refineDiffOptions(invert, options, 5), epochNano0 = slots0.epochNanoseconds, epochNano1 = slots1.epochNanoseconds, sign = compareBigNanos(epochNano1, epochNano0);
+  let durationFields;
+  if (sign) {
+    if (largestUnit < 6) {
+      durationFields = diffEpochNanos(epochNano0, epochNano1, largestUnit, smallestUnit, roundingInc, roundingMode);
+    } else {
+      const timeZoneOps = getTimeZoneOps(((a, b) => {
+        if (!isTimeZoneIdsEqual(a, b)) {
+          throw new RangeError("Mismatching TimeZones");
+        }
+        return a;
+      })(slots0.timeZone, slots1.timeZone)), calendarOps = getCalendarOps(calendarId);
+      durationFields = diffZonedEpochsBig(calendarOps, timeZoneOps, slots0, slots1, sign, largestUnit, options), 
+      durationFields = roundRelativeDuration(durationFields, epochNano1, largestUnit, smallestUnit, roundingInc, roundingMode, calendarOps, slots0, extractEpochNano, bindArgs(moveZonedEpochs, timeZoneOps));
+    }
+  } else {
+    durationFields = durationFieldDefaults;
+  }
+  return createDurationSlots(invert ? negateDurationFields(durationFields) : durationFields);
+}, exports.durationFieldNamesAsc = durationFieldNamesAsc, exports.durationWithFields = (slots, fields) => {
+  return createDurationSlots((initialFields = slots, modFields = fields, checkDurationUnits({
+    ...initialFields,
+    ...refineFields(modFields, durationFieldNamesAlpha)
+  })));
+  var initialFields, modFields;
+}, exports.epochMilliToInstant = epochMilli => createInstantSlots(checkEpochNanoInBounds(numberToBigNano(toStrictInteger(epochMilli), nanoInMilli))), 
+exports.epochNanoToInstant = epochNano => createInstantSlots(checkEpochNanoInBounds(bigIntToBigNano(toBigInt(epochNano)))), 
+exports.forbiddenValueOf = "Cannot use valueOf", exports.formatDurationIso = (slots, options) => {
+  const [roundingMode, nanoInc, subsecDigits] = refineTimeDisplayOptions(options, 3);
+  return nanoInc > 1 && checkDurationUnits(slots = {
+    ...slots,
+    ...roundDayTimeDurationByInc(slots, nanoInc, roundingMode)
+  }), ((durationSlots, subsecDigits) => {
+    const {sign: sign} = durationSlots, abs = -1 === sign ? negateDurationFields(durationSlots) : durationSlots, {hours: hours, minutes: minutes} = abs, [wholeSec, subsecNano] = divModBigNano(durationFieldsToBigNano(abs, 3), nanoInSec, divModTrunc);
+    checkDurationTimeUnit(wholeSec);
+    const subsecNanoString = formatSubsecNano(subsecNano, subsecDigits), forceSec = subsecDigits >= 0 || !sign || subsecNanoString;
+    return (sign < 0 ? "-" : "") + "P" + formatDurationFragments({
+      Y: formatDurationNumber(abs.years),
+      M: formatDurationNumber(abs.months),
+      W: formatDurationNumber(abs.weeks),
+      D: formatDurationNumber(abs.days)
+    }) + (hours || minutes || wholeSec || forceSec ? "T" + formatDurationFragments({
+      H: formatDurationNumber(hours),
+      M: formatDurationNumber(minutes),
+      S: formatDurationNumber(wholeSec, forceSec) + subsecNanoString
+    }) : "");
+  })(slots, subsecDigits);
+}, exports.formatInstantIso = (refineTimeZoneString, getTimeZoneOps, instantSlots, options) => {
+  const [timeZoneArg, roundingMode, nanoInc, subsecDigits] = (options => {
+    const timeDisplayTuple = refineTimeDisplayTuple(options = normalizeOptions(options));
+    return [ options.timeZone, ...timeDisplayTuple ];
+  })(options), providedTimeZone = void 0 !== timeZoneArg;
+  return ((providedTimeZone, timeZoneOps, epochNano, roundingMode, nanoInc, subsecDigits) => {
+    epochNano = roundBigNanoByInc(epochNano, nanoInc, roundingMode, 1);
+    const offsetNano = timeZoneOps.getOffsetNanosecondsFor(epochNano);
+    return formatIsoDateTimeFields(epochNanoToIso(epochNano, offsetNano), subsecDigits) + (providedTimeZone ? formatOffsetNano(roundToMinute(offsetNano)) : "Z");
+  })(providedTimeZone, getTimeZoneOps(providedTimeZone ? refineTimeZoneString(timeZoneArg) : utcTimeZoneId), instantSlots.epochNanoseconds, roundingMode, nanoInc, subsecDigits);
+}, exports.formatOffsetNano = formatOffsetNano, exports.formatPlainDateIso = (plainDateSlots, options) => {
+  return calendarId = plainDateSlots.calendar, isoFields = plainDateSlots, calendarDisplay = refineDateDisplayOptions(options), 
+  formatIsoDateFields(isoFields) + formatCalendar(calendarId, calendarDisplay);
+  var calendarId, isoFields, calendarDisplay;
+}, exports.formatPlainDateTimeIso = (plainDateTimeSlots0, options) => {
+  const [a, b, c, d] = (options => (options = normalizeOptions(options), [ refineCalendarDisplay(options), ...refineTimeDisplayTuple(options) ]))(options);
+  return calendarId = plainDateTimeSlots0.calendar, calendarDisplay = a, subsecDigits = d, 
+  formatIsoDateTimeFields(roundDateTimeToNano(plainDateTimeSlots0, c, b), subsecDigits) + formatCalendar(calendarId, calendarDisplay);
+  var calendarId, calendarDisplay, subsecDigits;
+}, exports.formatPlainMonthDayIso = (plainMonthDaySlots, options) => formatDateLikeIso(plainMonthDaySlots.calendar, formatIsoMonthDayFields, plainMonthDaySlots, refineDateDisplayOptions(options)), 
+exports.formatPlainTimeIso = (slots, options) => {
+  const [a, b, c] = refineTimeDisplayOptions(options);
+  return subsecDigits = c, formatIsoTimeFields(roundTimeToNano(slots, b, a)[0], subsecDigits);
+  var subsecDigits;
+}, exports.formatPlainYearMonthIso = (plainYearMonthSlots, options) => formatDateLikeIso(plainYearMonthSlots.calendar, formatIsoYearMonthFields, plainYearMonthSlots, refineDateDisplayOptions(options)), 
+exports.formatZonedDateTimeIso = (getTimeZoneOps, zonedDateTimeSlots0, options) => {
+  const [a, b, c, d, e, f] = (options => {
+    options = normalizeOptions(options);
+    const calendarDisplay = refineCalendarDisplay(options), subsecDigits = refineSubsecDigits(options), offsetDisplay = refineOffsetDisplay(options), roundingMode = refineRoundingMode(options, 4), smallestUnit = refineSmallestUnit(options, 4);
+    return [ calendarDisplay, refineTimeZoneDisplay(options), offsetDisplay, roundingMode, ...refineSmallestUnitAndSubsecDigits(smallestUnit, subsecDigits) ];
+  })(options);
+  return ((getTimeZoneOps, calendarId, timeZoneId, epochNano, calendarDisplay, timeZoneDisplay, offsetDisplay, roundingMode, nanoInc, subsecDigits) => {
+    epochNano = roundBigNanoByInc(epochNano, nanoInc, roundingMode, 1);
+    const offsetNano = getTimeZoneOps(timeZoneId).getOffsetNanosecondsFor(epochNano);
+    return formatIsoDateTimeFields(epochNanoToIso(epochNano, offsetNano), subsecDigits) + formatOffsetNano(roundToMinute(offsetNano), offsetDisplay) + ((timeZoneId, timeZoneDisplay) => 1 !== timeZoneDisplay ? "[" + (2 === timeZoneDisplay ? "!" : "") + timeZoneId + "]" : "")(timeZoneId, timeZoneDisplay) + formatCalendar(calendarId, calendarDisplay);
+  })(getTimeZoneOps, zonedDateTimeSlots0.calendar, zonedDateTimeSlots0.timeZone, zonedDateTimeSlots0.epochNanoseconds, a, b, c, d, e, f);
+}, exports.getCurrentEpochNano = getCurrentEpochNano, exports.getCurrentIsoDateTime = timeZoneOps => {
+  const epochNano = getCurrentEpochNano();
+  return epochNanoToIso(epochNano, timeZoneOps.getOffsetNanosecondsFor(epochNano));
+}, exports.getCurrentTimeZoneId = () => currentTimeZoneId || (currentTimeZoneId = (new RawDateTimeFormat).resolvedOptions().timeZone), 
+exports.getDurationBlank = slots => !slots.sign, exports.getEpochMilli = getEpochMilli, 
+exports.getEpochNano = slots => ((bigNano, divisorNano = 1) => {
+  const [days, timeNano] = bigNano, whole = Math.floor(timeNano / divisorNano), wholeInDay = nanoInUtcDay / divisorNano;
+  return BigInt(days) * BigInt(wholeInDay) + BigInt(whole);
+})(slots.epochNanoseconds), exports.instantConfig = instantConfig, exports.instantToZonedDateTime = (instantSlots, timeZoneId, calendarId = isoCalendarId) => createZonedDateTimeSlots(instantSlots.epochNanoseconds, timeZoneId, calendarId), 
+exports.instantsEqual = (instantSlots0, instantSlots1) => !compareInstants(instantSlots0, instantSlots1), 
+exports.invalidBag = "Invalid bag", exports.invalidCalendar = invalidCalendar, exports.invalidCallingContext = "Invalid calling context", 
+exports.invalidFormatType = branding => `Cannot format ${branding}`, exports.invalidTimeZone = invalidTimeZone, 
+exports.isObjectLike = isObjectLike, exports.isoCalendarId = isoCalendarId, exports.isoTimeFieldDefaults = isoTimeFieldDefaults, 
+exports.isoTimeFieldNamesAsc = isoTimeFieldNamesAsc, exports.mapPropNames = mapPropNames, 
+exports.mapProps = mapProps, exports.memoize = memoize, exports.mismatchingFormatTypes = "Mismatching types for formatting", 
+exports.monthDayConfig = monthDayConfig, exports.moveInstant = (doSubtract, instantSlots, durationSlots) => createInstantSlots(checkEpochNanoInBounds(addBigNanos(instantSlots.epochNanoseconds, (fields => {
+  if (durationHasDateParts(fields)) {
+    throw new RangeError("Cannot use large units");
+  }
+  return durationFieldsToBigNano(fields, 5);
+})(doSubtract ? negateDurationFields(durationSlots) : durationSlots)))), exports.movePlainDate = (getCalendarOps, doSubtract, plainDateSlots, durationSlots, options) => {
+  const {calendar: calendar} = plainDateSlots;
+  return createPlainDateSlots(moveDate(getCalendarOps(calendar), plainDateSlots, doSubtract ? negateDurationFields(durationSlots) : durationSlots, options), calendar);
+}, exports.movePlainDateTime = (getCalendarOps, doSubtract, plainDateTimeSlots, durationSlots, options = Object.create(null)) => {
+  const {calendar: calendar} = plainDateTimeSlots;
+  return createPlainDateTimeSlots(moveDateTime(getCalendarOps(calendar), plainDateTimeSlots, doSubtract ? negateDurationFields(durationSlots) : durationSlots, options), calendar);
+}, exports.movePlainTime = (doSubtract, slots, durationSlots) => createPlainTimeSlots(moveTime(slots, doSubtract ? negateDurationFields(durationSlots) : durationSlots)[0]), 
+exports.movePlainYearMonth = (getCalendarOps, doSubtract, plainYearMonthSlots, durationSlots, options) => {
+  const calendarId = plainYearMonthSlots.calendar, calendarOps = getCalendarOps(calendarId);
+  let isoDateFields = checkIsoDateInBounds(moveToDayOfMonthUnsafe(calendarOps, plainYearMonthSlots));
+  doSubtract && (durationSlots = negateDuration(durationSlots)), durationSlots.sign < 0 && (isoDateFields = calendarOps.dateAdd(isoDateFields, {
+    ...durationFieldDefaults,
+    months: 1
+  }), isoDateFields = moveByDays(isoDateFields, -1));
+  const movedIsoDateFields = calendarOps.dateAdd(isoDateFields, durationSlots, options);
+  return createPlainYearMonthSlots(moveToDayOfMonthUnsafe(calendarOps, movedIsoDateFields), calendarId);
+}, exports.moveZonedDateTime = (getCalendarOps, getTimeZoneOps, doSubtract, zonedDateTimeSlots, durationSlots, options = Object.create(null)) => {
+  const timeZoneOps = getTimeZoneOps(zonedDateTimeSlots.timeZone), calendarOps = getCalendarOps(zonedDateTimeSlots.calendar);
+  return {
+    ...zonedDateTimeSlots,
+    ...moveZonedEpochs(timeZoneOps, calendarOps, zonedDateTimeSlots, doSubtract ? negateDurationFields(durationSlots) : durationSlots, options)
+  };
+}, exports.nanoInMilli = nanoInMilli, exports.negateDuration = negateDuration, exports.numberToBigNano = numberToBigNano, 
+exports.parseCalendarId = s => {
+  const res = parseDateTimeLike(s) || parseYearMonthOnly(s) || parseMonthDayOnly(s);
+  return res ? res.calendar : s;
+}, exports.parseDuration = s => {
+  const parsed = (s => {
+    const parts = durationRegExp.exec(s);
+    return parts ? (parts => {
+      function parseUnit(wholeStr, fracStr, timeUnit) {
+        let leftoverUnits = 0, wholeUnits = 0;
+        if (timeUnit && ([leftoverUnits, leftoverNano] = divModFloor(leftoverNano, unitNanoMap[timeUnit])), 
+        void 0 !== wholeStr) {
+          if (hasAnyFrac) {
+            throw new RangeError(invalidSubstring(wholeStr));
+          }
+          wholeUnits = (s => {
+            const n = parseInt(s);
+            if (!Number.isFinite(n)) {
+              throw new RangeError(invalidSubstring(s));
+            }
+            return n;
+          })(wholeStr), hasAny = 1, fracStr && (leftoverNano = parseSubsecNano(fracStr) * (unitNanoMap[timeUnit] / nanoInSec), 
+          hasAnyFrac = 1);
+        }
+        return leftoverUnits + wholeUnits;
+      }
+      let hasAny = 0, hasAnyFrac = 0, leftoverNano = 0, durationFields = {
+        ...zipProps(durationFieldNamesAsc, [ parseUnit(parts[2]), parseUnit(parts[3]), parseUnit(parts[4]), parseUnit(parts[5]), parseUnit(parts[6], parts[7], 5), parseUnit(parts[8], parts[9], 4), parseUnit(parts[10], parts[11], 3) ]),
+        ...nanoToGivenFields(leftoverNano, 2, durationFieldNamesAsc)
+      };
+      if (!hasAny) {
+        throw new RangeError(noValidFields(durationFieldNamesAsc));
+      }
+      return parseSign(parts[1]) < 0 && (durationFields = negateDurationFields(durationFields)), 
+      durationFields;
+    })(parts) : void 0;
+  })(requireString(s));
+  if (!parsed) {
+    throw new RangeError(failedParse(s));
+  }
+  return createDurationSlots(checkDurationUnits(parsed));
+}, exports.parseInstant = s => {
+  const organized = parseDateTimeLike(s = toStringViaPrimitive(s));
+  if (!organized) {
+    throw new RangeError(failedParse(s));
+  }
+  let offsetNano;
+  if (organized.hasZ) {
+    offsetNano = 0;
+  } else {
+    if (!organized.offset) {
+      throw new RangeError(failedParse(s));
+    }
+    offsetNano = parseOffsetNano(organized.offset);
+  }
+  return organized.timeZone && parseOffsetNanoMaybe(organized.timeZone, 1), createInstantSlots(isoToEpochNanoWithOffset(checkIsoDateTimeFields(organized), offsetNano));
+}, exports.parsePlainDate = parsePlainDate, exports.parsePlainDateTime = s => {
+  const organized = parseDateTimeLike(requireString(s));
+  if (!organized || organized.hasZ) {
+    throw new RangeError(failedParse(s));
+  }
+  return createPlainDateTimeSlots(finalizeDateTime(organized));
+}, exports.parsePlainMonthDay = (getCalendarOps, s) => {
+  const organized = parseMonthDayOnly(requireString(s));
+  if (organized) {
+    return requireIsoCalendar(organized), createPlainMonthDaySlots(checkIsoDateFields(organized));
+  }
+  const dateSlots = parsePlainDate(s, 0, 1), {calendar: calendar} = dateSlots, calendarOps = getCalendarOps(calendar), [origYear, origMonth, day] = calendarOps.dateParts(dateSlots), [monthCodeNumber, isLeapMonth] = calendarOps.monthCodeParts(origYear, origMonth), [year, month] = calendarOps.yearMonthForMonthDay(monthCodeNumber, isLeapMonth, day);
+  return createPlainMonthDaySlots(checkIsoDateInBounds(calendarOps.isoFields(year, month, day)), calendar);
+}, exports.parsePlainTime = s => {
+  let altParsed, organized = (s => {
+    const parts = timeRegExp.exec(s);
+    return parts ? (organizeAnnotationParts(parts[10]), organizeTimeParts(parts)) : void 0;
+  })(requireString(s));
+  if (!organized) {
+    if (organized = parseDateTimeLike(s), !organized) {
+      throw new RangeError(failedParse(s));
+    }
+    if (!organized.hasTime) {
+      throw new RangeError(failedParse(s));
+    }
+    if (organized.hasZ) {
+      throw new RangeError(invalidSubstring("Z"));
+    }
+    requireIsoCalendar(organized);
+  }
+  if ((altParsed = parseYearMonthOnly(s)) && isIsoDateFieldsValid(altParsed)) {
+    throw new RangeError(failedParse(s));
+  }
+  if ((altParsed = parseMonthDayOnly(s)) && isIsoDateFieldsValid(altParsed)) {
+    throw new RangeError(failedParse(s));
+  }
+  return createPlainTimeSlots(constrainIsoTimeFields(organized, 1));
+}, exports.parsePlainYearMonth = (getCalendarOps, s) => {
+  const organized = parseYearMonthOnly(requireString(s));
+  if (organized) {
+    return requireIsoCalendar(organized), createPlainYearMonthSlots(checkIsoYearMonthInBounds(checkIsoDateFields(organized)));
+  }
+  const isoSlots = parsePlainDate(s, 1);
+  return createPlainYearMonthSlots(moveToDayOfMonthUnsafe(getCalendarOps(isoSlots.calendar), isoSlots));
+}, exports.parseRelativeToSlots = s => {
+  const organized = parseDateTimeLike(requireString(s));
+  if (!organized) {
+    throw new RangeError(failedParse(s));
+  }
+  if (organized.timeZone) {
+    return finalizeZonedDateTime(organized, organized.offset ? parseOffsetNano(organized.offset) : void 0);
+  }
+  if (organized.hasZ) {
+    throw new RangeError(failedParse(s));
+  }
+  return finalizeDate(organized);
+}, exports.parseTimeZoneId = s => {
+  const parsed = parseDateTimeLike(s);
+  return parsed && (parsed.timeZone || parsed.hasZ && utcTimeZoneId || parsed.offset) || s;
+}, exports.parseZonedDateTime = (s, options) => {
+  const organized = parseDateTimeLike(requireString(s));
+  if (!organized || !organized.timeZone) {
+    throw new RangeError(failedParse(s));
+  }
+  const {offset: offset} = organized, offsetNano = offset ? parseOffsetNano(offset) : void 0, [, offsetDisambig, epochDisambig] = refineZonedFieldOptions(options);
+  return finalizeZonedDateTime(organized, offsetNano, offsetDisambig, epochDisambig);
+}, exports.plainDateTimeToZonedDateTime = (getTimeZoneOps, plainDateTimeSlots, timeZoneId, options) => createZonedDateTimeSlots(checkEpochNanoInBounds(((getTimeZoneOps, timeZoneId, isoFields, options) => {
+  const epochDisambig = (options => refineEpochDisambig(normalizeOptions(options)))(options);
+  return getSingleInstantFor(getTimeZoneOps(timeZoneId), isoFields, epochDisambig);
+})(getTimeZoneOps, timeZoneId, plainDateTimeSlots, options)), timeZoneId, plainDateTimeSlots.calendar), 
+exports.plainDateTimeWithFields = (getCalendarOps, plainDateTimeSlots, modFields, options) => {
+  const calendarOps = getCalendarOps(plainDateTimeSlots.calendar), validFieldNames = [ ...calendarOps.fields(dateFieldNamesAlpha), ...timeFieldNamesAsc ].sort(), origFields = {
+    ...computeDateEssentials(slots = plainDateTimeSlots),
+    hour: slots.isoHour,
+    minute: slots.isoMinute,
+    second: slots.isoSecond,
+    millisecond: slots.isoMillisecond,
+    microsecond: slots.isoMicrosecond,
+    nanosecond: slots.isoNanosecond
+  };
+  var slots;
+  const partialFields = refineFields(modFields, validFieldNames), overflow = refineOverflowOptions(options), mergedCalendarFields = calendarOps.mergeFields(origFields, partialFields), mergedAllFields = {
+    ...origFields,
+    ...partialFields
+  };
+  return createPlainDateTimeSlots(checkIsoDateTimeInBounds({
+    ...calendarOps.dateFromFields(mergedCalendarFields, fabricateOverflowOptions(overflow)),
+    ...constrainIsoTimeFields(timeFieldsToIso(mergedAllFields), overflow)
+  }));
+}, exports.plainDateTimeWithPlainTime = (plainDateTimeSlots, plainTimeSlots = isoTimeFieldDefaults) => createPlainDateTimeSlots(checkIsoDateTimeInBounds({
+  ...plainDateTimeSlots,
+  ...plainTimeSlots
+})), exports.plainDateTimesEqual = (plainDateTimeSlots0, plainDateTimeSlots1) => !compareIsoDateTimeFields(plainDateTimeSlots0, plainDateTimeSlots1) && plainDateTimeSlots0.calendar === plainDateTimeSlots1.calendar, 
+exports.plainDateToPlainDateTime = (plainDateSlots, plainTimeFields = isoTimeFieldDefaults) => createPlainDateTimeSlots(checkIsoDateTimeInBounds({
+  ...plainDateSlots,
+  ...plainTimeFields
+})), exports.plainDateToPlainMonthDay = (getCalendarOps, plainDateSlots, plainDateFields) => ((calendarOps, input) => {
+  const fields = refineCalendarFields(calendarOps, input, monthCodeDayFieldNames);
+  return calendarOps.monthDayFromFields(fields);
+})(getCalendarOps(plainDateSlots.calendar), plainDateFields), exports.plainDateToPlainYearMonth = (getCalendarOps, plainDateSlots, plainDateFields) => ((calendarOps, input) => {
+  const fields = refineCalendarFields(calendarOps, input, yearMonthCodeFieldNames);
+  return calendarOps.yearMonthFromFields(fields, void 0);
+})(getCalendarOps(plainDateSlots.calendar), plainDateFields), exports.plainDateToZonedDateTime = (refineTimeZoneString, refinePlainTimeArg, getTimeZoneOps, plainDateSlots, options) => {
+  const timeZoneId = refineTimeZoneString(options.timeZone), plainTimeArg = options.plainTime, isoTimeFields = void 0 !== plainTimeArg ? refinePlainTimeArg(plainTimeArg) : void 0, timeZoneOps = getTimeZoneOps(timeZoneId);
+  let epochNano;
+  return epochNano = isoTimeFields ? getSingleInstantFor(timeZoneOps, {
+    ...plainDateSlots,
+    ...isoTimeFields
+  }) : getStartOfDayInstantFor(timeZoneOps, {
+    ...plainDateSlots,
+    ...isoTimeFieldDefaults
+  }), createZonedDateTimeSlots(epochNano, timeZoneId, plainDateSlots.calendar);
+}, exports.plainDateWithFields = (getCalendarOps, plainDateSlots, modFields, options) => {
+  const calendarOps = getCalendarOps(plainDateSlots.calendar), validFieldNames = calendarOps.fields(dateFieldNamesAlpha).sort(), origFields = computeDateEssentials(plainDateSlots), partialFields = refineFields(modFields, validFieldNames), mergedFields = calendarOps.mergeFields(origFields, partialFields);
+  return calendarOps.dateFromFields(mergedFields, options);
+}, exports.plainDatesEqual = (plainDateSlots0, plainDateSlots1) => !compareIsoDateFields(plainDateSlots0, plainDateSlots1) && plainDateSlots0.calendar === plainDateSlots1.calendar, 
+exports.plainMonthDayToPlainDate = (getCalendarOps, plainMonthDaySlots, plainMonthDayFields, bag) => ((calendarOps, input, bag) => convertToIso(calendarOps, input, monthCodeDayFieldNames, requireObjectLike(bag), yearFieldNames))(getCalendarOps(plainMonthDaySlots.calendar), plainMonthDayFields, bag), 
+exports.plainMonthDayWithFields = (getCalendarOps, plainMonthDaySlots, modFields, options) => {
+  const calendarOps = getCalendarOps(plainMonthDaySlots.calendar), validFieldNames = calendarOps.fields(dateFieldNamesAlpha).sort(), origFields = (slots => {
+    const calendarOps = createNativePartOps(slots.calendar), [year, month, day] = calendarOps.dateParts(slots), [monthCodeNumber, isLeapMonth] = calendarOps.monthCodeParts(year, month);
+    return {
+      monthCode: formatMonthCode(monthCodeNumber, isLeapMonth),
+      day: day
+    };
+  })(plainMonthDaySlots), partialFields = refineFields(modFields, validFieldNames), mergedFields = calendarOps.mergeFields(origFields, partialFields);
+  return calendarOps.monthDayFromFields(mergedFields, options);
+}, exports.plainMonthDaysEqual = (plainMonthDaySlots0, plainMonthDaySlots1) => !compareIsoDateFields(plainMonthDaySlots0, plainMonthDaySlots1) && plainMonthDaySlots0.calendar === plainMonthDaySlots1.calendar, 
+exports.plainTimeWithFields = (initialFields, mod, options) => createPlainTimeSlots(((initialFields, modFields, options) => refineTimeBag({
+  ...pluckProps(timeFieldNamesAlpha, initialFields),
+  ...refineFields(modFields, timeFieldNamesAlpha)
+}, refineOverflowOptions(options)))(initialFields, mod, options)), exports.plainTimesEqual = (plainTimeSlots0, plainTimeSlots1) => !compareIsoTimeFields(plainTimeSlots0, plainTimeSlots1), 
+exports.plainYearMonthToPlainDate = (getCalendarOps, plainYearMonthSlots, plainYearMonthFields, bag) => ((calendarOps, input, bag) => convertToIso(calendarOps, input, yearMonthCodeFieldNames, requireObjectLike(bag), dayFieldNames))(getCalendarOps(plainYearMonthSlots.calendar), plainYearMonthFields, bag), 
+exports.plainYearMonthWithFields = (getCalendarOps, plainYearMonthSlots, modFields, options) => {
+  const calendarOps = getCalendarOps(plainYearMonthSlots.calendar), validFieldNames = calendarOps.fields(yearMonthFieldNames).sort(), origFields = (slots => {
+    const calendarOps = createNativePartOps(slots.calendar), [year, month] = calendarOps.dateParts(slots), [monthCodeNumber, isLeapMonth] = calendarOps.monthCodeParts(year, month);
+    return {
+      year: year,
+      monthCode: formatMonthCode(monthCodeNumber, isLeapMonth)
+    };
+  })(plainYearMonthSlots), partialFields = refineFields(modFields, validFieldNames), mergedFields = calendarOps.mergeFields(origFields, partialFields);
+  return calendarOps.yearMonthFromFields(mergedFields, options);
+}, exports.plainYearMonthsEqual = (plainYearMonthSlots0, plainYearMonthSlots1) => !compareIsoDateFields(plainYearMonthSlots0, plainYearMonthSlots1) && plainYearMonthSlots0.calendar === plainYearMonthSlots1.calendar, 
+exports.pluckProps = pluckProps, exports.queryNativeTimeZone = queryNativeTimeZone, 
+exports.refineCalendarId = id => resolveCalendarId(requireString(id)), exports.refineDirectionOptions = options => {
+  const normalizedOptions = normalizeOptionsOrString(options, "direction"), res = refineChoiceOption("direction", directionMap, normalizedOptions, 0);
+  if (!res) {
+    throw new RangeError(invalidEntity("direction", res));
+  }
+  return res;
+}, exports.refineDurationBag = bag => {
+  const durationFields = refineFields(bag, durationFieldNamesAlpha);
+  return createDurationSlots(checkDurationUnits({
+    ...durationFieldDefaults,
+    ...durationFields
+  }));
+}, exports.refineMaybeZonedDateTimeBag = (refineTimeZoneString, getTimeZoneOps, calendarOps, bag) => {
+  const fields = refineCalendarFields(calendarOps, bag, dateFieldNamesAlpha, [], timeAndZoneFieldNames);
+  if (void 0 !== fields.timeZone) {
+    const isoDateFields = calendarOps.dateFromFields(fields), isoTimeFields = refineTimeBag(fields), timeZoneId = refineTimeZoneString(fields.timeZone);
+    return {
+      epochNanoseconds: getMatchingInstantFor(getTimeZoneOps(timeZoneId), {
+        ...isoDateFields,
+        ...isoTimeFields
+      }, void 0 !== fields.offset ? parseOffsetNano(fields.offset) : void 0),
+      timeZone: timeZoneId
+    };
+  }
+  return {
+    ...calendarOps.dateFromFields(fields),
+    ...isoTimeFieldDefaults
+  };
+}, exports.refineOverflowOptions = refineOverflowOptions, exports.refinePlainDateBag = (calendarOps, bag, options, requireFields = []) => {
+  const fields = refineCalendarFields(calendarOps, bag, dateFieldNamesAlpha, requireFields);
+  return calendarOps.dateFromFields(fields, options);
+}, exports.refinePlainDateTimeBag = (calendarOps, bag, options) => {
+  const fields = refineCalendarFields(calendarOps, bag, dateFieldNamesAlpha, [], timeFieldNamesAsc), overflow = refineOverflowOptions(options);
+  return createPlainDateTimeSlots(checkIsoDateTimeInBounds({
+    ...calendarOps.dateFromFields(fields, fabricateOverflowOptions(overflow)),
+    ...refineTimeBag(fields, overflow)
+  }));
+}, exports.refinePlainMonthDayBag = (calendarOps, calendarAbsent, bag, options) => {
+  const fields = refineCalendarFields(calendarOps, bag, dateFieldNamesAlpha, dayFieldNames);
+  return calendarAbsent && void 0 !== fields.month && void 0 === fields.monthCode && void 0 === fields.year && (fields.year = isoEpochFirstLeapYear), 
+  calendarOps.monthDayFromFields(fields, options);
+}, exports.refinePlainTimeBag = (bag, options) => createPlainTimeSlots(refineTimeBag(refineFields(bag, timeFieldNamesAlpha, [], 1), refineOverflowOptions(options))), 
+exports.refinePlainYearMonthBag = (calendarOps, bag, options, requireFields) => {
+  const fields = refineCalendarFields(calendarOps, bag, yearMonthFieldNames, requireFields);
+  return calendarOps.yearMonthFromFields(fields, options);
+}, exports.refineTimeZoneId = id => resolveTimeZoneId(requireString(id)), exports.refineZonedDateTimeBag = (refineTimeZoneString, getTimeZoneOps, calendarOps, calendarId, bag, options) => {
+  const fields = refineCalendarFields(calendarOps, bag, dateFieldNamesAlpha, timeZoneFieldNames, timeAndZoneFieldNames), timeZoneId = refineTimeZoneString(fields.timeZone), [overflow, offsetDisambig, epochDisambig] = refineZonedFieldOptions(options), isoDateFields = calendarOps.dateFromFields(fields, fabricateOverflowOptions(overflow)), isoTimeFields = refineTimeBag(fields, overflow);
+  return createZonedDateTimeSlots(getMatchingInstantFor(getTimeZoneOps(timeZoneId), {
+    ...isoDateFields,
+    ...isoTimeFields
+  }, void 0 !== fields.offset ? parseOffsetNano(fields.offset) : void 0, offsetDisambig, epochDisambig), timeZoneId, calendarId);
+}, exports.refineZonedFieldOptions = refineZonedFieldOptions, exports.requireBoolean = requireBoolean, 
+exports.requireInteger = requireInteger, exports.requireIntegerOrUndefined = input => {
+  if (void 0 !== input) {
+    return requireInteger(input);
+  }
+}, exports.requireNumberIsInteger = requireNumberIsInteger, exports.requirePositiveInteger = requirePositiveInteger, 
+exports.requirePositiveIntegerOrUndefined = input => {
+  if (void 0 !== input) {
+    return requirePositiveInteger(input);
+  }
+}, exports.requireString = requireString, exports.requireStringOrUndefined = input => {
+  if (void 0 !== input) {
+    return requireString(input);
+  }
+}, exports.resolveCalendarId = resolveCalendarId, exports.resolveTimeZoneId = resolveTimeZoneId, 
+exports.roundDuration = (refineRelativeTo, getCalendarOps, getTimeZoneOps, slots, options) => {
+  const durationLargestUnit = getMaxDurationUnit(slots), [largestUnit, smallestUnit, roundingInc, roundingMode, relativeToSlots] = ((options, defaultLargestUnit, refineRelativeTo) => {
+    options = normalizeOptionsOrString(options, smallestUnitStr);
+    let largestUnit = refineLargestUnit(options);
+    const relativeToInternals = refineRelativeTo(options.relativeTo);
+    let roundingInc = parseRoundingIncInteger(options);
+    const roundingMode = refineRoundingMode(options, 7);
+    let smallestUnit = refineSmallestUnit(options);
+    if (void 0 === largestUnit && void 0 === smallestUnit) {
+      throw new RangeError("Required smallestUnit or largestUnit");
+    }
+    if (null == smallestUnit && (smallestUnit = 0), null == largestUnit && (largestUnit = Math.max(smallestUnit, defaultLargestUnit)), 
+    checkLargestSmallestUnit(largestUnit, smallestUnit), roundingInc = refineRoundingInc(roundingInc, smallestUnit, 1), 
+    roundingInc > 1 && smallestUnit > 5 && largestUnit !== smallestUnit) {
+      throw new RangeError("For calendar units with roundingIncrement > 1, use largestUnit = smallestUnit");
+    }
+    return [ largestUnit, smallestUnit, roundingInc, roundingMode, relativeToInternals ];
+  })(options, durationLargestUnit, refineRelativeTo), maxUnit = Math.max(durationLargestUnit, largestUnit);
+  if (!relativeToSlots && maxUnit <= 6) {
+    return createDurationSlots(checkDurationUnits(((durationFields, largestUnit, smallestUnit, roundingInc, roundingMode) => {
+      const roundedBigNano = roundBigNano(durationFieldsToBigNano(durationFields), smallestUnit, roundingInc, roundingMode);
+      return {
+        ...durationFieldDefaults,
+        ...nanoToDurationDayTimeFields(roundedBigNano, largestUnit)
+      };
+    })(slots, largestUnit, smallestUnit, roundingInc, roundingMode)));
+  }
+  if (!isZonedEpochSlots(relativeToSlots) && !slots.sign) {
+    return slots;
+  }
+  if (!relativeToSlots) {
+    throw new RangeError("Missing relativeTo");
+  }
+  const [marker, calendarOps, timeZoneOps] = createMarkerSystem(getCalendarOps, getTimeZoneOps, relativeToSlots), markerToEpochNano = createMarkerToEpochNano(timeZoneOps), moveMarker = createMoveMarker(timeZoneOps), diffMarkers = createDiffMarkers(timeZoneOps), endMarker = moveMarker(calendarOps, marker, slots);
+  isZonedEpochSlots(relativeToSlots) || (checkIsoDateTimeInBounds(marker), checkIsoDateTimeInBounds(endMarker));
+  let balancedDuration = diffMarkers(calendarOps, marker, endMarker, largestUnit);
+  const origSign = slots.sign, balancedSign = computeDurationSign(balancedDuration);
+  if (origSign && balancedSign && origSign !== balancedSign) {
+    throw new RangeError(invalidProtocolResults);
+  }
+  return balancedDuration = roundRelativeDuration(balancedDuration, markerToEpochNano(endMarker), largestUnit, smallestUnit, roundingInc, roundingMode, calendarOps, marker, markerToEpochNano, moveMarker), 
+  createDurationSlots(balancedDuration);
+}, exports.roundInstant = (instantSlots, options) => {
+  const [smallestUnit, roundingInc, roundingMode] = refineRoundingOptions(options, 5, 1);
+  return createInstantSlots(roundBigNano(instantSlots.epochNanoseconds, smallestUnit, roundingInc, roundingMode, 1));
+}, exports.roundPlainDateTime = (slots, options) => createPlainDateTimeSlots(roundDateTime(slots, ...refineRoundingOptions(options)), slots.calendar), 
+exports.roundPlainTime = (slots, options) => {
+  const [a, b, c] = refineRoundingOptions(options, 5);
+  var roundingMode;
+  return createPlainTimeSlots((roundingMode = c, roundTimeToNano(slots, computeNanoInc(a, b), roundingMode)[0]));
+}, exports.roundZonedDateTime = (getTimeZoneOps, slots, options) => {
+  let {epochNanoseconds: epochNanoseconds, timeZone: timeZone, calendar: calendar} = slots;
+  const [smallestUnit, roundingInc, roundingMode] = refineRoundingOptions(options);
+  if (0 === smallestUnit && 1 === roundingInc) {
+    return slots;
+  }
+  const timeZoneOps = getTimeZoneOps(timeZone);
+  if (6 === smallestUnit) {
+    epochNanoseconds = ((computeInterval, timeZoneOps, slots, roundingMode) => {
+      const isoSlots = zonedEpochSlotsToIso(slots, timeZoneOps), [isoFields0, isoFields1] = computeInterval(isoSlots), epochNano = slots.epochNanoseconds, epochNano0 = getStartOfDayInstantFor(timeZoneOps, isoFields0), epochNano1 = getStartOfDayInstantFor(timeZoneOps, isoFields1);
+      if (bigNanoOutside(epochNano, epochNano0, epochNano1)) {
+        throw new RangeError(invalidProtocolResults);
+      }
+      return roundWithMode(computeEpochNanoFrac(epochNano, epochNano0, epochNano1), roundingMode) ? epochNano1 : epochNano0;
+    })(computeDayInterval, timeZoneOps, slots, roundingMode);
+  } else {
+    const offsetNano = timeZoneOps.getOffsetNanosecondsFor(epochNanoseconds);
+    epochNanoseconds = getMatchingInstantFor(timeZoneOps, roundDateTime(epochNanoToIso(epochNanoseconds, offsetNano), smallestUnit, roundingInc, roundingMode), offsetNano, 2, 0, 1);
+  }
+  return createZonedDateTimeSlots(epochNanoseconds, timeZone, calendar);
+}, exports.slotsWithCalendarId = (slots, calendarId) => ({
+  ...slots,
+  calendar: calendarId
+}), exports.slotsWithTimeZoneId = (slots, timeZoneId) => ({
+  ...slots,
+  timeZone: timeZoneId
+}), exports.timeConfig = timeConfig, exports.timeFieldNamesAsc = timeFieldNamesAsc, 
+exports.totalDuration = (refineRelativeTo, getCalendarOps, getTimeZoneOps, slots, options) => {
+  const maxDurationUnit = getMaxDurationUnit(slots), [totalUnit, relativeToSlots] = ((options, refineRelativeTo) => {
+    const relativeToInternals = refineRelativeTo((options = normalizeOptionsOrString(options, "unit")).relativeTo);
+    let totalUnit = refineTotalUnit(options);
+    return totalUnit = requirePropDefined("unit", totalUnit), [ totalUnit, relativeToInternals ];
+  })(options, refineRelativeTo), maxUnit = Math.max(totalUnit, maxDurationUnit);
+  if (!relativeToSlots && isUniformUnit(maxUnit, relativeToSlots)) {
+    return totalDayTimeDuration(slots, totalUnit);
+  }
+  if (!relativeToSlots) {
+    throw new RangeError("Missing relativeTo");
+  }
+  if (!slots.sign) {
+    return 0;
+  }
+  const [marker, calendarOps, timeZoneOps] = createMarkerSystem(getCalendarOps, getTimeZoneOps, relativeToSlots), markerToEpochNano = createMarkerToEpochNano(timeZoneOps), moveMarker = createMoveMarker(timeZoneOps), diffMarkers = createDiffMarkers(timeZoneOps), endMarker = moveMarker(calendarOps, marker, slots);
+  isZonedEpochSlots(relativeToSlots) || (checkIsoDateTimeInBounds(marker), checkIsoDateTimeInBounds(endMarker));
+  const balancedDuration = diffMarkers(calendarOps, marker, endMarker, totalUnit);
+  return isUniformUnit(totalUnit, relativeToSlots) ? totalDayTimeDuration(balancedDuration, totalUnit) : ((durationFields, endEpochNano, totalUnit, calendarOps, marker, markerToEpochNano, moveMarker) => {
+    const sign = computeDurationSign(durationFields), [epochNano0, epochNano1] = clampRelativeDuration(calendarOps, clearDurationFields(totalUnit, durationFields), totalUnit, sign, marker, markerToEpochNano, moveMarker), frac = computeEpochNanoFrac(endEpochNano, epochNano0, epochNano1);
+    return durationFields[durationFieldNamesAsc[totalUnit]] + frac * sign;
+  })(balancedDuration, markerToEpochNano(endMarker), totalUnit, calendarOps, marker, markerToEpochNano, moveMarker);
+}, exports.yearMonthConfig = yearMonthConfig, exports.zonedConfig = zonedConfig, 
+exports.zonedDateTimeToInstant = zonedDateTimeSlots0 => createInstantSlots(zonedDateTimeSlots0.epochNanoseconds), 
+exports.zonedDateTimeToPlainDate = (getTimeZoneOps, zonedDateTimeSlots0) => createPlainDateSlots(zonedEpochSlotsToIso(zonedDateTimeSlots0, getTimeZoneOps)), 
+exports.zonedDateTimeToPlainDateTime = (getTimeZoneOps, zonedDateTimeSlots0) => createPlainDateTimeSlots(zonedEpochSlotsToIso(zonedDateTimeSlots0, getTimeZoneOps)), 
+exports.zonedDateTimeToPlainTime = (getTimeZoneOps, zonedDateTimeSlots0) => createPlainTimeSlots(zonedEpochSlotsToIso(zonedDateTimeSlots0, getTimeZoneOps)), 
+exports.zonedDateTimeWithFields = (getCalendarOps, getTimeZoneOps, zonedDateTimeSlots, modFields, options) => {
+  const {calendar: calendar, timeZone: timeZone} = zonedDateTimeSlots, calendarOps = getCalendarOps(calendar), timeZoneOps = getTimeZoneOps(timeZone), validFieldNames = [ ...calendarOps.fields(dateFieldNamesAlpha), ...timeAndOffsetFieldNames ].sort(), origFields = (slots => {
+    const isoFields = zonedEpochSlotsToIso(slots, queryNativeTimeZone), offsetString = formatOffsetNano(isoFields.offsetNanoseconds), calendarOps = createNativePartOps(slots.calendar), [year, month, day] = calendarOps.dateParts(isoFields), [monthCodeNumber, isLeapMonth] = calendarOps.monthCodeParts(year, month), monthCode = formatMonthCode(monthCodeNumber, isLeapMonth);
+    return {
+      ...isoTimeFieldsToCal(isoFields),
+      year: year,
+      monthCode: monthCode,
+      day: day,
+      offset: offsetString
+    };
+  })(zonedDateTimeSlots), partialFields = refineFields(modFields, validFieldNames), mergedCalendarFields = calendarOps.mergeFields(origFields, partialFields), mergedAllFields = {
+    ...origFields,
+    ...partialFields
+  }, [overflow, offsetDisambig, epochDisambig] = refineZonedFieldOptions(options, 2);
+  return createZonedDateTimeSlots(getMatchingInstantFor(timeZoneOps, {
+    ...calendarOps.dateFromFields(mergedCalendarFields, fabricateOverflowOptions(overflow)),
+    ...constrainIsoTimeFields(timeFieldsToIso(mergedAllFields), overflow)
+  }, parseOffsetNano(mergedAllFields.offset), offsetDisambig, epochDisambig), timeZone, calendar);
+}, exports.zonedDateTimeWithPlainTime = (getTimeZoneOps, zonedDateTimeSlots, plainTimeSlots) => {
+  const timeZoneId = zonedDateTimeSlots.timeZone, timeZoneOps = getTimeZoneOps(timeZoneId), isoFields = {
+    ...zonedEpochSlotsToIso(zonedDateTimeSlots, timeZoneOps),
+    ...plainTimeSlots || isoTimeFieldDefaults
+  };
+  let epochNano;
+  return epochNano = plainTimeSlots ? getMatchingInstantFor(timeZoneOps, isoFields, isoFields.offsetNanoseconds, 2) : getStartOfDayInstantFor(timeZoneOps, isoFields), 
+  createZonedDateTimeSlots(epochNano, timeZoneId, zonedDateTimeSlots.calendar);
+}, exports.zonedDateTimesEqual = (zonedDateTimeSlots0, zonedDateTimeSlots1) => !compareZonedDateTimes(zonedDateTimeSlots0, zonedDateTimeSlots1) && !!isTimeZoneIdsEqual(zonedDateTimeSlots0.timeZone, zonedDateTimeSlots1.timeZone) && zonedDateTimeSlots0.calendar === zonedDateTimeSlots1.calendar, 
+exports.zonedEpochSlotsToIso = zonedEpochSlotsToIso;
+
+
+/***/ }),
+
+/***/ 27645:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var classApi = __nccwpck_require__(69256);
+
+exports.Intl = classApi.IntlExtended, exports.Temporal = classApi.Temporal, exports.toTemporalInstant = classApi.toTemporalInstant;
+
 
 /***/ }),
 
