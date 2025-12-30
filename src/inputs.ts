@@ -116,9 +116,11 @@ export const purgePrimaryKey = (function () {
 
 export const purgePrefixes = utils.getInputAsArray(Inputs.PurgePrefixes);
 
-export const purgeLastAccessed = utils.getInputAsInt(Inputs.PurgeLastAccessed);
+export const purgeLastAccessed = utils.getInputAsDuration(
+    Inputs.PurgeLastAccessed
+);
 
-export const purgeCreated = utils.getInputAsInt(Inputs.PurgeCreated);
+export const purgeCreated = utils.getInputAsDuration(Inputs.PurgeCreated);
 
 export const uploadChunkSize =
     utils.getInputAsInt(Inputs.UploadChunkSize) || 32 * 1024 * 1024;

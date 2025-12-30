@@ -3,6 +3,7 @@ import * as github from "@actions/github";
 import { Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
+import { Temporal } from "temporal-polyfill";
 
 export async function purgeCacheByKey(key: string, message?: string) {
     try {
@@ -28,22 +29,23 @@ export async function purgeCacheByKey(key: string, message?: string) {
     }
 }
 
-export const filterCachesByTime = ({
+export const selectOldCaches = ({
     caches,
     doUseLastAccessedTime,
-    maxDate
+    maxTime
 }: {
     caches: utils.Cache[];
     doUseLastAccessedTime: boolean;
-    maxDate: Date;
+    maxTime: Temporal.ZonedDateTime;
 }) =>
     caches.filter(cache => {
-        const at = doUseLastAccessedTime
+        const cacheTime = doUseLastAccessedTime
             ? cache.last_accessed_at
             : cache.created_at;
-        if (at && cache.key) {
-            const atDate = new Date(at);
-            return atDate < maxDate;
+        if (cacheTime && cache.key) {
+            const cacheDateTime =
+                Temporal.Instant.from(cacheTime).toZonedDateTimeISO("UTC");
+            return Temporal.ZonedDateTime.compare(cacheDateTime, maxTime) != 1;
         } else return false;
     });
 
@@ -58,19 +60,20 @@ async function purgeCachesByPrimaryKeyAndPrefixes({
     prefixes: string[];
     doUseTime: boolean;
     doUseLastAccessedTime: boolean;
-    time: number;
+    time: Temporal.ZonedDateTime;
 }): Promise<void> {
     const verb = doUseLastAccessedTime ? "last accessed" : "created";
 
-    const maxDate = utils.getMaxDate({ doUseLastAccessedTime, time });
+    const maxTime = utils.getMaxTime({ doUseLastAccessedTime, time });
+    const doUseMaxTime = doUseTime && maxTime;
 
     let caches: utils.Cache[] = [];
 
     utils.info(
         `
-        Purging cache(s) ${doUseTime ? `${verb} before ${maxDate.toISOString()}, ` : ""}scoped to "${
+        Purging cache(s) ${doUseMaxTime ? `${verb} before ${maxTime}, ` : ""}scoped to "${
             github.context.ref
-        }"${doUseTime ? "," : ""} and with ${
+        }"${doUseMaxTime ? "," : ""} and with ${
             prefixes.length > 0
                 ? `one of the key prefixes:\n${utils.stringify(prefixes)}`
                 : `the key "${primaryKey}".`
@@ -83,11 +86,11 @@ async function purgeCachesByPrimaryKeyAndPrefixes({
         anyRef: false
     });
 
-    if (doUseTime) {
-        caches = filterCachesByTime({
+    if (doUseMaxTime) {
+        caches = selectOldCaches({
             caches,
             doUseLastAccessedTime,
-            maxDate
+            maxTime
         });
     }
 
@@ -126,17 +129,22 @@ async function purgeCachesByPrimaryKeyAndPrefixes({
 
     for (const cache of caches) {
         if (cache.key) {
-            if (doUseTime) {
-                const at = doUseLastAccessedTime
+            if (doUseMaxTime) {
+                const purgeTime = doUseLastAccessedTime
                     ? cache.last_accessed_at
                     : cache.created_at;
-                if (at) {
-                    const atDate = new Date(at);
-                    const atDatePretty = atDate.toISOString();
-                    await purgeCacheByKey(
-                        cache.key,
-                        `Purging the cache that was ${verb} at ${atDatePretty} and that has the key "${cache.key}".`
-                    );
+                if (purgeTime) {
+                    try {
+                        const purgeTimeStr =
+                            Temporal.Instant.from(purgeTime).toZonedDateTimeISO("UTC")
+
+                        await purgeCacheByKey(
+                            cache.key,
+                            `Purging the cache that was ${verb} at ${purgeTimeStr} and that has the key "${cache.key}".`
+                        );
+                    } catch (error: unknown) {
+                        utils.logWarning((error as Error).message);
+                    }
                 }
             } else {
                 await purgeCacheByKey(
@@ -157,13 +165,13 @@ export async function purgeCaches({
 }: {
     primaryKey: string;
     prefixes: string[];
-    time: number;
+    time: Temporal.ZonedDateTime;
 }): Promise<void> {
     if (
         inputs.purgeLastAccessed === undefined &&
         inputs.purgeCreated === undefined
     ) {
-        purgeCachesByPrimaryKeyAndPrefixes({
+        await purgeCachesByPrimaryKeyAndPrefixes({
             primaryKey,
             prefixes,
             doUseTime: false,
