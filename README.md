@@ -284,17 +284,19 @@ Another problem is that derivations produced with the help of flake inputs don't
 
 ### Solution 1 - `saveFromGC`
 
+The Nix function is defined in [`./saveFromGC.nix`](./saveFromGC.nix).
+
 > [!WARNING]
-> We don't guarantee that [`saveFromGC.nix`](./saveFromGC.nix) will be available or won't have breaking changes in future.
+> We don't guarantee that [`./saveFromGC.nix`](./saveFromGC.nix) will be available or won't have breaking changes in future.
 
 Write an expression for a derivation that mentions the necessary paths and flake inputs. Next, [add it to a profile or build it](#solution-2---nix-profile-add-or-nix-build).
 
 - **Pros**: Allows to include and exclude flake inputs in Nix expressions.
 - **Cons**: Requires writing Nix expressions and running extra commands.
 
-#### Sample flake that uses `saveFromGC`
+#### `saveFromGC` example
 
-See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFromGC.nix](./saveFromGC.nix).
+Example or a flake with `saveFromGC` (from [`./examples/saveFromGC/flake.nix`](./examples/saveFromGC/flake.nix)):
 
 <!-- `$ cat flake.nix` as nix -->
 
@@ -346,6 +348,24 @@ See [examples/saveFromGC/flake.nix](./examples/saveFromGC/flake.nix) and [saveFr
       }
     );
 }
+```
+
+Example of GitHub Actions steps:
+
+```yaml
+# ... Install Nix
+#
+# ... Restore cache
+
+- name: Run gcc
+  run: nix develop -c 'gcc --version'
+
+- name: Run hello
+  run: nix run .#hello -- --version
+
+- name: Save packages from garbage collection
+  run: nix profile add .#saveFromGC
+# ... Collect garbage and save cache
 ```
 
 ### Solution 2 - `nix profile add` or `nix build`
