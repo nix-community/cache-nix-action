@@ -59254,7 +59254,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.filterCachesByTime = void 0;
+exports.selectOldCaches = void 0;
 exports.purgeCacheByKey = purgeCacheByKey;
 exports.purgeCaches = purgeCaches;
 const github = __importStar(__nccwpck_require__(93228));
@@ -59282,18 +59282,18 @@ async function purgeCacheByKey(key, message) {
             `);
     }
 }
-const filterCachesByTime = ({ caches, doUseLastAccessedTime, maxTime }) => caches.filter(cache => {
+const selectOldCaches = ({ caches, doUseLastAccessedTime, maxTime }) => caches.filter(cache => {
     const cacheTime = doUseLastAccessedTime
         ? cache.last_accessed_at
         : cache.created_at;
     if (cacheTime && cache.key) {
         const cacheDateTime = temporal_polyfill_1.Temporal.Instant.from(cacheTime).toZonedDateTimeISO("UTC");
-        return cacheDateTime < maxTime;
+        return temporal_polyfill_1.Temporal.ZonedDateTime.compare(cacheDateTime, maxTime) != 1;
     }
     else
         return false;
 });
-exports.filterCachesByTime = filterCachesByTime;
+exports.selectOldCaches = selectOldCaches;
 async function purgeCachesByPrimaryKeyAndPrefixes({ primaryKey, prefixes, doUseTime, doUseLastAccessedTime, time }) {
     const verb = doUseLastAccessedTime ? "last accessed" : "created";
     const maxTime = utils.getMaxTime({ doUseLastAccessedTime, time });
@@ -59309,7 +59309,7 @@ async function purgeCachesByPrimaryKeyAndPrefixes({ primaryKey, prefixes, doUseT
         anyRef: false
     });
     if (doUseMaxTime) {
-        caches = (0, exports.filterCachesByTime)({
+        caches = (0, exports.selectOldCaches)({
             caches,
             doUseLastAccessedTime,
             maxTime
