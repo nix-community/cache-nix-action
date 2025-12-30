@@ -12,9 +12,7 @@ export const restorePrefixesAllMatches = utils.getInputAsArray(
     Inputs.RestorePrefixesAllMatches
 );
 
-export const skipRestoreOnHitPrimaryKey = utils.getInputAsBool(
-    Inputs.SkipRestoreOnHitPrimaryKey
-);
+export const lookupOnly = utils.getInputAsBool(Inputs.LookupOnly);
 
 interface FailOn {
     keyType: "primary" | "first-match";

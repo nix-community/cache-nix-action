@@ -85,7 +85,7 @@ export async function restoreImpl(
                 );
                 hitPrimaryKey = true;
 
-                if (!inputs.skipRestoreOnHitPrimaryKey) {
+                if (!inputs.lookupOnly) {
                     restoredKey = await restore.restoreCache(primaryKey);
                     if (restoredKey) {
                         restoredKeys.push(...[restoredKey]);
