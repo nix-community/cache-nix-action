@@ -58,8 +58,10 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - Uses experimental [`nix`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix) commands like [`nix store gc`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-store-gc) and [`nix path-info`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-path-info).
 - By default, the action caches and restores only `/nix` (see [documentation](#inputs) for the `paths` input).
   - The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nix.dev/manual/nix/2.33/store/types/local-store.html#local-store)).
-  - When restoring a cache, the action doesn't extract from the cache the `/nix/store` paths that already exist on the runner.
-  - Additionally, the action unarchives only the `/nix/var/nix/db/db.sqlite` and skips other cached `/nix/var` directories.
+  - When restoring a cache, the action doesn't restore the `/nix/store` paths that already exist on the runner.
+  - Out of all files in `/nix/var`, the action restores only `/nix/var/nix/db/db.sqlite`.
+  - It then replaces that file with a new database file.
+  - The action removes existing `/nix/var/nix/db/db.sqlite-wal` and `/nix/var/nix/db/db.sqlite-shm` (see [WAL-mode File Format](https://sqlite.org/walformat.html)) because the new database file is incompatible with them and they're unnecessary (assumption).
   - The action merges existing and new databases when restoring a cache.
 - The action supports only `Linux` and `macOS` runners for Nix store caching.
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
