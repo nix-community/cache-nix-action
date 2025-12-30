@@ -171,7 +171,7 @@ export async function purgeCaches({
         inputs.purgeLastAccessed === undefined &&
         inputs.purgeCreated === undefined
     ) {
-        purgeCachesByPrimaryKeyAndPrefixes({
+        await purgeCachesByPrimaryKeyAndPrefixes({
             primaryKey,
             prefixes,
             doUseTime: false,
