@@ -29,7 +29,7 @@ export async function purgeCacheByKey(key: string, message?: string) {
     }
 }
 
-export const filterCachesByTime = ({
+export const selectOldCaches = ({
     caches,
     doUseLastAccessedTime,
     maxTime
@@ -87,7 +87,7 @@ async function purgeCachesByPrimaryKeyAndPrefixes({
     });
 
     if (doUseMaxTime) {
-        caches = filterCachesByTime({
+        caches = selectOldCaches({
             caches,
             doUseLastAccessedTime,
             maxTime
