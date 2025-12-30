@@ -56,21 +56,7 @@ export const isMacos = process.env.RUNNER_OS === "macOS";
 
 export const nix = utils.getInputAsBool(Inputs.Nix) && (isLinux || isMacos);
 
-export const paths = (
-    nix
-        ? [
-              "/nix",
-              // # TODO research
-              // I'm not sure why these paths should be cached
-              // I only saw them here https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7
-              // Old caches can be invalid after restoring a cache
-              // if they rely on internal Nix store database information
-              // such as `id`s.
-              "~/.cache/nix",
-              "~root/.cache/nix"
-          ]
-        : []
-).concat(
+export const paths = (nix ? ["/nix"] : []).concat(
     (function () {
         const paths = utils.getInputAsArray(Inputs.Paths);
         const pathsPlatform = utils.getInputAsArray(

@@ -34,7 +34,7 @@ let
 
   q = txt: "`${txt}`";
   whenListOf = "When a newline-separated non-empty list of non-empty";
-  pathsDefault = ''`["/nix", "~/.cache/nix", "~root/.cache/nix"]`'';
+  pathsDefault = ''`["/nix"]`'';
   nixTrue = "nix: true";
 
   pathsWhen = ''${whenListOf} path patterns (see [`@actions/glob`](https://github.com/actions/toolkit/tree/main/packages/glob) for supported patterns), the action appends it to default paths and uses the resulting list for ${specific.actions} caches.'';
@@ -129,7 +129,7 @@ in
 
     ${paths}:
       description: |
-        - When ${q nixTrue}, the action uses ${pathsDefault} as default paths, as suggested [here](https://github.com/divnix/nix-cache-action/blob/b14ec98ae694c754f57f8619ea21b6ab44ccf6e7/action.yml#L7).
+        - When ${q nixTrue}, the action uses ${pathsDefault} as default paths.
         - Otherwise, the action uses an empty list as default paths.
         - ${pathsWhen}
         - ${pathsOtherwise}
