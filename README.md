@@ -29,7 +29,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 ## A typical job
 
 > [!NOTE]
-> Inputs are given for reference. All available inputs are specified [below](#inputs).
+> See all available action inputs in [Inputs](#inputs).
 
 1. One of the [compatible actions](#compatible-nix-installers) installs Nix.
 
@@ -37,6 +37,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
    > [!NOTE]
    > For a cache to be restored in the current step, `paths` used to create that cache must be the same as the `paths` specified in the current step.
+
    1. The `cache-nix-action` tries to restore a cache whose key is the same as the specified one (inputs: `primary-key`, `paths`).
 
    1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in a given list of key prefixes (inputs: `restore-prefixes-first-match`, `paths`).
