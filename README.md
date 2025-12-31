@@ -132,9 +132,9 @@ See [Caching Approaches](#caching-approaches).
     purge-prefixes: nix-${{ runner.os }}-
     # created more than this number of seconds ago
     purge-created: 0
-    # or, last accessed more than this number of seconds ago
-    # relative to the start of the `Post Restore and save Nix store` phase
-    purge-last-accessed: 0
+    # or last accessed this duration (ISO 8601 duration format)
+    # before the start of the `Post Restore and save Nix store` phase
+    purge-last-accessed: P1DT12H
     # except any version with the key that is the same as the `primary-key`
     purge-primary-key: never
 ```
