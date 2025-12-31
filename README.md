@@ -484,10 +484,14 @@ These distances affect the restore and save speed.
 
 ### GitHub Actions
 
-- [DeterminateSystems/magic-nix-cache-action](https://github.com/DeterminateSystems/magic-nix-cache-action)
-- [nix-community/cache-nix-action](https://github.com/nix-community/cache-nix-action)
+- [`nix-community/cache-nix-action`](#nix-communitycache-nix-action)
+- [`DeterminateSystems/magic-nix-cache-action`](#determinatesystemsmagic-nix-cache-action)
+- [`actions/cache`](#actionscache)
+- [`rikhuijzer/cache-install`](#rikhuijzercache-install)
 
-#### cache-nix-action
+#### `nix-community/cache-nix-action`
+
+[Link](https://github.com/nix-community/cache-nix-action)
 
 **Pros**:
 
@@ -503,9 +507,11 @@ These distances affect the restore and save speed.
 
 **Cons**: see [Limitations](#limitations)
 
-#### magic-nix-cache-action
+#### `DeterminateSystems/magic-nix-cache-action`
 
-**Pros** ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
+[Link](https://github.com/DeterminateSystems/magic-nix-cache-action)
+
+**Pros** ([source](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
 
 - Free.
 - Easy to set up.
@@ -520,50 +526,56 @@ These distances affect the restore and save speed.
   - Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
 - Saves a cache for each path in a store and quickly litters `Caches`.
 
-#### FlakeHub Cache
+#### `actions/cache`
 
-**Pros** ([link](https://flakehub.com/cache)):
+[Link](https://github.com/actions/cache)
 
-- Free for one month with a coupon code ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
-- Easy to set up.
+If the action is used with [`nixbuild/nix-quick-install-action`](https://github.com/nixbuild/nix-quick-install-action), it's similar to the [`nix-community/cache-nix-action`](#nix-communitycache-nix-action).
 
-**Cons**:
-
-- Not free ([link](https://flakehub.com/cache))
-
-#### actions/cache
-
-If used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action), it's similar to the [cache-nix-action](#cache-nix-action).
-
-If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-help-stores.html#local-store):
+If used with [`cachix/install-nix-action`](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-help-stores.html#local-store):
 
 **Pros**:
 
-- Quick restore and save `/tmp/nix`.
+- Quickly restores and saves `/tmp/nix`.
+- `chroot` store works only on Linux.
 
 **Cons**:
 
 - Slow [`nix copy`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
 
-If used with [install-nix-action](https://github.com/cachix/install-nix-action) and this [trick](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1030697681), it's similar to the [cache-nix-action](#cache-nix-action), but slower ([link](https://github.com/ryantm/nix-installer-action-benchmark)).
+If used with [`cachix/install-nix-action`](https://github.com/cachix/install-nix-action) and this [trick](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1030697681), it's similar to the [`nix-community/cache-nix-action`](#nix-communitycache-nix-action) but slower ([link](https://github.com/ryantm/nix-installer-action-benchmark)).
+
+#### `rikhuijzer/cache-install`
+
+**Pros**:
+
+- Quickly restores and saves `/nix/store`, some `/nix/var` files, and profiles ([link](https://github.com/rikhuijzer/cache-install/blob/f7a5251fe0711d671111afdf303db5b5aad8afbd/action.yml#L47-L53)).
+
+**Cons**:
+
+- Coupled with the installer ([link](https://github.com/rikhuijzer/cache-install/blob/f7a5251fe0711d671111afdf303db5b5aad8afbd/src/core.sh#L5)).
 
 ### Hosted binary caches
 
 See [binary cache](https://nix.dev/manual/nix/2.33/glossary.html#gloss-binary-cache), [HTTP Binary Cache Store](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-help-stores.html#http-binary-cache-store).
 
-- [cachix](https://www.cachix.org/)
-- [attic](https://github.com/zhaofengli/attic)
+- [`Cachix`](https://www.cachix.org/)
+- [`Attic`](https://github.com/zhaofengli/attic)
+- [`FlakeHub Cache`](https://flakehub.com/cache)
 
 **Pros**:
 
 - Restore and save paths selectively.
-- Provide least recently used garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
-- Don't cache paths available from the NixOS cache ([cachix](https://docs.cachix.org/garbage-collection?highlight=upstream)).
-- Allow to share paths between projects ([cachix](https://docs.cachix.org/getting-started#using-binaries-with-nix)).
+- Have free tier ([`Cachix`](https://www.cachix.org/pricing), Attic is [FOSS](https://github.com/zhaofengli/attic)).
+- Provide least recently used garbage collection strategies ([`Cachix`](https://docs.cachix.org/garbage-collection?highlight=garbage), [`Attic`](https://github.com/zhaofengli/attic#goals)).
+- Don't cache paths available from the NixOS cache ([`Cachix`](https://docs.cachix.org/garbage-collection?highlight=upstream)).
+- Allow to share paths between projects ([`Cachix`](https://docs.cachix.org/getting-started#using-binaries-with-nix), [`FlakeHub Cache`](https://docs.determinate.systems/flakehub/cache/#pulling-from-the-cache)).
 
 **Cons**:
 
-- Have limited free storage ([cachix](https://www.cachix.org/pricing) gives 5GB for open-source projects).
+- `Cachix` gives only 5GB for open-source projects ([src](https://www.cachix.org/pricing)).
+- `FlakeHub Cache` is available only to paid accounts ([src](https://docs.determinate.systems/flakehub/cache/)).
+- `Attic` needs to be hosted.
 - Need good bandwidth for receiving and pushing paths over the Internet.
 - Can be down.
 
