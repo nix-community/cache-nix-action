@@ -31,17 +31,18 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 > [!NOTE]
 > See all available action inputs in [Inputs](#inputs).
 
+> [!NOTE]
+> The action can't restore a cache when there's a mismatch in the [cache version](#cache-version), e.g., when `paths` used to create a cache differ from those specified in the current job run.
+
 1. One of the [compatible actions](#compatible-nix-installers) installs Nix.
 
 1. `Restore` phase:
 
-   > [!NOTE]
-   > For a cache to be restored in the current step, `paths` used to create that cache must be the same as the `paths` specified in the current step.
-   1. The `cache-nix-action` tries to restore a cache whose key is the same as the specified one (inputs: `primary-key`, `paths`).
+   1. The `cache-nix-action` tries to restore a cache whose key is the same as the specified one (input: `primary-key`).
 
-   1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in a given list of key prefixes (inputs: `restore-prefixes-first-match`, `paths`).
+   1. When the `cache-nix-action` can't restore, it tries to restore a cache whose key matches a prefix in a given list of key prefixes (input: `restore-prefixes-first-match`).
 
-   1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in another given list of key prefixes (inputs: `restore-prefixes-all-matches`, `paths`).
+   1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in another given list of key prefixes (input: `restore-prefixes-all-matches`).
 
 1. Other job steps run.
 
@@ -50,7 +51,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
    1. When there's no cache whose key is the same as the primary key, the `cache-nix-action` collects garbage in the Nix store and saves a new cache (inputs: `save`, `gc-max-store-size`, `gc-max-store-size-linux`, `gc-max-store-size-macos`).
 
-   1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created or last accessed more than a given time ago relative to the start of the `Post Restore` phase (`purge`, `purge-prefixes`, `purge-created`, `purge-last-accessed`, `purge-primary-key`).
+   1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created or last accessed more than a given time ago relative to the start of the `Post Restore` phase (inputs: `purge`, `purge-prefixes`, `purge-created`, `purge-last-accessed`, `purge-primary-key`).
 
 ## Limitations
 
