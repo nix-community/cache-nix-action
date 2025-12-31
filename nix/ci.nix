@@ -451,6 +451,10 @@ in
           nix-installer:
             - DeterminateSystems/determinate-nix-action
             - nixbuild/nix-quick-install-action
+          exclude:
+            # See https://github.com/DeterminateSystems/nix-src/issues/224
+            - nix-installer: DeterminateSystems/determinate-nix-action
+              os: macos-15-intel
       runs-on: ''${{ matrix.os }}
       steps:
         - name: Checkout this repo
@@ -522,6 +526,10 @@ in
           nix-installer:
             - DeterminateSystems/determinate-nix-action
             - nixbuild/nix-quick-install-action
+          exclude:
+            # See https://github.com/DeterminateSystems/nix-src/issues/224
+            - nix-installer: DeterminateSystems/determinate-nix-action
+              os: macos-15-intel
       runs-on: ''${{ matrix.os }}
       steps:
         - name: Checkout this repo
