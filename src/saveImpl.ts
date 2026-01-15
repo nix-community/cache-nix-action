@@ -12,6 +12,7 @@ import * as utils from "./utils/action";
 import { cache } from "./utils/cacheBackend";
 import { collectGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCaches } from "./utils/purge";
+import { installSQLite3 } from "./utils/install";
 import { TarCommandModifiers } from "actions/toolkit/packages/cache/src/options";
 import { Temporal } from "temporal-polyfill";
 
@@ -101,6 +102,16 @@ export async function saveImpl(
                 await collectGarbage();
 
                 utils.info(`Saving a new cache with the key "${primaryKey}".`);
+
+                // Checkpoint WAL before saving to ensure all data is in the DB.
+                if (inputs.nix) {
+                    await installSQLite3();
+                    
+                    utils.info("Checkpointing SQLite WAL.");
+                    await utils.run(
+                        `sqlite3 /nix/var/nix/db/db.sqlite 'PRAGMA wal_checkpoint(TRUNCATE);'`
+                    );
+                }
 
                 let tarCommandModifiers = new TarCommandModifiers();
 
