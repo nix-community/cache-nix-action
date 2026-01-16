@@ -12,7 +12,7 @@ import * as utils from "./utils/action";
 import { cache } from "./utils/cacheBackend";
 import { collectGarbage } from "./utils/collectGarbage";
 import { purgeCacheByKey, purgeCaches } from "./utils/purge";
-import { installSQLite3 } from "./utils/install";
+import { installSQLite3, checkpointDb } from "./utils/database";
 import { TarCommandModifiers } from "actions/toolkit/packages/cache/src/options";
 import { Temporal } from "temporal-polyfill";
 
@@ -106,11 +106,8 @@ export async function saveImpl(
                 // Checkpoint WAL before saving to ensure all data is in the DB.
                 if (inputs.nix) {
                     await installSQLite3();
-                    
-                    utils.info("Checkpointing SQLite WAL.");
-                    await utils.run(
-                        `sqlite3 /nix/var/nix/db/db.sqlite 'PRAGMA wal_checkpoint(TRUNCATE);'`
-                    );
+
+                    await checkpointDb();
                 }
 
                 let tarCommandModifiers = new TarCommandModifiers();

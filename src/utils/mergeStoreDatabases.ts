@@ -3,23 +3,28 @@ import Handlebars from "handlebars";
 
 import { mergeSqlTemplate } from "../templates/merge";
 import * as utils from "./action";
+import { dbShmStandardPath, dbWalStandardPath } from "./database";
 
 export async function mergeStoreDatabases(
     mergeScriptPath: string,
-    dbOldPath: string,
-    dbNewPath: string,
+    dbOldBackupPath: string,
+    dbNewBackupPath: string,
     dbMergedPath: string,
-    dbStorePath: string
+    dbStandardPath: string
 ) {
+    utils.info("Merging databases.");
+    
+    utils.info(`Writing the merge script at ${mergeScriptPath}.`);
+    
+    const template = Handlebars.compile(mergeSqlTemplate);
+    writeFileSync(mergeScriptPath, template({ dbPath1: dbOldBackupPath, dbPath2: dbNewBackupPath }));
+    
     utils.info(
         `
-        Merging store databases "${dbOldPath}" and "${dbNewPath}"
+        Merging store databases "${dbOldBackupPath}" and "${dbNewBackupPath}"
         into the new database "${dbMergedPath}".
         `
     );
-    
-    const template = Handlebars.compile(mergeSqlTemplate);
-    writeFileSync(mergeScriptPath, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
 
     await utils.run(`sqlite3 ${dbMergedPath} < ${mergeScriptPath}`);
     
@@ -27,11 +32,13 @@ export async function mergeStoreDatabases(
     
     await utils.run(`sqlite3 "${dbMergedPath}" 'PRAGMA integrity_check;'`);
     
-    utils.info(`Removing old database files.`)
+    utils.info(`Removing the old database files.`)
     
-    await utils.run(`sudo rm -f ${dbStorePath} ${dbStorePath}-wal ${dbStorePath}-shm`);
+    await utils.run(`rm -f ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath}`);
     
-    utils.info(`Moving the database file to ${dbStorePath}.`)
+    utils.info(`Moving the new database file to ${dbStandardPath}.`)
     
-    await utils.run(`sudo mv ${dbMergedPath} ${dbStorePath}`);    
+    await utils.run(`mv ${dbMergedPath} ${dbStandardPath}`);    
+    
+    utils.info(`Finished merging databases.`)
 }
