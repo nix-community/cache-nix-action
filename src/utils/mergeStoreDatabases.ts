@@ -6,27 +6,27 @@ import * as utils from "./action";
 
 export async function mergeStoreDatabases(
     mergeScriptPath: string,
-    dbOldPath: string,
-    dbNewPath: string,
+    dbOldBackupPath: string,
+    dbNewBackupPath: string,
     dbMergedPath: string,
-    dbStorePath: string
+    dbStandardPath: string
 ) {
     utils.info("Merging databases.");
     
     utils.info("Checkpointing the old database.");
     
     await utils.run(
-        `sqlite3 "${dbStorePath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
+        `sqlite3 "${dbStandardPath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
     );
     
     utils.info(`Writing the merge script at ${mergeScriptPath}.`);
     
     const template = Handlebars.compile(mergeSqlTemplate);
-    writeFileSync(mergeScriptPath, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
+    writeFileSync(mergeScriptPath, template({ dbPath1: dbOldBackupPath, dbPath2: dbNewBackupPath }));
     
     utils.info(
         `
-        Merging store databases "${dbOldPath}" and "${dbNewPath}"
+        Merging store databases "${dbOldBackupPath}" and "${dbNewBackupPath}"
         into the new database "${dbMergedPath}".
         `
     );
@@ -39,11 +39,11 @@ export async function mergeStoreDatabases(
     
     utils.info(`Removing the old database files.`)
     
-    await utils.run(`sudo rm -f ${dbStorePath} ${dbStorePath}-wal ${dbStorePath}-shm`);
+    await utils.run(`sudo rm -f ${dbStandardPath} ${dbStandardPath}-wal ${dbStandardPath}-shm`);
     
-    utils.info(`Moving the new database file to ${dbStorePath}.`)
+    utils.info(`Moving the new database file to ${dbStandardPath}.`)
     
-    await utils.run(`sudo mv ${dbMergedPath} ${dbStorePath}`);    
+    await utils.run(`sudo mv ${dbMergedPath} ${dbStandardPath}`);    
     
     utils.info(`Finished merging databases.`)
 }

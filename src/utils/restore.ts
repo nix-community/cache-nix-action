@@ -1,5 +1,5 @@
 import { existsSync } from 'fs';
-import { dbStorePath, Inputs } from "../constants";
+import { dbStorePath as dbStandardPath, Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 import { cacheUtils } from "./cacheBackend";
@@ -9,8 +9,8 @@ import { installSQLite3 } from './install';
 export async function restoreCache(key: string, ref?: string) {
     const tempDir = await cacheUtils.createTempDirectory();
 
-    const dbOldPath = `${tempDir}/old.sqlite`;
-    const dbNewPath = `${tempDir}/new.sqlite`;
+    const dbOldBackupPath = `${tempDir}/old.sqlite`;
+    const dbNewBackupPath = `${tempDir}/new.sqlite`;
     const dbMergedPath = `${tempDir}/merged.sqlite`;
     
     const user = "runner";
@@ -18,15 +18,15 @@ export async function restoreCache(key: string, ref?: string) {
     
     let copyDb = async (dbPath: string) => {
         await utils.run(`
-            sudo cp ${dbStorePath} ${dbPath};
+            sudo cp ${dbStandardPath} ${dbPath};
             sudo chown ${user}:${group} ${dbPath}
         `)
     }
     
     if (inputs.nix) {
-        utils.info(`Copying "${dbStorePath}" to "${dbOldPath}".`);
+        utils.info(`Copying "${dbStandardPath}" to "${dbOldBackupPath}".`);
         
-        await copyDb(dbOldPath)
+        await copyDb(dbOldBackupPath)
     }
 
     utils.info(
@@ -47,18 +47,18 @@ export async function restoreCache(key: string, ref?: string) {
         await installSQLite3();
 
         if (inputs.nix) {
-            utils.info(`Copying "${dbStorePath}" to "${dbNewPath}".`);
+            utils.info(`Copying "${dbStandardPath}" to "${dbNewBackupPath}".`);
 
-            await copyDb(dbNewPath)
+            await copyDb(dbNewBackupPath)
 
             const mergeScriptPath = `${tempDir}/merge.sql`;
             
             await mergeStoreDatabases(
                 mergeScriptPath,
-                dbOldPath,
-                dbNewPath,
+                dbOldBackupPath,
+                dbNewBackupPath,
                 dbMergedPath,
-                dbStorePath
+                dbStandardPath
             );
             
             const nixCachePath = `${process.env.HOME}/.cache/nix`;
