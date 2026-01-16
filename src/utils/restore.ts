@@ -16,6 +16,9 @@ export async function restoreCache(key: string, ref?: string) {
     const user = "runner";
     const group = inputs.choose("runner", "staff", "");
     
+    // Need SQLite to checkpoint the database.
+    await installSQLite3();
+    
     let copyDb = async (dbPath: string) => {
         utils.info("Checkpointing the database.");
             
@@ -50,8 +53,6 @@ export async function restoreCache(key: string, ref?: string) {
     if (cacheKey) {
         utils.info(`Finished restoring the cache.`);
         
-        await installSQLite3();
-
         if (inputs.nix) {
             await copyDb(dbNewBackupPath)
 
