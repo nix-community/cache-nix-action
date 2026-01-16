@@ -11,6 +11,11 @@ export async function mergeStoreDatabases(
     dbMergedPath: string,
     dbStorePath: string
 ) {
+    utils.info("Checkpointing the old database.");
+    
+    await utils.run(
+        `sqlite3 "${dbStorePath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
+    );
     utils.info(
         `
         Merging store databases "${dbOldPath}" and "${dbNewPath}"
