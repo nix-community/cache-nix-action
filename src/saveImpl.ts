@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 import * as fs from "fs";
 
-import { Events, Inputs, State } from "./constants";
+import { dbStorePath, Events, Inputs, State } from "./constants";
 import * as inputs from "./inputs";
 import {
     IStateProvider,
@@ -109,7 +109,7 @@ export async function saveImpl(
                     
                     utils.info("Checkpointing SQLite WAL.");
                     await utils.run(
-                        `sqlite3 /nix/var/nix/db/db.sqlite 'PRAGMA wal_checkpoint(TRUNCATE);'`
+                        `sqlite3 ${dbStorePath} 'PRAGMA wal_checkpoint(TRUNCATE);'`
                     );
                 }
 

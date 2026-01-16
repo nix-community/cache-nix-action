@@ -1,5 +1,5 @@
 import { existsSync } from 'fs';
-import { Inputs } from "../constants";
+import { dbStorePath, Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 import { cacheUtils } from "./cacheBackend";
@@ -8,7 +8,7 @@ import { installSQLite3 } from './install';
 
 export async function restoreCache(key: string, ref?: string) {
     const tempDir = await cacheUtils.createTempDirectory();
-    const dbStorePath = "/nix/var/nix/db/db.sqlite";
+
     const dbOldPath = `${tempDir}/old.sqlite`;
     const dbNewPath = `${tempDir}/new.sqlite`;
     const dbMergedPath = `${tempDir}/merged.sqlite`;
