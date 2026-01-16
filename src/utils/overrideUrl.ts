@@ -5,9 +5,7 @@ export async function tryOverrideActionsUrl() {
     const customCacheURL = process.env["CUSTOM_ACTIONS_CACHE_URL"];
 
     if (customCacheURL) {
-        utils.info(
-            `Redefining the "ACTIONS_CACHE_URL" to "${customCacheURL}"`
-        );
+        utils.info(`Redefining the "ACTIONS_CACHE_URL" to "${customCacheURL}"`);
         process.env["ACTIONS_CACHE_URL"] = customCacheURL;
     }
 

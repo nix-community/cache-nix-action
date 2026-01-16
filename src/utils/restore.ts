@@ -1,4 +1,4 @@
-import { existsSync } from 'fs';
+import { existsSync } from "fs";
 import { Inputs } from "../constants";
 import { dbStandardPath } from "./database";
 import * as inputs from "../inputs";
@@ -35,12 +35,12 @@ export async function restoreCache(key: string, ref?: string) {
 
     if (cacheKey) {
         utils.info(`Finished restoring the cache.`);
-        
+
         if (inputs.nix) {
-            await copyDb(dbNewBackupPath)
+            await copyDb(dbNewBackupPath);
 
             const mergeScriptPath = `${tempDir}/merge.sql`;
-            
+
             await mergeStoreDatabases(
                 mergeScriptPath,
                 dbOldBackupPath,
@@ -48,14 +48,14 @@ export async function restoreCache(key: string, ref?: string) {
                 dbMergedPath,
                 dbStandardPath
             );
-            
+
             const nixCachePath = `${process.env.HOME}/.cache/nix`;
 
             if (existsSync(nixCachePath)) {
                 utils.info(
                     `Giving write permissions for ${nixCachePath} to the current user.`
                 );
-                
+
                 await utils.run(`sudo chmod -R u+w ${nixCachePath}`);
             }
         }

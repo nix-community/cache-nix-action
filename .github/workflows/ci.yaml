@@ -91,8 +91,12 @@ jobs:
         run: |
           git add dist
           git commit -m "chore: build the action" || echo "Nothing to commit"
-          git add {.,save,restore}/{*.yml,*.md}
+          git add {.,save,restore}/*.md
           git commit -m "chore: update docs" || echo "Nothing to commit"
+          git add {.,save,restore}/*.yml
+          git commit -m "chore: update action configs" || echo "Nothing to commit"
+          git add src/*.ts src/utils/*.ts
+          git commit -m "chore: update src" || echo "Nothing to commit"
           git push
 
       - name: Save flake attributes from garbage collection

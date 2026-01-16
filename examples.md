@@ -40,7 +40,7 @@
 - [Swift, Objective-C - CocoaPods](#swift-objective-c---cocoapods)
 - [Swift - Swift Package Manager](#swift---swift-package-manager)
 - [Swift - Mint](#swift---mint)
-- [* - Bazel](#---bazel)
+- [\* - Bazel](#---bazel)
 
 ## Bun
 
@@ -94,6 +94,7 @@ With `nix-community/cache-nix-action@v6` you can now exclude unwanted packages w
 ```
 
 Or you could move the cache folder like below.
+
 > **Note** This workflow does not work for projects that require files to be placed in user profile package folder
 
 ```yaml
@@ -294,7 +295,7 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
       ${{ runner.os }}-stack-global-
     paths: |
       ~\AppData\Roaming\stack
-      ~\AppData\Local\Programs\stack    
+      ~\AppData\Local\Programs\stack
 - uses: nix-community/cache-nix-action@v6
   name: Cache .stack-work
   with:
@@ -379,7 +380,7 @@ After [deprecation](https://github.blog/changelog/2022-10-11-github-actions-depr
   uses: nix-community/cache-nix-action@v6
   with:
     primary-key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
-    paths: '**/node_modules'
+    paths: "**/node_modules"
 ```
 
 ## Node - Yarn
@@ -515,7 +516,7 @@ Replace `~/.cache/pip` with the correct `paths` if not using Ubuntu.
 
 ### Multiple OS's in a workflow with a matrix
 
-``` yaml
+```yaml
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -523,19 +524,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
-        - os: ubuntu-latest
-          paths: ~/.cache/pip
-        - os: macos-latest
-          paths: ~/Library/Caches/pip
-        - os: windows-latest
-          paths: ~\AppData\Local\pip\Cache
+          - os: ubuntu-latest
+            paths: ~/.cache/pip
+          - os: macos-latest
+            paths: ~/Library/Caches/pip
+          - os: windows-latest
+            paths: ~\AppData\Local\pip\Cache
     steps:
-    - uses: nix-community/cache-nix-action@v6
-      with:
-        primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-prefixes-first-match: |
-         ${{ runner.os }}-pip-
-        paths: ${{ matrix.paths }}
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-prefixes-first-match: |
+            ${{ runner.os }}-pip-
+          paths: ${{ matrix.paths }}
 ```
 
 ### Using pip to get cache location
@@ -692,7 +693,7 @@ steps:
       paths: .mint
 ```
 
-## * - Bazel
+## \* - Bazel
 
 [`bazelisk`](https://github.com/bazelbuild/bazelisk) does not have be to separately downloaded and installed because it's already included in GitHub's `ubuntu-latest` and `macos-latest` base images.
 
