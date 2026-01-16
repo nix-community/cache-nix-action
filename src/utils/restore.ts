@@ -23,6 +23,8 @@ export async function restoreCache(key: string, ref?: string) {
             `sqlite3 "${dbStandardPath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
         );
         
+        utils.info(`Copying "${dbStandardPath}" to "${dbPath}".`);
+        
         await utils.run(`
             sudo cp ${dbStandardPath} ${dbPath};
             sudo chown ${user}:${group} ${dbPath}
@@ -30,8 +32,6 @@ export async function restoreCache(key: string, ref?: string) {
     }
     
     if (inputs.nix) {
-        utils.info(`Copying "${dbStandardPath}" to "${dbOldBackupPath}".`);
-        
         await copyDb(dbOldBackupPath)
     }
 
@@ -53,8 +53,6 @@ export async function restoreCache(key: string, ref?: string) {
         await installSQLite3();
 
         if (inputs.nix) {
-            utils.info(`Copying "${dbStandardPath}" to "${dbNewBackupPath}".`);
-
             await copyDb(dbNewBackupPath)
 
             const mergeScriptPath = `${tempDir}/merge.sql`;
