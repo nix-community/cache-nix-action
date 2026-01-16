@@ -13,7 +13,7 @@ export async function updateDbPermissions() {
     utils.info("Updating the database permissions.");
 
     await utils.run(
-        `sudo chown ${user}:${group} ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath}`
+        `sudo chown ${user}:${group} ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath} 2> /dev/null || true`
     );
 }
 
