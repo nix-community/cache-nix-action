@@ -55,3 +55,5 @@ export enum Events {
 }
 
 export const RefKey = "GITHUB_REF";
+
+export const dbStorePath = "/nix/var/nix/db/db.sqlite";
