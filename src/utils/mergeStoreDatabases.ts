@@ -11,20 +11,25 @@ export async function mergeStoreDatabases(
     dbMergedPath: string,
     dbStorePath: string
 ) {
+    utils.info("Merging databases.");
+    
     utils.info("Checkpointing the old database.");
     
     await utils.run(
         `sqlite3 "${dbStorePath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
     );
+    
+    utils.info(`Writing the merge script at ${mergeScriptPath}.`);
+    
+    const template = Handlebars.compile(mergeSqlTemplate);
+    writeFileSync(mergeScriptPath, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
+    
     utils.info(
         `
         Merging store databases "${dbOldPath}" and "${dbNewPath}"
         into the new database "${dbMergedPath}".
         `
     );
-    
-    const template = Handlebars.compile(mergeSqlTemplate);
-    writeFileSync(mergeScriptPath, template({ dbPath1: dbOldPath, dbPath2: dbNewPath }));
 
     await utils.run(`sqlite3 ${dbMergedPath} < ${mergeScriptPath}`);
     
@@ -32,11 +37,13 @@ export async function mergeStoreDatabases(
     
     await utils.run(`sqlite3 "${dbMergedPath}" 'PRAGMA integrity_check;'`);
     
-    utils.info(`Removing old database files.`)
+    utils.info(`Removing the old database files.`)
     
     await utils.run(`sudo rm -f ${dbStorePath} ${dbStorePath}-wal ${dbStorePath}-shm`);
     
-    utils.info(`Moving the database file to ${dbStorePath}.`)
+    utils.info(`Moving the new database file to ${dbStorePath}.`)
     
     await utils.run(`sudo mv ${dbMergedPath} ${dbStorePath}`);    
+    
+    utils.info(`Finished merging databases.`)
 }
