@@ -17,6 +17,12 @@ export async function restoreCache(key: string, ref?: string) {
     const group = inputs.choose("runner", "staff", "");
     
     let copyDb = async (dbPath: string) => {
+        utils.info("Checkpointing the database.");
+            
+        await utils.run(
+            `sqlite3 "${dbStandardPath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
+        );
+        
         await utils.run(`
             sudo cp ${dbStandardPath} ${dbPath};
             sudo chown ${user}:${group} ${dbPath}

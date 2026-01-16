@@ -13,12 +13,6 @@ export async function mergeStoreDatabases(
 ) {
     utils.info("Merging databases.");
     
-    utils.info("Checkpointing the old database.");
-    
-    await utils.run(
-        `sqlite3 "${dbStandardPath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
-    );
-    
     utils.info(`Writing the merge script at ${mergeScriptPath}.`);
     
     const template = Handlebars.compile(mergeSqlTemplate);
