@@ -2,25 +2,20 @@ import { which } from "@actions/io";
 import * as utils from "./action";
 import * as inputs from "../inputs";
 
-export const dbStandardPath = "/nix/var/nix/db/db.sqlite";
+export const dbStandardDir = "/nix/var/nix/db";
+export const dbStandardPath = `${dbStandardDir}/db.sqlite`;
 export const dbWalStandardPath = `${dbStandardPath}-wal`;
 export const dbShmStandardPath = `${dbStandardPath}-shm`;
 
 const user = "runner";
 const group = inputs.choose("runner", "staff", "");
 
-async function makeWritable(path: string) {
-    await utils.run(
-        `sudo test -f ${path} && sudo chown ${user}:${group} ${path} && sudo chmod +rw ${path} || echo "${path} doesn't exist"`
-    );
-}
-
 export async function updateDbPermissions() {
     utils.info("Updating the database files' permissions.");
 
-    await makeWritable(dbStandardPath);
-    await makeWritable(dbWalStandardPath);
-    await makeWritable(dbShmStandardPath);
+    await utils.run(
+        `sudo chown -R ${user}:${group} ${dbStandardDir} && sudo chmod -R u+rw ${dbStandardDir}`
+    );
 }
 
 export async function checkpointDb() {
