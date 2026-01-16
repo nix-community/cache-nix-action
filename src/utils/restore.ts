@@ -1,5 +1,5 @@
 import { existsSync } from 'fs';
-import { dbStorePath as dbStandardPath, Inputs } from "../constants";
+import { dbStandardPath, Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 import { cacheUtils } from "./cacheBackend";
