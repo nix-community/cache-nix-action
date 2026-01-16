@@ -136,7 +136,9 @@ async function purgeCachesByPrimaryKeyAndPrefixes({
                 if (purgeTime) {
                     try {
                         const purgeTimeStr =
-                            Temporal.Instant.from(purgeTime).toZonedDateTimeISO("UTC")
+                            Temporal.Instant.from(purgeTime).toZonedDateTimeISO(
+                                "UTC"
+                            );
 
                         await purgeCacheByKey(
                             cache.key,
