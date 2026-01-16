@@ -1,5 +1,5 @@
 import { existsSync } from 'fs';
-import { dbStandardPath, Inputs } from "../constants";
+import { dbShmStandardPath, dbStandardPath, dbWalStandardPath, Inputs } from "../constants";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 import { cacheUtils } from "./cacheBackend";
@@ -20,18 +20,23 @@ export async function restoreCache(key: string, ref?: string) {
     await installSQLite3();
     
     let copyDb = async (dbPath: string) => {
+        utils.info("Updating the database permissions.");
+        
+        await utils.run(
+            `sudo chown ${user}:${group} ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath}`
+        )
+        
         utils.info("Checkpointing the database.");
             
         await utils.run(
             `sqlite3 "${dbStandardPath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
         );
         
-        utils.info(`Copying "${dbStandardPath}" to "${dbPath}".`);
+        utils.info(`Copying the database.`);
         
-        await utils.run(`
-            sudo cp ${dbStandardPath} ${dbPath};
-            sudo chown ${user}:${group} ${dbPath}
-        `)
+        await utils.run(
+            `sudo cp ${dbStandardPath} ${dbPath};`
+        )
     }
     
     if (inputs.nix) {
