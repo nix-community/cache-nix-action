@@ -42,7 +42,7 @@
     "@types/nock": "^11.1.0",
     "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.52.0",
-    "@typescript-eslint/parser": "^8.52.0",
+    "@typescript-eslint/parser": "^8.53.0",
     "@vercel/ncc": "^0.38.3",
     "action-docs": "^2.5.1",
     "eslint": "^9.39.2",
