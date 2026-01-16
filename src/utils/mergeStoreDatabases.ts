@@ -3,6 +3,7 @@ import Handlebars from "handlebars";
 
 import { mergeSqlTemplate } from "../templates/merge";
 import * as utils from "./action";
+import { dbShmStandardPath, dbWalStandardPath } from "../constants";
 
 export async function mergeStoreDatabases(
     mergeScriptPath: string,
@@ -33,7 +34,7 @@ export async function mergeStoreDatabases(
     
     utils.info(`Removing the old database files.`)
     
-    await utils.run(`sudo rm -f ${dbStandardPath} ${dbStandardPath}-wal ${dbStandardPath}-shm`);
+    await utils.run(`sudo rm -f ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath}`);
     
     utils.info(`Moving the new database file to ${dbStandardPath}.`)
     
