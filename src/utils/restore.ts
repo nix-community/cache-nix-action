@@ -1,10 +1,11 @@
 import { existsSync } from 'fs';
-import { dbShmStandardPath, dbStandardPath, dbWalStandardPath, Inputs } from "../constants";
+import { Inputs } from "../constants";
+import { dbStandardPath } from "./database";
 import * as inputs from "../inputs";
 import * as utils from "./action";
 import { cacheUtils } from "./cacheBackend";
 import { mergeStoreDatabases } from "./mergeStoreDatabases";
-import { installSQLite3 } from './install';
+import { installSQLite3, copyDb } from "./database";
 
 export async function restoreCache(key: string, ref?: string) {
     const tempDir = await cacheUtils.createTempDirectory();
@@ -12,35 +13,12 @@ export async function restoreCache(key: string, ref?: string) {
     const dbOldBackupPath = `${tempDir}/old.sqlite`;
     const dbNewBackupPath = `${tempDir}/new.sqlite`;
     const dbMergedPath = `${tempDir}/merged.sqlite`;
-    
-    const user = "runner";
-    const group = inputs.choose("runner", "staff", "");
-    
+
     // Need SQLite to checkpoint the database.
     await installSQLite3();
-    
-    let copyDb = async (dbPath: string) => {
-        utils.info("Updating the database permissions.");
-        
-        await utils.run(
-            `sudo chown ${user}:${group} ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath}`
-        )
-        
-        utils.info("Checkpointing the database.");
-            
-        await utils.run(
-            `sqlite3 "${dbStandardPath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
-        );
-        
-        utils.info(`Copying the database.`);
-        
-        await utils.run(
-            `sudo cp ${dbStandardPath} ${dbPath};`
-        )
-    }
-    
+
     if (inputs.nix) {
-        await copyDb(dbOldBackupPath)
+        await copyDb(dbOldBackupPath);
     }
 
     utils.info(

@@ -3,7 +3,7 @@ import Handlebars from "handlebars";
 
 import { mergeSqlTemplate } from "../templates/merge";
 import * as utils from "./action";
-import { dbShmStandardPath, dbWalStandardPath } from "../constants";
+import { dbShmStandardPath, dbWalStandardPath } from "./database";
 
 export async function mergeStoreDatabases(
     mergeScriptPath: string,

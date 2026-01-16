@@ -55,7 +55,3 @@ export enum Events {
 }
 
 export const RefKey = "GITHUB_REF";
-
-export const dbStandardPath = "/nix/var/nix/db/db.sqlite";
-export const dbWalStandardPath = `${dbStandardPath}-wal`;
-export const dbShmStandardPath = `${dbStandardPath}-shm`;
