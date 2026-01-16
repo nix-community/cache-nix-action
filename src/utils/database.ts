@@ -28,7 +28,7 @@ export async function copyDb(dbPath: string) {
 
     utils.info(`Copying the database.`);
 
-    await utils.run(`sudo cp ${dbStandardPath} ${dbPath};`);
+    await utils.run(`sudo cp -p ${dbStandardPath} ${dbPath};`);
 }
 
 export async function installSQLite3() {
