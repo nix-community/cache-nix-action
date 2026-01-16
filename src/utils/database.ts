@@ -9,15 +9,21 @@ export const dbShmStandardPath = `${dbStandardPath}-shm`;
 const user = "runner";
 const group = inputs.choose("runner", "staff", "");
 
-export async function updateDbPermissions() {
-    utils.info("Updating the database permissions.");
-
+async function makeWritable(path: string) {
     await utils.run(
-        `sudo chown ${user}:${group} ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath} 2> /dev/null || true`
+        `sudo test -f ${path} && sudo chown ${user}:${group} ${path} && sudo chmod +rw ${path} || echo "${path} doesn't exist"`
     );
 }
 
-export async function copyDb(dbPath: string) {
+export async function updateDbPermissions() {
+    utils.info("Updating the database files' permissions.");
+
+    await makeWritable(dbStandardPath);
+    await makeWritable(dbWalStandardPath);
+    await makeWritable(dbShmStandardPath);
+}
+
+export async function checkpointDb() {
     await updateDbPermissions();
 
     utils.info("Checkpointing the database.");
@@ -25,10 +31,14 @@ export async function copyDb(dbPath: string) {
     await utils.run(
         `sqlite3 "${dbStandardPath}" 'PRAGMA wal_checkpoint(TRUNCATE);'`
     );
+}
 
-    utils.info(`Copying the database.`);
+export async function copyDb(dbPath: string) {
+    await checkpointDb();
 
-    await utils.run(`sudo cp -p ${dbStandardPath} ${dbPath};`);
+    utils.run("Copying database.");
+
+    await utils.run(`sudo cp -p ${dbStandardPath} ${dbPath}`);
 }
 
 export async function installSQLite3() {
