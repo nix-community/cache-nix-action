@@ -34,11 +34,11 @@ export async function mergeStoreDatabases(
     
     utils.info(`Removing the old database files.`)
     
-    await utils.run(`sudo rm -f ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath}`);
+    await utils.run(`rm -f ${dbStandardPath} ${dbWalStandardPath} ${dbShmStandardPath}`);
     
     utils.info(`Moving the new database file to ${dbStandardPath}.`)
     
-    await utils.run(`sudo mv ${dbMergedPath} ${dbStandardPath}`);    
+    await utils.run(`mv ${dbMergedPath} ${dbStandardPath}`);    
     
     utils.info(`Finished merging databases.`)
 }
