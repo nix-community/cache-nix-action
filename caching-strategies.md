@@ -24,12 +24,12 @@ In your workflows, you can use different strategies to name your key depending o
 One of the most common use case is to use hash for lockfile as key. This way, same cache will be restored for a lockfile until there's a change in dependencies listed in lockfile.
 
 ```yaml
-  - uses: nix-community/cache-nix-action@v6
-    with:
-      primary-key: cache-${{ hashFiles('**/lockfiles') }}
-      paths: |
-        path/to/dependencies
-        some/other/dependencies
+- uses: nix-community/cache-nix-action@v6
+  with:
+    primary-key: cache-${{ hashFiles('**/lockfiles') }}
+    paths: |
+      path/to/dependencies
+      some/other/dependencies
 ```
 
 ### Using restore keys to download the closest matching cache
@@ -37,14 +37,14 @@ One of the most common use case is to use hash for lockfile as key. This way, sa
 If cache is not found matching the primary key, restore keys can be used to download the closest matching cache that was recently created. This ensures that the build/install step will need to additionally fetch just a handful of newer dependencies, and hence saving build time.
 
 ```yaml
-  - uses: nix-community/cache-nix-action@v6
-    with:
-      primary-key: cache-npm-${{ hashFiles('**/lockfiles') }}
-      paths: |
-        path/to/dependencies
-        some/other/dependencies
-      restore-prefixes-first-match: |
-        cache-npm-
+- uses: nix-community/cache-nix-action@v6
+  with:
+    primary-key: cache-npm-${{ hashFiles('**/lockfiles') }}
+    paths: |
+      path/to/dependencies
+      some/other/dependencies
+    restore-prefixes-first-match: |
+      cache-npm-
 ```
 
 The restore keys can be provided as a complete name, or a prefix, read more [here](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key) on how a cache key is matched using restore keys.
@@ -54,12 +54,12 @@ The restore keys can be provided as a complete name, or a prefix, read more [her
 In case of workflows with matrix running for multiple Operating Systems, the caches can be stored separately for each of them. This can be used in combination with hashfiles in case multiple caches are being generated per OS.
 
 ```yaml
-  - uses: nix-community/cache-nix-action@v6
-    with:
-      primary-key: ${{ runner.os }}-cache
-      paths: |
-        path/to/dependencies
-        some/other/dependencies
+- uses: nix-community/cache-nix-action@v6
+  with:
+    primary-key: ${{ runner.os }}-cache
+    paths: |
+      path/to/dependencies
+      some/other/dependencies
 ```
 
 ### Creating a short lived cache
@@ -67,18 +67,18 @@ In case of workflows with matrix running for multiple Operating Systems, the cac
 Caches scoped to the particular workflow run id or run attempt can be stored and referred by using the run id/attempt. This is an effective way to have a short lived cache.
 
 ```yaml
-    primary-key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+primary-key: cache-${{ github.run_id }}-${{ github.run_attempt }}
 ```
 
 On similar lines, commit sha can be used to create a very specialized and short lived cache.
 
 ```yaml
-  - uses: nix-community/cache-nix-action@v6
-    with:
-      primary-key: cache-${{ github.sha }}
-      paths: |
-        path/to/dependencies
-        some/other/dependencies
+- uses: nix-community/cache-nix-action@v6
+  with:
+    primary-key: cache-${{ github.sha }}
+    paths: |
+      path/to/dependencies
+      some/other/dependencies
 ```
 
 ### Using multiple factors while forming a key depending on the need
@@ -86,12 +86,12 @@ On similar lines, commit sha can be used to create a very specialized and short 
 Cache key can be formed by combination of more than one metadata, evaluated info.
 
 ```yaml
-  - uses: nix-community/cache-nix-action@v6
-    with:
-      primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-      paths: |
-        path/to/dependencies
-        some/other/dependencies
+- uses: nix-community/cache-nix-action@v6
+  with:
+    primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    paths: |
+      path/to/dependencies
+      some/other/dependencies
 ```
 
 The [GitHub Context](https://docs.github.com/en/actions/learn-github-actions/contexts#github-context) can be used to create keys using the workflows metadata.
@@ -222,7 +222,7 @@ Let's say we have a restore step that computes key at runtime
 uses: nix-community/cache-nix-action@v6
 id: restore-cache
 with:
-    primary-key: cache-${{ hashFiles('**/lockfiles') }}
+  primary-key: cache-${{ hashFiles('**/lockfiles') }}
 ```
 
 Case 1: Where an user would want to reuse the key as it is
@@ -230,7 +230,7 @@ Case 1: Where an user would want to reuse the key as it is
 ```yaml
 uses: nix-community/cache-nix-action@v6
 with:
-    primary-key: ${{ steps.restore-cache.outputs.primary-key }}
+  primary-key: ${{ steps.restore-cache.outputs.primary-key }}
 ```
 
 Case 2: Where the user would want to re-evaluate the key
@@ -238,7 +238,7 @@ Case 2: Where the user would want to re-evaluate the key
 ```yaml
 uses: nix-community/cache-nix-action@v6
 with:
-    primary-key: npm-cache-${{hashfiles(package-lock.json)}}
+  primary-key: npm-cache-${{hashfiles(package-lock.json)}}
 ```
 
 ### Saving cache even if the build fails
@@ -280,7 +280,7 @@ steps:
   - name: Install Dependencies
     if: steps.cache.outputs.hit-primary-key != 'true'
     run: ./install.sh
-      
+
   - name: Build
     run: ./build-child-module.sh
 
