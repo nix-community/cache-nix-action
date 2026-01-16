@@ -58448,6 +58448,64 @@ function getInputAsBool(name, options) {
 
 /***/ }),
 
+/***/ 81930:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.installSQLite3 = installSQLite3;
+const io_1 = __nccwpck_require__(94994);
+const inputs = __importStar(__nccwpck_require__(38422));
+const utils = __importStar(__nccwpck_require__(39603));
+async function installSQLite3() {
+    if (inputs.nix && inputs.isMacos) {
+        try {
+            await (0, io_1.which)("sqlite3", true);
+        }
+        catch (error) {
+            utils.info("No SQLite 3 found. Installing it.");
+            await utils.run(`brew install sqlite3`);
+        }
+    }
+}
+
+
+/***/ }),
+
 /***/ 56555:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
