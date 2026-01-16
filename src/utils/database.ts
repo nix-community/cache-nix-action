@@ -36,7 +36,7 @@ export async function checkpointDb() {
 export async function copyDb(dbPath: string) {
     await checkpointDb();
 
-    utils.run("Copying database.");
+    utils.info("Copying database.");
 
     await utils.run(`sudo cp -p ${dbStandardPath} ${dbPath}`);
 }
