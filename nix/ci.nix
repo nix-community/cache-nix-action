@@ -81,6 +81,7 @@ in
       permissions:
         contents: write
         actions: write
+      if: github.event_name != 'pull_request' || github.repository == github.event.pull_request.head.repo.full_name
       steps:
         - uses: actions/checkout@v6
           with:
