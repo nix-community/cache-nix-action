@@ -1,6 +1,5 @@
 # Cache Nix Store
 
-
 A GitHub Action to restore and save Nix store paths using GitHub Actions cache.
 
 This action is based on [actions/cache](https://github.com/actions/cache).
