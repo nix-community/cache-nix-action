@@ -8,7 +8,6 @@ import {
     StateProvider
 } from "./stateProvider";
 import * as utils from "./utils/action";
-import * as install from "./utils/install";
 import * as restore from "./utils/restore";
 
 export async function restoreImpl(

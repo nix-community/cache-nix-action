@@ -29,19 +29,19 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 ## A typical job
 
 > [!NOTE]
-> Inputs are given for reference. All available inputs are specified [below](#inputs).
+> See all available action inputs in [Inputs](#inputs).
+
+> [!NOTE]
+> The action can't restore a cache when there's a mismatch in the [cache version](#cache-version), e.g., when `paths` used to create a cache differ from those specified in the current job run.
 
 1. One of the [compatible actions](#compatible-nix-installers) installs Nix.
 
 1. `Restore` phase:
+   1. The `cache-nix-action` tries to restore a cache whose key is the same as the specified one (input: `primary-key`).
 
-   > [!NOTE]
-   > For a cache to be restored in the current step, `paths` used to create that cache must be the same as the `paths` specified in the current step.
-   1. The `cache-nix-action` tries to restore a cache whose key is the same as the specified one (inputs: `primary-key`, `paths`).
+   1. When the `cache-nix-action` can't restore, it tries to restore a cache whose key matches a prefix in a given list of key prefixes (input: `restore-prefixes-first-match`).
 
-   1. When it can't restore, the `cache-nix-action` tries to restore a cache whose key matches a prefix in a given list of key prefixes (inputs: `restore-prefixes-first-match`, `paths`).
-
-   1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in another given list of key prefixes (inputs: `restore-prefixes-all-matches`, `paths`).
+   1. The `cache-nix-action` restores all caches whose keys match some of the prefixes in another given list of key prefixes (input: `restore-prefixes-all-matches`).
 
 1. Other job steps run.
 
@@ -50,26 +50,49 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
    1. When there's no cache whose key is the same as the primary key, the `cache-nix-action` collects garbage in the Nix store and saves a new cache (inputs: `save`, `gc-max-store-size`, `gc-max-store-size-linux`, `gc-max-store-size-macos`).
 
-   1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created or last accessed more than a given time ago relative to the start of the `Post Restore` phase (`purge`, `purge-prefixes`, `purge-created`, `purge-last-accessed`, `purge-primary-key`).
+   1. The `cache-nix-action` purges caches whose keys match some of the given prefixes in a given list of key prefixes and that were created or last accessed more than a given time ago relative to the start of the `Post Restore` phase (inputs: `purge`, `purge-prefixes`, `purge-created`, `purge-last-accessed`, `purge-primary-key`).
 
 ## Limitations
 
-- Requires Nix 2.24+ and SQLite 3.37+ to be installed on the GitHub Actions runner.
-- Uses experimental [`nix`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix) commands like [`nix store gc`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-store-gc) and [`nix path-info`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-path-info).
+### Speed
+
+- The action may slow down your workflow. You should test whether the action is useful in your case.
+
+### Runners
+
+- The action supports only `Linux` and `macOS` GitHub Actions runners for Nix store caching.
+- Nix 2.24+ and SQLite 3.37+ must be installed on the runner.
+
+### Restoring files
+
 - By default, the action caches and restores only `/nix` (see [documentation](#inputs) for the `paths` input).
-  - The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nix.dev/manual/nix/2.33/store/types/local-store.html#local-store)).
-  - When restoring a cache, the action doesn't restore the `/nix/store` paths that already exist on the runner.
+- The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nix.dev/manual/nix/2.33/store/types/local-store.html#local-store)).
+- The action removes existing Nix store database files after merging the existing database with the restored one.
+
+  <details><summary>(Click to view details)</summary>
+  - The action [checkpoints](https://sqlite.org/pragma.html#pragma_wal_checkpoint) the existing database before restoring a cache.
+  - The action merges the existing and restored databases (`/nix/var/nix/db/db.sqlite`) and Nix stores (`/nix/store`) when restoring a cache.
   - Out of all files in `/nix/var`, the action restores only `/nix/var/nix/db/db.sqlite`.
-  - It then replaces that file with a new database file.
-  - The action removes existing `/nix/var/nix/db/db.sqlite-wal` and `/nix/var/nix/db/db.sqlite-shm` (see [WAL-mode File Format](https://sqlite.org/walformat.html)) because the new database file is incompatible with them and they're unnecessary (assumption).
-  - The action merges existing and new databases when restoring a cache.
-- The action supports only `Linux` and `macOS` runners for Nix store caching.
+  - The action removes existing `/nix/var/nix/db/db.sqlite-wal` and `/nix/var/nix/db/db.sqlite-shm` (see [WAL-mode File Format](https://sqlite.org/walformat.html)) because they're unnecessary.
+  - The action merges the old and new databases when restoring a cache.
+  - The action overwrites the old database with the merged database.
+
+  </details>
+
+### Purging existing caches
+
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
 - `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
   - [Purge old caches](#purge-old-caches)
   - [Merge caches](#merge-caches)
-- The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)). [Workarounds](https://github.com/marketplace?query=disk):
+
+### Cache size
+
+- The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
+
+  <details><summary>Workarounds: increase the storage size on the runner (click to view)</summary>
+  - Search: <https://github.com/marketplace?query=disk>
   - Ubuntu, macOS, Windows:
     - [hugoalh/disk-space-optimizer-ghaction](https://github.com/hugoalh/disk-space-optimizer-ghaction)
   - Ubuntu, macOS:
@@ -88,10 +111,18 @@ This action is based on [actions/cache](https://github.com/actions/cache).
     - [justinthelaw/maximize-github-runner-space](https://github.com/justinthelaw/maximize-github-runner-space)
   - macOS:
     - [comment](https://github.com/easimon/maximize-build-space/issues/7#issuecomment-1063681606)
+
+  </details>
+
+### Restoring caches
+
 - Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
   - Workaround: provide caches for PRs on default or base branches.
+
+### Garbage collection
+
 - Garbage collection by default evicts flake inputs ([issue](https://github.com/NixOS/nix/issues/6895)).
-  - Workaround: save the flake closure as an installable ([link](#save-nix-store-paths-from-garbage-collection)).
+  - Workaround: see [Save Nix store paths from garbage collection](#save-nix-store-paths-from-garbage-collection).
 
 ## Comparison with alternative approaches
 
@@ -131,9 +162,9 @@ See [Caching Approaches](#caching-approaches).
     purge-prefixes: nix-${{ runner.os }}-
     # created more than this number of seconds ago
     purge-created: 0
-    # or, last accessed more than this number of seconds ago
-    # relative to the start of the `Post Restore and save Nix store` phase
-    purge-last-accessed: 0
+    # or last accessed this duration (ISO 8601 duration format)
+    # before the start of the `Post Restore and save Nix store` phase
+    purge-last-accessed: P1DT12H
     # except any version with the key that is the same as the `primary-key`
     purge-primary-key: never
 ```
@@ -483,10 +514,14 @@ These distances affect the restore and save speed.
 
 ### GitHub Actions
 
-- [DeterminateSystems/magic-nix-cache-action](https://github.com/DeterminateSystems/magic-nix-cache-action)
-- [nix-community/cache-nix-action](https://github.com/nix-community/cache-nix-action)
+- [`nix-community/cache-nix-action`](#nix-communitycache-nix-action)
+- [`DeterminateSystems/magic-nix-cache-action`](#determinatesystemsmagic-nix-cache-action)
+- [`actions/cache`](#actionscache)
+- [`rikhuijzer/cache-install`](#rikhuijzercache-install)
 
-#### cache-nix-action
+#### `nix-community/cache-nix-action`
+
+[Link](https://github.com/nix-community/cache-nix-action)
 
 **Pros**:
 
@@ -502,9 +537,11 @@ These distances affect the restore and save speed.
 
 **Cons**: see [Limitations](#limitations)
 
-#### magic-nix-cache-action
+#### `DeterminateSystems/magic-nix-cache-action`
 
-**Pros** ([link](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
+[Link](https://github.com/DeterminateSystems/magic-nix-cache-action)
+
+**Pros** ([source](https://github.com/DeterminateSystems/magic-nix-cache#why-use-the-magic-nix-cache)):
 
 - Free.
 - Easy to set up.
@@ -519,50 +556,56 @@ These distances affect the restore and save speed.
   - Caches are isolated between branches ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
 - Saves a cache for each path in a store and quickly litters `Caches`.
 
-#### FlakeHub Cache
+#### `actions/cache`
 
-**Pros** ([link](https://flakehub.com/cache)):
+[Link](https://github.com/actions/cache)
 
-- Free for one month with a coupon code ([link](https://determinate.systems/posts/magic-nix-cache-free-tier-eol/)).
-- Easy to set up.
+If the action is used with [`nixbuild/nix-quick-install-action`](https://github.com/nixbuild/nix-quick-install-action), it's similar to the [`nix-community/cache-nix-action`](#nix-communitycache-nix-action).
 
-**Cons**:
-
-- Not free ([link](https://flakehub.com/cache))
-
-#### actions/cache
-
-If used with [nix-quick-install-action](https://github.com/nixbuild/nix-quick-install-action), it's similar to the [cache-nix-action](#cache-nix-action).
-
-If used with [install-nix-action](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-help-stores.html#local-store):
+If used with [`cachix/install-nix-action`](https://github.com/cachix/install-nix-action) and a [chroot local store](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-help-stores.html#local-store):
 
 **Pros**:
 
-- Quick restore and save `/tmp/nix`.
+- Quickly restores and saves `/tmp/nix`.
+- `chroot` store works only on Linux.
 
 **Cons**:
 
 - Slow [`nix copy`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-copy.html) from `/tmp/nix` to `/nix/store`.
 
-If used with [install-nix-action](https://github.com/cachix/install-nix-action) and this [trick](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1030697681), it's similar to the [cache-nix-action](#cache-nix-action), but slower ([link](https://github.com/ryantm/nix-installer-action-benchmark)).
+If used with [`cachix/install-nix-action`](https://github.com/cachix/install-nix-action) and this [trick](https://github.com/cachix/install-nix-action/issues/56#issuecomment-1030697681), it's similar to the [`nix-community/cache-nix-action`](#nix-communitycache-nix-action) but slower ([link](https://github.com/ryantm/nix-installer-action-benchmark)).
+
+#### `rikhuijzer/cache-install`
+
+**Pros**:
+
+- Quickly restores and saves `/nix/store`, some `/nix/var` files, and profiles ([link](https://github.com/rikhuijzer/cache-install/blob/f7a5251fe0711d671111afdf303db5b5aad8afbd/action.yml#L47-L53)).
+
+**Cons**:
+
+- Coupled with the installer ([link](https://github.com/rikhuijzer/cache-install/blob/f7a5251fe0711d671111afdf303db5b5aad8afbd/src/core.sh#L5)).
 
 ### Hosted binary caches
 
 See [binary cache](https://nix.dev/manual/nix/2.33/glossary.html#gloss-binary-cache), [HTTP Binary Cache Store](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-help-stores.html#http-binary-cache-store).
 
-- [cachix](https://www.cachix.org/)
-- [attic](https://github.com/zhaofengli/attic)
+- [`Cachix`](https://www.cachix.org/)
+- [`Attic`](https://github.com/zhaofengli/attic)
+- [`FlakeHub Cache`](https://flakehub.com/cache)
 
 **Pros**:
 
 - Restore and save paths selectively.
-- Provide least recently used garbage collection strategies ([cachix](https://docs.cachix.org/garbage-collection?highlight=garbage), [attic](https://github.com/zhaofengli/attic#goals)).
-- Don't cache paths available from the NixOS cache ([cachix](https://docs.cachix.org/garbage-collection?highlight=upstream)).
-- Allow to share paths between projects ([cachix](https://docs.cachix.org/getting-started#using-binaries-with-nix)).
+- Have free tier ([`Cachix`](https://www.cachix.org/pricing), Attic is [FOSS](https://github.com/zhaofengli/attic)).
+- Provide least recently used garbage collection strategies ([`Cachix`](https://docs.cachix.org/garbage-collection?highlight=garbage), [`Attic`](https://github.com/zhaofengli/attic#goals)).
+- Don't cache paths available from the NixOS cache ([`Cachix`](https://docs.cachix.org/garbage-collection?highlight=upstream)).
+- Allow to share paths between projects ([`Cachix`](https://docs.cachix.org/getting-started#using-binaries-with-nix), [`FlakeHub Cache`](https://docs.determinate.systems/flakehub/cache/#pulling-from-the-cache)).
 
 **Cons**:
 
-- Have limited free storage ([cachix](https://www.cachix.org/pricing) gives 5GB for open-source projects).
+- `Cachix` gives only 5GB for open-source projects ([src](https://www.cachix.org/pricing)).
+- `FlakeHub Cache` is available only to paid accounts ([src](https://docs.determinate.systems/flakehub/cache/)).
+- `Attic` needs to be hosted.
 - Need good bandwidth for receiving and pushing paths over the Internet.
 - Can be down.
 

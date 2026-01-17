@@ -10,18 +10,18 @@ Default value of this timeout is 10 minutes and can be customized by specifying 
 
 A cache today is immutable and cannot be updated. But some use cases require the cache to be saved even though there was a "hit" during restore. To do so, use a `primary-key` which is unique for every run and use `restore-prefixes-first-match` to restore the nearest cache. For example:
 
-  ```yaml
-      - name: update cache on every commit
-        uses: nix-community/cache-nix-action@v6
-        with:
-          primary-key: primes-${{ runner.os }}-${{ github.run_id }} # Can use time based key as well
-          restore-prefixes-first-match: |
-            primes-${{ runner.os }}
-          paths: prime-numbers
-  ```
+```yaml
+- name: update cache on every commit
+  uses: nix-community/cache-nix-action@v6
+  with:
+    primary-key: primes-${{ runner.os }}-${{ github.run_id }} # Can use time based key as well
+    restore-prefixes-first-match: |
+      primes-${{ runner.os }}
+    paths: prime-numbers
+```
 
-  Please note that this will create a new cache on every run and hence will consume the cache [quota](./README.md#cache-limits).
-  
+Please note that this will create a new cache on every run and hence will consume the cache [quota](./README.md#cache-limits).
+
 ## Use cache across feature branches
 
 Reusing cache across feature branches is not allowed today to provide cache [isolation](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache). However if both feature branches are from the default branch, a good way to achieve this is to ensure that the default branch has a cache. This cache will then be consumable by both feature branches.

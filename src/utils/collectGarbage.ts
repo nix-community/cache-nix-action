@@ -59,7 +59,10 @@ export async function collectGarbage() {
 
         utils.info(`::group::Logs produced while collecting garbage.`);
 
-        await utils.run(`nix --experimental-features nix-command store gc --max ${maxBytesToFree}`, true);
+        await utils.run(
+            `nix --experimental-features nix-command store gc --max ${maxBytesToFree}`,
+            true
+        );
 
         utils.info(`::endgroup::`);
 
