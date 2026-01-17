@@ -35,13 +35,6 @@ let
       - cron: 0 0 * * *'') "";
 
   name = choose "" ''with BuildJet backend'';
-  # https://stackoverflow.com/a/71158878
-  git_pull = ''
-    ''${{
-                github.head_ref
-                  && format('gh pr checkout {0}', github.event.pull_request.number) 
-                  || format('git pull --rebase origin {0}', github.ref_name) 
-              }}'';
 
   install-nix-action = ''- uses: cachix/install-nix-action@v31.9.0'';
   os = {
@@ -86,6 +79,7 @@ in
         - uses: actions/checkout@v6
           with:
             submodules: true
+            ref: ''${{ github.head_ref }}
 
         ${install-nix-action}
           with:
@@ -119,8 +113,6 @@ in
 
         - name: Configure git
           run: |
-            ${git_pull}
-
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
@@ -168,10 +160,8 @@ in
       steps:
         - name: Checkout this repo
           uses: actions/checkout@v6
-
-        - name: Rebase
-          run: |
-            ${git_pull}
+          with:
+            ref: ''${{ github.head_ref }}
 
         ${install-nix-action}
           with:
@@ -254,10 +244,8 @@ in
           steps:
             - name: Checkout this repo
               uses: actions/checkout@v6
-
-            - name: Rebase
-              run: |
-                ${git_pull}
+              with:
+                ref: ''${{ github.head_ref }}
 
             ${install-nix-action}
               with:
@@ -346,10 +334,8 @@ in
       steps:
         - name: Checkout this repo
           uses: actions/checkout@v6
-
-        - name: Rebase
-          run: |
-            ${git_pull}
+          with:
+            ref: ''${{ github.head_ref }}
 
         # adapted from https://github.com/nodejs/node/pull/54658
         - name: Cleanup
@@ -460,14 +446,8 @@ in
       steps:
         - name: Checkout this repo
           uses: actions/checkout@v6
-
-        - name: Rebase
-          run: |
-            ''${{
-              github.head_ref
-                && format('gh pr checkout {0}', github.event.pull_request.number) 
-                || format('git pull --rebase origin {0}', github.ref_name) 
-            }}
+          with:
+            ref: ''${{ github.head_ref }}
 
         - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
           uses: DeterminateSystems/determinate-nix-action@v3.15.1
@@ -531,14 +511,8 @@ in
       steps:
         - name: Checkout this repo
           uses: actions/checkout@v6
-
-        - name: Rebase
-          run: |
-            ''${{
-              github.head_ref
-                && format('gh pr checkout {0}', github.event.pull_request.number) 
-                || format('git pull --rebase origin {0}', github.ref_name) 
-            }}
+          with:
+            ref: ''${{ github.head_ref }}
 
         - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
           uses: DeterminateSystems/determinate-nix-action@v3.15.1
