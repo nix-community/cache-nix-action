@@ -54,6 +54,10 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 ## Limitations
 
+### Speed
+
+- The action may slow down your workflow. You should test whether the action is useful in your case.
+
 ### Runners
 
 - The action supports only `Linux` and `macOS` GitHub Actions runners for Nix store caching.
