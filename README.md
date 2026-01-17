@@ -54,22 +54,43 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 
 ## Limitations
 
-- Requires Nix 2.24+ and SQLite 3.37+ to be installed on the GitHub Actions runner.
-- Uses experimental [`nix`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix) commands like [`nix store gc`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-store-gc) and [`nix path-info`](https://nix.dev/manual/nix/2.33/command-ref/new-cli/nix3-path-info).
+### Runners
+
+- The action supports only `Linux` and `macOS` GitHub Actions runners for Nix store caching.
+- Nix 2.24+ and SQLite 3.37+ must be installed on the runner.
+
+### Restoring files
+
 - By default, the action caches and restores only `/nix` (see [documentation](#inputs) for the `paths` input).
-  - The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nix.dev/manual/nix/2.33/store/types/local-store.html#local-store)).
-  - When restoring a cache, the action doesn't restore the `/nix/store` paths that already exist on the runner.
+- The action doesn't automatically cache stores specified via the `--store` flag ([link](https://nix.dev/manual/nix/2.33/store/types/local-store.html#local-store)).
+- The action removes existing Nix store database files after merging the existing database with the restored one.
+
+  <details><summary>(Click to view details)</summary>
+
+  - The action [checkpoints](https://sqlite.org/pragma.html#pragma_wal_checkpoint) the existing database before restoring a cache.
+  - The action merges the existing and restored databases (`/nix/var/nix/db/db.sqlite`) and Nix stores (`/nix/store`) when restoring a cache.
   - Out of all files in `/nix/var`, the action restores only `/nix/var/nix/db/db.sqlite`.
-  - It then replaces that file with a new database file.
-  - The action removes existing `/nix/var/nix/db/db.sqlite-wal` and `/nix/var/nix/db/db.sqlite-shm` (see [WAL-mode File Format](https://sqlite.org/walformat.html)) because the new database file is incompatible with them and they're unnecessary (assumption).
-  - The action merges existing and new databases when restoring a cache.
-- The action supports only `Linux` and `macOS` runners for Nix store caching.
+  - The action removes existing `/nix/var/nix/db/db.sqlite-wal` and `/nix/var/nix/db/db.sqlite-shm` (see [WAL-mode File Format](https://sqlite.org/walformat.html)) because they're unnecessary.
+  - The action merges the old and new databases when restoring a cache.
+  - The action overwrites the old database with the merged database.
+  
+  </details>
+
+### Purging existing caches
+
 - The action purges caches scoped to the current [GITHUB_REF](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
 - The action purges caches by keys without considering cache versions (see [Cache version](#cache-version)).
 - `GitHub` allows only `10GB` of caches and then removes the least recently used entries (see its [eviction policy](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy)). Workarounds:
   - [Purge old caches](#purge-old-caches)
   - [Merge caches](#merge-caches)
-- The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)). [Workarounds](https://github.com/marketplace?query=disk):
+
+### Cache size
+
+- The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
+  
+  <details><summary>Workarounds: increase the storage size on the runner (click to view)</summary>
+  
+  - Search: <https://github.com/marketplace?query=disk>
   - Ubuntu, macOS, Windows:
     - [hugoalh/disk-space-optimizer-ghaction](https://github.com/hugoalh/disk-space-optimizer-ghaction)
   - Ubuntu, macOS:
@@ -88,10 +109,18 @@ This action is based on [actions/cache](https://github.com/actions/cache).
     - [justinthelaw/maximize-github-runner-space](https://github.com/justinthelaw/maximize-github-runner-space)
   - macOS:
     - [comment](https://github.com/easimon/maximize-build-space/issues/7#issuecomment-1063681606)
+
+  </details>
+
+### Restoring caches
+
 - Caches are isolated for restoring between refs ([link](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache)).
   - Workaround: provide caches for PRs on default or base branches.
+
+### Garbage collection
+
 - Garbage collection by default evicts flake inputs ([issue](https://github.com/NixOS/nix/issues/6895)).
-  - Workaround: save the flake closure as an installable ([link](#save-nix-store-paths-from-garbage-collection)).
+  - Workaround: see [Save Nix store paths from garbage collection](#save-nix-store-paths-from-garbage-collection).
 
 ## Comparison with alternative approaches
 
