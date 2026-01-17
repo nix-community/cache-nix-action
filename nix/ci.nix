@@ -321,6 +321,7 @@ in
       permissions:
         actions: write
       strategy:
+        fail-fast: false
         matrix:
           do-cache:
             - true
