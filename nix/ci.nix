@@ -486,10 +486,10 @@ in
           run: ''${{ env.pin_nixpkgs }}
             
         - name: Save nixpkgs from garbage collection
-          run: nix profile install $(nix flake archive nixpkgs --json | jq -r '.path')
+          run: nix profile add $(nix flake archive nixpkgs --json | jq -r '.path')
 
         - name: Install a package
-          run: nix profile install nixpkgs#ghc
+          run: nix profile add nixpkgs#ghc
 
         - name: Check installation
           run: ghc --version
@@ -540,7 +540,7 @@ in
           run: ''${{ env.pin_nixpkgs }}
             
         - name: Install a package
-          run: nix profile install nixpkgs#ghc
+          run: nix profile add nixpkgs#ghc
 
         - name: Check installation
           run: ghc --version
