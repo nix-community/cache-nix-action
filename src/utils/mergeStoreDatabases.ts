@@ -33,7 +33,7 @@ export async function mergeStoreDatabases(
 
     // I assume it's not necessary to checkpoint the new database
     // because we don't use WAL mode for the new database.
-    
+
     utils.info(`Checking the new database.`);
 
     await utils.run(`sqlite3 "${dbMergedPath}" 'PRAGMA integrity_check;'`);
