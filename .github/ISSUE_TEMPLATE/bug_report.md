@@ -2,9 +2,8 @@
 name: Bug report
 about: Create a report to help us improve
 title: "[BUG]"
-labels: ''
+labels: ""
 assignees: deemp
-
 ---
 
 ## Describe the bug
