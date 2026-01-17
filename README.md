@@ -70,14 +70,13 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - The action removes existing Nix store database files after merging the existing database with the restored one.
 
   <details><summary>(Click to view details)</summary>
-
   - The action [checkpoints](https://sqlite.org/pragma.html#pragma_wal_checkpoint) the existing database before restoring a cache.
   - The action merges the existing and restored databases (`/nix/var/nix/db/db.sqlite`) and Nix stores (`/nix/store`) when restoring a cache.
   - Out of all files in `/nix/var`, the action restores only `/nix/var/nix/db/db.sqlite`.
   - The action removes existing `/nix/var/nix/db/db.sqlite-wal` and `/nix/var/nix/db/db.sqlite-shm` (see [WAL-mode File Format](https://sqlite.org/walformat.html)) because they're unnecessary.
   - The action merges the old and new databases when restoring a cache.
   - The action overwrites the old database with the merged database.
-  
+
   </details>
 
 ### Purging existing caches
@@ -91,9 +90,8 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 ### Cache size
 
 - The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
-  
+
   <details><summary>Workarounds: increase the storage size on the runner (click to view)</summary>
-  
   - Search: <https://github.com/marketplace?query=disk>
   - Ubuntu, macOS, Windows:
     - [hugoalh/disk-space-optimizer-ghaction](https://github.com/hugoalh/disk-space-optimizer-ghaction)
