@@ -1,10 +1,9 @@
-import * as core from "@actions/core";
 import * as exec from "@actions/exec";
 import * as github from "@actions/github";
 import * as fs from "fs";
 import { devNull } from "os";
 
-import { Inputs, RefKey } from "../constants";
+import { RefKey } from "../constants";
 import * as inputs from "../inputs";
 import { cache, cacheUtils } from "./cacheBackend";
 import { TarCommandModifiers } from "actions/toolkit/packages/cache/src/options";
