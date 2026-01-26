@@ -451,7 +451,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
-        uses: DeterminateSystems/determinate-nix-action@v3.15.1
+        uses: DeterminateSystems/determinate-nix-action@v3.15.2
         with:
           extra-conf: |
             ${{ env.extra_nix_config }}
@@ -516,7 +516,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
-        uses: DeterminateSystems/determinate-nix-action@v3.15.1
+        uses: DeterminateSystems/determinate-nix-action@v3.15.2
         with:
           extra-conf: |
             ${{ env.extra_nix_config }}
