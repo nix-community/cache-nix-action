@@ -30,13 +30,13 @@ export async function collectGarbage() {
     utils.info("Calculating store size.");
 
     async function getStoreSize() {
-        const nixVersionOutput = await utils.run(`nix --version`);
+        const nixVersionResult = await utils.run(`nix --version`);
 
-        let nixVersion = parseNixVersion(nixVersionOutput.stdout);
+        let nixVersion = parseNixVersion(nixVersionResult.stdout);
 
         if (nixVersion === undefined) {
             utils.warning(
-                `Could not get Nix version ('nix --version'). Got: ${nixVersionOutput}.`
+                `Could not get Nix version ('nix --version'). Got: ${nixVersionResult}.`
             );
             // We select commands based on the Nix version.
             // Currently, we need to differentiate between
@@ -51,16 +51,16 @@ export async function collectGarbage() {
                 ? `nix --experimental-features nix-command path-info --json --json-format 2 --all | jq '.info | map(.narSize) | add'`
                 : `nix --experimental-features nix-command path-info --json --all | jq 'map(.narSize) | add'`;
 
-        const { stdout } = await utils.run(nixCommand);
+        const nixCommandOutput = await utils.run(nixCommand);
 
         const storeSize = (() => {
             try {
-                return BigInt(stdout);
+                return BigInt(nixCommandOutput.stdout);
             } catch (err) {
                 let sizeDummy = 1_000_000_000_000n;
                 utils.warning(
                     `
-                    Expected a number for the store size, but got: ${stdout}.
+                    Expected a number for the store size, but got: ${nixCommandOutput.stdout}.
                     
                     Assuming the store has size: ${sizeDummy}.
                     `
