@@ -1,10 +1,10 @@
 import * as core from '@actions/core'
 import {HttpClient} from '@actions/http-client'
-import {BearerCredentialHandler} from '@actions/http-client/lib/auth'
+import {BearerCredentialHandler} from '@actions/http-client/lib/auth.js'
 import {
   RequestOptions,
   TypedResponse
-} from '@actions/http-client/lib/interfaces'
+} from '@actions/http-client/lib/interfaces.js'
 import * as fs from 'fs'
 import {URL} from 'url'
 import * as utils from './cacheUtils.js'
