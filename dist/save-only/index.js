@@ -58184,20 +58184,45 @@ exports.collectGarbage = collectGarbage;
 const constants_1 = __nccwpck_require__(27242);
 const inputs = __importStar(__nccwpck_require__(38422));
 const utils = __importStar(__nccwpck_require__(39603));
+function parseNixVersion(nixVersionStdout) {
+    const regexMajorMinor = /(\d+)\.(\d+)/;
+    const match = nixVersionStdout.match(regexMajorMinor);
+    if (match) {
+        return {
+            major: parseInt(match[1], 10),
+            minor: parseInt(match[2], 10)
+        };
+    }
+    return undefined;
+}
 async function collectGarbage() {
     utils.info("Removing useless files.");
     await utils.run(`sudo rm -rf /nix/.[!.]* /nix/..?*`);
     utils.info("Calculating store size.");
     async function getStoreSize() {
-        const { stdout } = await utils.run(`nix --experimental-features nix-command path-info --json --json-format 2 --all | jq '.info | map(.narSize) | add'`);
+        const nixVersionResult = await utils.run(`nix --version`);
+        let nixVersion = parseNixVersion(nixVersionResult.stdout);
+        if (nixVersion === undefined) {
+            utils.warning(`Could not get Nix version ('nix --version'). Got: ${nixVersionResult}.`);
+            // We select commands based on the Nix version.
+            // Currently, we need to differentiate between
+            // >=2.33 versions and <2.33 versions.
+            // Versions after 2.33 definitely support `nix --version`.
+            // Therefore, let's assume the version is 2.0.
+            nixVersion = { major: 2, minor: 0 };
+        }
+        const nixCommand = nixVersion.minor >= 33
+            ? `nix --experimental-features nix-command path-info --json --json-format 2 --all | jq '.info | map(.narSize) | add'`
+            : `nix --experimental-features nix-command path-info --json --all | jq 'map(.narSize) | add'`;
+        const nixCommandOutput = await utils.run(nixCommand);
         const storeSize = (() => {
             try {
-                return BigInt(stdout);
+                return BigInt(nixCommandOutput.stdout);
             }
             catch (err) {
                 let sizeDummy = 1000000000000n;
                 utils.warning(`
-                    Expected a number for the store size, but got: ${stdout}.
+                    Expected a number for the store size, but got: ${nixCommandOutput.stdout}.
                     
                     Assuming the store has size: ${sizeDummy}.
                     `);

@@ -451,7 +451,7 @@ in
             ref: ''${{ github.head_ref }}
 
         - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
-          uses: DeterminateSystems/determinate-nix-action@v3.15.1
+          uses: DeterminateSystems/determinate-nix-action@v3.15.2
           with:
             extra-conf: |
               ''${{ env.extra_nix_config }}
@@ -516,7 +516,7 @@ in
             ref: ''${{ github.head_ref }}
 
         - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
-          uses: DeterminateSystems/determinate-nix-action@v3.15.1
+          uses: DeterminateSystems/determinate-nix-action@v3.15.2
           with:
             extra-conf: |
               ''${{ env.extra_nix_config }}
@@ -544,6 +544,42 @@ in
 
         - name: Check installation
           run: ghc --version
+            
+    test-old-nix-gc-works:
+      name: Check works with old Nix versions
+      needs: test-alt-nix-installers-restore-only
+      strategy:
+        fail-fast: false
+        matrix:
+          os:
+            - macos-14
+            - macos-15
+            - ubuntu-24.04
+            - ubuntu-24.04-arm
+      runs-on: ''${{ matrix.os }}
+      steps:
+        - name: Checkout this repo
+          uses: actions/checkout@v6
+          with:
+            ref: ''${{ github.head_ref }}
+
+        - uses: cachix/install-nix-action@v31.9.0
+          with:
+            install_url: https://releases.nixos.org/nix/nix-2.32.5/install
+            extra_nix_config: |
+              ''${{ env.extra_nix_config }}
+
+        - name: Pin nixpkgs
+          run: ''${{ env.pin_nixpkgs }}
+        
+        - name: Get a package
+          run: nix run nixpkgs#hello
+              
+        - name: Save
+          uses: ./save
+          with:
+            primary-key: old-nix-''${{ matrix.os }}-''${{ hashFiles('.github/workflows/ci.yaml') }}
+            gc-max-store-size: 0
             
     test-collision-produce:
       needs: build
