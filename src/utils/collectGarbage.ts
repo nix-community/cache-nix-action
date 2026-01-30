@@ -47,7 +47,8 @@ export async function collectGarbage() {
         }
 
         const nixCommand =
-            nixVersion.minor >= 33
+            (nixVersion.major == 2 && nixVersion.minor >= 33) ||
+            nixVersion.major > 2
                 ? `nix --experimental-features nix-command path-info --json --json-format 2 --all | jq '.info | map(.narSize) | add'`
                 : `nix --experimental-features nix-command path-info --json --all | jq 'map(.narSize) | add'`;
 
