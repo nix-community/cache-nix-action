@@ -12,7 +12,7 @@ A cache today is immutable and cannot be updated. But some use cases require the
 
 ```yaml
 - name: update cache on every commit
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: primes-${{ runner.os }}-${{ github.run_id }} # Can use time based key as well
     restore-prefixes-first-match: |

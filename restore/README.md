@@ -56,7 +56,7 @@ If you are using separate jobs to create and save your cache(s) to be reused by 
 steps:
   - uses: actions/checkout@v6
 
-  - uses: nix-community/cache-nix-action@v6
+  - uses: nix-community/cache-nix-action@v7
     id: cache
     with:
       primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
@@ -88,7 +88,7 @@ steps:
   - name: Build
     run: /build-parent-module.sh
 
-  - uses: nix-community/cache-nix-action@v6
+  - uses: nix-community/cache-nix-action@v7
     id: cache
     with:
       primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
@@ -101,7 +101,7 @@ steps:
 steps:
   - uses: actions/checkout@v6
 
-  - uses: nix-community/cache-nix-action@v6
+  - uses: nix-community/cache-nix-action@v7
     id: cache
     with:
       primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
@@ -128,7 +128,7 @@ To fail if there is no cache hit for the primary key, leave `restore-prefixes-fi
 steps:
   - uses: actions/checkout@v6
 
-  - uses: nix-community/cache-nix-action@v6
+  - uses: nix-community/cache-nix-action@v7
     id: cache
     with:
       primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
