@@ -45,7 +45,7 @@
 ## Bun
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
     restore-prefixes-first-match: |
@@ -57,7 +57,7 @@
 ### Windows
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
     restore-prefixes-first-match: |
@@ -71,7 +71,7 @@
 Using [NuGet lock files](https://docs.microsoft.com/nuget/consume-packages/package-references-in-project-files#locking-dependencies):
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
     restore-prefixes-first-match: |
@@ -80,10 +80,10 @@ Using [NuGet lock files](https://docs.microsoft.com/nuget/consume-packages/packa
 ```
 
 Depending on the environment, huge packages might be pre-installed in the global cache folder.
-With `nix-community/cache-nix-action@v6` you can now exclude unwanted packages with [exclude pattern](https://github.com/actions/toolkit/tree/main/packages/glob#exclude-patterns)
+With `nix-community/cache-nix-action@v7` you can now exclude unwanted packages with [exclude pattern](https://github.com/actions/toolkit/tree/main/packages/glob#exclude-patterns)
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
     restore-prefixes-first-match: |
@@ -101,7 +101,7 @@ Or you could move the cache folder like below.
 env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 steps:
-  - uses: nix-community/cache-nix-action@v6
+  - uses: nix-community/cache-nix-action@v7
     with:
       primary-key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
       restore-prefixes-first-match: |
@@ -113,7 +113,7 @@ steps:
 
 ```yaml
 - name: Cache lein project dependencies
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-clojure-${{ hashFiles('**/project.clj') }}
     restore-prefixes-first-match: |
@@ -126,7 +126,7 @@ steps:
 ### POSIX
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-dub-${{ hashFiles('**/dub.selections.json') }}
     restore-prefixes-first-match: |
@@ -137,7 +137,7 @@ steps:
 ### Windows
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-dub-${{ hashFiles('**/dub.selections.json') }}
     restore-prefixes-first-match: |
@@ -150,7 +150,7 @@ steps:
 ### Linux
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
     paths: |
@@ -161,7 +161,7 @@ steps:
 ### macOS
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
     paths: |
@@ -172,7 +172,7 @@ steps:
 ### Windows
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-deno-${{ hashFiles('**/deps.ts') }}
     paths: |
@@ -183,7 +183,7 @@ steps:
 ## Elixir - Mix
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
     restore-prefixes-first-match: |
@@ -211,7 +211,7 @@ steps:
 ### Linux
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
     restore-prefixes-first-match: |
@@ -224,7 +224,7 @@ steps:
 ### macOS
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
     restore-prefixes-first-match: |
@@ -237,7 +237,7 @@ steps:
 ### Windows
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
     restore-prefixes-first-match: |
@@ -253,7 +253,7 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 
 ```yaml
 - name: Cache ~/.cabal/packages, ~/.cabal/store and dist-newstyle
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal', '**/cabal.project', '**/cabal.project.freeze') }}
     restore-prefixes-first-match: ${{ runner.os }}-${{ matrix.ghc }}-
@@ -268,14 +268,14 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 ### Linux or macOS
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   name: Cache ~/.stack
   with:
     primary-key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
     restore-prefixes-first-match: |
       ${{ runner.os }}-stack-global-
     paths: ~/.stack
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   name: Cache .stack-work
   with:
     primary-key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
@@ -287,7 +287,7 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 ### Windows
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   name: Cache %APPDATA%\stack %LOCALAPPDATA%\Programs\stack
   with:
     primary-key: ${{ runner.os }}-stack-global-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}
@@ -296,7 +296,7 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
     paths: |
       ~\AppData\Roaming\stack
       ~\AppData\Local\Programs\stack
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   name: Cache .stack-work
   with:
     primary-key: ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.hs') }}
@@ -310,7 +310,7 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 > **Note** Ensure no Gradle daemons are running anymore when your workflow completes. Creating the cache package might fail due to locks being held by Gradle. Refer to the [Gradle Daemon documentation](https://docs.gradle.org/current/userguide/gradle_daemon.html) on how to disable or stop the Gradle Daemons.
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
     restore-prefixes-first-match: |
@@ -324,7 +324,7 @@ We cache the elements of the Cabal store separately, as the entirety of `~/.caba
 
 ```yaml
 - name: Cache local Maven repository
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
     restore-prefixes-first-match: |
@@ -364,7 +364,7 @@ After [deprecation](https://github.blog/changelog/2022-10-11-github-actions-depr
 `Get npm cache directory` step can then be used with `nix-community/cache-nix-action` as shown below
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   id: npm-cache # use this to check for `hit-primary-key` ==> if: steps.npm-cache.outputs.hit-primary-key != 'true'
   with:
     primary-key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -377,7 +377,7 @@ After [deprecation](https://github.blog/changelog/2022-10-11-github-actions-depr
 
 ```yaml
 - name: restore lerna
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
     paths: "**/node_modules"
@@ -392,7 +392,7 @@ The yarn cache directory will depend on your operating system and version of `ya
   id: yarn-cache-dir-path
   run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   id: yarn-cache # use this to check for `hit-primary-key` (`steps.yarn-cache.outputs.hit-primary-key != 'true'`)
   with:
     primary-key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
@@ -410,7 +410,7 @@ The yarn 2 cache directory will depend on your config. See <https://yarnpkg.com/
   id: yarn-cache-dir-path
   run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   id: yarn-cache # use this to check for `hit-primary-key` (`steps.yarn-cache.outputs.hit-primary-key != 'true'`)
   with:
     primary-key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
@@ -426,7 +426,7 @@ Esy allows you to export built dependencies and import pre-built dependencies.
 ```yaml
     - name: Restore Cache
       id: restore-cache
-      uses: nix-community/cache-nix-action@v6
+      uses: nix-community/cache-nix-action@v7
       with:
         primary-key:  ${{ runner.os }}-esy-${{ hashFiles('esy.lock/index.json') }}
         restore-prefixes-first-match: |
@@ -455,7 +455,7 @@ Esy allows you to export built dependencies and import pre-built dependencies.
   id: composer-cache
   run: |
     echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
     restore-prefixes-first-match: |
@@ -476,7 +476,7 @@ Locations:
 ### Simple example
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
     restore-prefixes-first-match: |
@@ -489,7 +489,7 @@ Replace `~/.cache/pip` with the correct `paths` if not using Ubuntu.
 ### Multiple OS's in a workflow
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   if: startsWith(runner.os, 'Linux')
   with:
     primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -497,7 +497,7 @@ Replace `~/.cache/pip` with the correct `paths` if not using Ubuntu.
       ${{ runner.os }}-pip-
     paths: ~/.cache/pip
 
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   if: startsWith(runner.os, 'macOS')
   with:
     primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -505,7 +505,7 @@ Replace `~/.cache/pip` with the correct `paths` if not using Ubuntu.
       ${{ runner.os }}-pip-
     paths: ~/Library/Caches/pip
 
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   if: startsWith(runner.os, 'Windows')
   with:
     primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -531,7 +531,7 @@ jobs:
           - os: windows-latest
             paths: ~\AppData\Local\pip\Cache
     steps:
-      - uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-prefixes-first-match: |
@@ -551,7 +551,7 @@ jobs:
     echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
 - name: pip cache
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
     restore-prefixes-first-match: |
@@ -569,7 +569,7 @@ jobs:
 
   ⋮
 
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipenv-${{ hashFiles('Pipfile.lock') }}
     paths: ~/.local/share/virtualenvs
@@ -596,7 +596,7 @@ For renv, the cache directory will vary by OS. The `RENV_PATHS_ROOT` environment
     cat("##[set-output name=r-version;]", R.Version()$version.string, sep = "")
   shell: Rscript {0}
 - name: Restore Renv package cache
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ steps.get-version.outputs.os-version }}-${{ steps.get-version.outputs.r-version }}-${{ inputs.cache-version }}-${{ hashFiles('renv.lock') }}
     restore-prefixes-first-match: ${{ steps.get-version.outputs.os-version }}-${{ steps.get-version.outputs.r-version }}-${{inputs.cache-version }}-
@@ -622,7 +622,7 @@ whenever possible:
 ## Rust - Cargo
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     paths: |
@@ -637,7 +637,7 @@ whenever possible:
 
 ```yaml
 - name: Cache SBT
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
     paths: |
@@ -648,7 +648,7 @@ whenever possible:
 ## Swift, Objective-C - Carthage
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-carthage-${{ hashFiles('**/Cartfile.resolved') }}
     restore-prefixes-first-match: |
@@ -659,7 +659,7 @@ whenever possible:
 ## Swift, Objective-C - CocoaPods
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
     restore-prefixes-first-match: |
@@ -670,7 +670,7 @@ whenever possible:
 ## Swift - Swift Package Manager
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
     restore-prefixes-first-match: |
@@ -685,7 +685,7 @@ env:
   MINT_PATH: .mint/lib
   MINT_LINK_PATH: .mint/bin
 steps:
-  - uses: nix-community/cache-nix-action@v6
+  - uses: nix-community/cache-nix-action@v7
     with:
       primary-key: ${{ runner.os }}-mint-${{ hashFiles('**/Mintfile') }}
       restore-prefixes-first-match: |
@@ -701,7 +701,7 @@ steps:
 
 ```yaml
 - name: Cache Bazel
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') }}
     restore-prefixes-first-match: |
@@ -715,7 +715,7 @@ steps:
 
 ```yaml
 - name: Cache Bazel
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-bazel-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') }}
     restore-prefixes-first-match: |

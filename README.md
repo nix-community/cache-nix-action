@@ -146,7 +146,7 @@ See [Caching Approaches](#caching-approaches).
       keep-outputs = true
 
 - name: Restore and save Nix store
-  uses: nix-community/cache-nix-action@v6
+  uses: nix-community/cache-nix-action@v7
   with:
     # restore and save a cache using this key
     primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
@@ -762,7 +762,7 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: nix-community/cache-nix-action@v6
+        uses: nix-community/cache-nix-action@v7
         with:
           primary-key: ${{ runner.os }}-primes
           paths: prime-numbers
@@ -862,7 +862,7 @@ A cache key can include any of the contexts, functions, literals, and operators 
 For example, using the [`hashFiles`](https://docs.github.com/en/actions/learn-github-actions/expressions#hashfiles) function allows you to create a new cache when dependencies change.
 
 ```yaml
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
     paths: |
@@ -879,7 +879,7 @@ Additionally, you can use arbitrary command output in a cache key, such as a dat
   run: echo "date=$(/bin/date -u "+%Y%m%d")" >> $GITHUB_OUTPUT
   shell: bash
 
-- uses: nix-community/cache-nix-action@v6
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('**/lockfiles') }}
     paths: path/to/dependencies
@@ -905,7 +905,7 @@ Example:
 steps:
   - uses: actions/checkout@v6
 
-  - uses: nix-community/cache-nix-action@v6
+  - uses: nix-community/cache-nix-action@v7
     id: cache
     with:
       primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
@@ -938,7 +938,7 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: nix-community/cache-nix-action@v6
+        uses: nix-community/cache-nix-action@v7
         with:
           primary-key: primes
           paths: prime-numbers
@@ -949,7 +949,7 @@ jobs:
 
       - name: Cache Numbers
         id: cache-numbers
-        uses: nix-community/cache-nix-action@v6
+        uses: nix-community/cache-nix-action@v7
         with:
           primary-key: primes
           paths: numbers
@@ -965,7 +965,7 @@ jobs:
 
       - name: Cache Primes
         id: cache-primes
-        uses: nix-community/cache-nix-action@v6
+        uses: nix-community/cache-nix-action@v7
         with:
           primary-key: primes
           paths: prime-numbers

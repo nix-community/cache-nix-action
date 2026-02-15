@@ -50,7 +50,7 @@ steps:
   - name: Build artifacts
     run: /build.sh
 
-  - uses: nix-community/cache-nix-action@v6
+  - uses: nix-community/cache-nix-action@v7
     id: cache
     with:
       primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
@@ -66,7 +66,7 @@ Let's say we have a restore step that computes a key at runtime.
 #### Restore a cache
 
 ```yaml
-uses: nix-community/cache-nix-action@v6
+uses: nix-community/cache-nix-action@v7
 id: restore-cache
 with:
   primary-key: cache-${{ hashFiles('**/lockfiles') }}
@@ -75,7 +75,7 @@ with:
 #### Case 1 - Where a user would want to reuse the key as it is
 
 ```yaml
-uses: nix-community/cache-nix-action@v6
+uses: nix-community/cache-nix-action@v7
 with:
   primary-key: ${{ steps.restore-cache.outputs.primary-key }}
 ```
@@ -83,7 +83,7 @@ with:
 #### Case 2 - Where the user would want to re-evaluate the key
 
 ```yaml
-uses: nix-community/cache-nix-action@v6
+uses: nix-community/cache-nix-action@v7
 with:
   primary-key: npm-cache-${{hashfiles(package-lock.json)}}
 ```
