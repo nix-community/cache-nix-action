@@ -17,7 +17,7 @@ jobs:
       - name: Checkout this repo
         uses: actions/checkout@v6
       - name: Install Nix
-        uses: cachix/install-nix-action@v31.9.0
+        uses: cachix/install-nix-action@v31.9.1
         with:
           extra_nix_config: |
             substituters = https://cache.nixos.org/ https://nix-community.cachix.org https://cache.iog.io
