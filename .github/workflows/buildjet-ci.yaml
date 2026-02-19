@@ -33,7 +33,7 @@ jobs:
           submodules: true
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.9.0
+      - uses: cachix/install-nix-action@v31.9.1
         with:
           # We don't enable ca-derivations here
           # because we have later jobs where ca-derivations is enabled.
@@ -116,7 +116,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.9.0
+      - uses: cachix/install-nix-action@v31.9.1
         with:
           # Make caches with ca-derivations enabled on some machines
           # to test merging stores where the feature is enabled for one store and disabled for another.
@@ -191,7 +191,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.9.0
+      - uses: cachix/install-nix-action@v31.9.1
         with:
           # We enable ca-derivations only on macos-15
           # to test more different cases.
@@ -268,7 +268,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.9.0
+      - uses: cachix/install-nix-action@v31.9.1
         with:
           # We enable ca-derivations only on macos-15
           # to test more different cases.
@@ -350,7 +350,7 @@ jobs:
           df -h
           echo "::endgroup::"
 
-      - uses: cachix/install-nix-action@v31.9.0
+      - uses: cachix/install-nix-action@v31.9.1
         with:
           extra_nix_config: |
             ${{ env.extra_nix_config }}
@@ -563,7 +563,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.9.0
+      - uses: cachix/install-nix-action@v31.9.1
         with:
           install_url: https://releases.nixos.org/nix/nix-2.32.5/install
           extra_nix_config: |
