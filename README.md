@@ -92,6 +92,7 @@ This action is based on [actions/cache](https://github.com/actions/cache).
 - The Nix store size is limited by a runner storage size ([link](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)).
 
   <details><summary>Workarounds: increase the storage size on the runner (click to view)</summary>
+  
   - Search: <https://github.com/marketplace?query=disk>
   - Ubuntu, macOS, Windows:
     - [hugoalh/disk-space-optimizer-ghaction](https://github.com/hugoalh/disk-space-optimizer-ghaction)
