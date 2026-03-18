@@ -115,13 +115,16 @@ export const token = core.getInput(Inputs.Token, { required: true });
 
 export enum Backend {
     Actions,
-    BuildJet
+    BuildJet,
+    WarpBuild
 }
 
 export const backend: Backend = (() => {
     const backend = core.getInput(Inputs.Backend);
     if (backend === "buildjet") {
         return Backend.BuildJet;
+    } else if (backend === "warpbuild") {
+        return Backend.WarpBuild;
     } else {
         return Backend.Actions;
     }
