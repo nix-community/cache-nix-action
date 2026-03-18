@@ -32,6 +32,7 @@
     "@actions/github": "^7.0.0",
     "@actions/io": "^2.0.0",
     "@buildjet/cache": "file:deps/buildjet/toolkit/packages/cache",
+    "@warpbuild/cache": "file:deps/warpbuild/toolkit/packages/warp-cache",
     "dedent": "^1.7.1",
     "handlebars": "^4.7.8",
     "temporal-polyfill": "^0.3.0"

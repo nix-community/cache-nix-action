@@ -69,6 +69,12 @@
       "@buildjet/cache/cacheUtils": [
         "buildjet/toolkit/packages/cache/src/internal/cacheUtils.ts"
       ],
+      "@warpbuild/cache": [
+        "warpbuild/toolkit/packages/warp-cache/src/cache.ts"
+      ],
+      "@warpbuild/cache/cacheUtils": [
+        "warpbuild/toolkit/packages/warp-cache/src/internal/cacheUtils.ts"
+      ],
     },
   },
   "exclude": [
