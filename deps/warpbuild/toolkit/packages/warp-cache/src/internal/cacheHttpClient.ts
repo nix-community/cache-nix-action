@@ -207,27 +207,37 @@ export async function getCacheEntry(
     restore_repos: Array.from(restoreRepos)
   }
 
+  const apiUrl = getCacheApiUrl('cache/get')
+  core.info(`[warp-cache debug] POST ${apiUrl}`)
+  core.info(`[warp-cache debug] Request body: ${JSON.stringify(getCacheRequest, null, 2)}`)
+  core.info(`[warp-cache debug] paths input: ${JSON.stringify(paths)}`)
+  core.info(`[warp-cache debug] compressionMethod: ${options?.compressionMethod}`)
+  core.info(`[warp-cache debug] enableCrossOsArchive: ${options?.enableCrossOsArchive}`)
+  core.info(`[warp-cache debug] enableCrossArchArchive: ${options?.enableCrossArchArchive}`)
+  core.info(`[warp-cache debug] WARPBUILD_CACHE_URL: ${process.env['WARPBUILD_CACHE_URL'] ?? '(not set, using default)'}`)
+  core.info(`[warp-cache debug] WARPBUILD_RUNNER_VERIFICATION_TOKEN: ${process.env['WARPBUILD_RUNNER_VERIFICATION_TOKEN'] ? '(set, length=' + process.env['WARPBUILD_RUNNER_VERIFICATION_TOKEN'].length + ')' : '(not set)'}`)
+
   const response = await retryTypedResponse('getCacheEntry', async () =>
     httpClient.postJson<CommonsGetCacheResponse>(
-      getCacheApiUrl('cache/get'),
+      apiUrl,
       getCacheRequest
     )
   )
 
+  core.info(`[warp-cache debug] Response status: ${response.statusCode}`)
+  core.info(`[warp-cache debug] Response result: ${JSON.stringify(response.result)}`)
+
   if (response.statusCode === 204) {
-    // TODO: List cache for primary key only if cache miss occurs
-    // if (core.isDebug()) {
-    //   await printCachesListForDiagnostics(keys[0], httpClient, version)
-    // }
+    core.info(`[warp-cache debug] Cache miss (204 No Content)`)
     return null
   }
   if (!isSuccessStatusCode(response.statusCode)) {
+    core.info(`[warp-cache debug] Cache service error: ${response.statusCode}`)
     throw new Error(`Cache service responded with ${response.statusCode}`)
   }
 
   const cacheResult = response.result
-  core.debug(`Cache Result:`)
-  core.debug(JSON.stringify(cacheResult))
+  core.info(`[warp-cache debug] Cache hit! Result: ${JSON.stringify(cacheResult)}`)
 
   return cacheResult
 }
@@ -375,12 +385,21 @@ export async function reserveCache(
     vcs_ref: getVCSRef(),
     annotations: getAnnotations()
   }
+
+  const reserveUrl = getCacheApiUrl('cache/reserve')
+  core.info(`[warp-cache debug] POST ${reserveUrl}`)
+  core.info(`[warp-cache debug] Reserve request: ${JSON.stringify(reserveCacheRequest, null, 2)}`)
+
   const response = await retryTypedResponse('reserveCache', async () =>
     httpClient.postJson<CommonsReserveCacheResponse>(
-      getCacheApiUrl('cache/reserve'),
+      reserveUrl,
       reserveCacheRequest
     )
   )
+
+  core.info(`[warp-cache debug] Reserve response status: ${response.statusCode}`)
+  core.info(`[warp-cache debug] Reserve response result: ${JSON.stringify(response.result)}`)
+
   return response
 }
 
