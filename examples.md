@@ -204,7 +204,7 @@ steps:
 ## Erlang - Rebar3
 
 ```yaml
-- uses: actions/cache@v5
+- uses: nix-community/cache-nix-action@v7
   with:
     primary-key: ${{ runner.os }}-erlang-${{ env.OTP_VERSION }}-${{ hashFiles('**/*rebar.lock') }}
     restore-prefixes-first-match: |
