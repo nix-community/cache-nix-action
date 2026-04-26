@@ -118,7 +118,7 @@ jobs:
 
       - name: Restore cached Prime Numbers
         id: cache-prime-numbers-restore
-        uses: nix-community/cache-nix-action/restore@v6
+        uses: nix-community/cache-nix-action/restore@v7
         with:
           primary-key: ${{ runner.os }}-prime-numbers
           paths: |

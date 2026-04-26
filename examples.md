@@ -1,26 +1,32 @@
 # Examples
 
 - [Bun](#bun)
+  - [Windows](#windows)
 - [C# - NuGet](#c---nuget)
 - [Clojure - Lein Deps](#clojure---lein-deps)
 - [D - DUB](#d---dub)
   - [POSIX](#posix)
-  - [Windows](#windows)
+  - [Windows](#windows-1)
 - [Deno](#deno)
   - [Linux](#linux)
   - [macOS](#macos)
-  - [Windows](#windows-1)
+  - [Windows](#windows-2)
 - [Elixir - Mix](#elixir---mix)
 - [Erlang - Rebar3](#erlang---rebar3)
 - [Go - Modules](#go---modules)
   - [Linux](#linux-1)
   - [macOS](#macos-1)
-  - [Windows](#windows-2)
+  - [Windows](#windows-3)
 - [Haskell - Cabal](#haskell---cabal)
 - [Haskell - Stack](#haskell---stack)
+  - [Linux or macOS](#linux-or-macos)
+  - [Windows](#windows-4)
 - [Java - Gradle](#java---gradle)
 - [Java - Maven](#java---maven)
 - [Node - npm](#node---npm)
+  - [**Get npm cache directory using same shell**](#get-npm-cache-directory-using-same-shell)
+  - [Bash shell](#bash-shell)
+  - [PWSH shell](#pwsh-shell)
 - [Node - Lerna](#node---lerna)
 - [Node - Yarn](#node---yarn)
 - [Node - Yarn 2](#node---yarn-2)
@@ -41,6 +47,8 @@
 - [Swift - Swift Package Manager](#swift---swift-package-manager)
 - [Swift - Mint](#swift---mint)
 - [\* - Bazel](#---bazel)
+  - [Linux](#linux-2)
+  - [macOS](#macos-2)
 
 ## Bun
 
@@ -196,7 +204,7 @@ steps:
 ## Erlang - Rebar3
 
 ```yaml
-- uses: actions/cache@v2
+- uses: actions/cache@v5
   with:
     primary-key: ${{ runner.os }}-erlang-${{ env.OTP_VERSION }}-${{ hashFiles('**/*rebar.lock') }}
     restore-prefixes-first-match: |
@@ -211,7 +219,7 @@ steps:
 ### Linux
 
 ```yaml
-- uses: nix-community/cache-nix-action@v7
+- uses: actions/cache@v7
   with:
     primary-key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
     restore-prefixes-first-match: |
@@ -565,7 +573,7 @@ jobs:
 - name: Set up Python
   # The actions/cache step below uses this id to get the exact python version
   id: setup-python
-  uses: actions/setup-python@v2
+  uses: actions/setup-python@v6
 
   ⋮
 
