@@ -793,21 +793,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-
+  
       - name: Restore cached Primes
         id: cache-primes-restore
-        uses: nix-community/cache-nix-action/restore@v6
+        uses: nix-community/cache-nix-action/restore@v7
         with:
           primary-key: ${{ runner.os }}-primes
           paths: |
             path/to/dependencies
             some/other/dependencies
-
-      # other steps
-
+  
+        # other steps
+  
       - name: Save Primes
         id: cache-primes-save
-        uses: nix-community/cache-nix-action/save@v6
+        uses: nix-community/cache-nix-action/save@v7
         with:
           primary-key: ${{ steps.cache-primes-restore.outputs.cache-primary-key }}
           paths: |
