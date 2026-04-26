@@ -172,6 +172,7 @@ You can use the output of this action to exit the workflow on cache miss. This w
 ```yaml
 steps:
   - uses: actions/checkout@v6
+  - uses: actions/checkout@v6
 
   - uses: nix-community/cache-nix-action@v7
     id: cache
@@ -194,7 +195,7 @@ steps:
 If you want to avoid re-computing the cache key again in `save` action, the outputs from `restore` action can be used as input to the `save` action.
 
 ```yaml
-  - uses: nix-community/cache-nix-action@v7
+  - uses: nix-community/cache-nix-action/restore@v7
     id: restore-cache
     with:
       primary-key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
@@ -204,7 +205,7 @@ If you want to avoid re-computing the cache key again in `save` action, the outp
   .
   .
   .
-  - uses: nix-community/cache-nix-action@v7
+  - uses: nix-community/cache-nix-action/save@v7
     with:
       primary-key: ${{ steps.restore-cache.outputs.primary-key }}
       paths: |
@@ -219,7 +220,7 @@ On the other hand, the key can also be explicitly re-computed while executing th
 Let's say we have a restore step that computes key at runtime
 
 ```yaml
-uses: nix-community/cache-nix-action@v7
+uses: nix-community/cache-nix-action/restore@v7
 id: restore-cache
 with:
   primary-key: cache-${{ hashFiles('**/lockfiles') }}
