@@ -793,7 +793,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-  
+
       - name: Restore cached Primes
         id: cache-primes-restore
         uses: nix-community/cache-nix-action/restore@v7
@@ -802,9 +802,9 @@ jobs:
           paths: |
             path/to/dependencies
             some/other/dependencies
-  
+
         # other steps
-  
+
       - name: Save Primes
         id: cache-primes-save
         uses: nix-community/cache-nix-action/save@v7

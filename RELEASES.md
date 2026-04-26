@@ -15,13 +15,13 @@
 1. Commit your changes and push your branch upstream.
 1. Open a pull request against `main` and get it reviewed and merged.
 1. Draft a new release https://github.com/actions/cache/releases use the same version number used in `package.json`
-    1. Create a new tag with the version number.
-    1. Auto generate release notes and update them to match the changes you made in `RELEASES.md`.
-    1. Toggle the set as the latest release option.
-    1. Publish the release.
+   1. Create a new tag with the version number.
+   1. Auto generate release notes and update them to match the changes you made in `RELEASES.md`.
+   1. Toggle the set as the latest release option.
+   1. Publish the release.
 1. Navigate to https://github.com/actions/cache/actions/workflows/release-new-action-version.yml
-    1. There should be a workflow run queued with the same version number.
-    1. Approve the run to publish the new version and update the major tags for this action. 
+   1. There should be a workflow run queued with the same version number.
+   1. Approve the run to publish the new version and update the major tags for this action.
 
 ## Changelog
 
