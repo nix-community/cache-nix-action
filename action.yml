@@ -82,7 +82,7 @@ inputs:
       Choose an implementation of the `cache` package.
       - When `actions`, use the [actions version](https://github.com/actions/toolkit/tree/main/packages/cache) from [here](https://github.com/nix-community/cache-nix-action/tree/actions-toolkit/packages/cache).
       - When `buildjet`, use the [BuildJet version](https://github.com/BuildJet/toolkit/tree/main/packages/cache-buildjet) from [here](https://github.com/nix-community/cache-nix-action/tree/buildjet-toolkit/packages/cache).
-      - When `warpbuild`, use the [WarpBuild version](https://github.com/WarpBuilds/toolkit/tree/main/packages/warp-cache). Only works on WarpBuild runners.
+      - When `warpbuild`, use the [WarpBuild version](https://github.com/WarpBuilds/toolkit/tree/main/packages/warp-cache). Only works on WarpBuild runners. The `warpbuild` backend ignores `upload-chunk-size` and the action's tar command tuning, since `@warpbuild/cache` does not expose the equivalent options.
     default: "actions"
     required: false
 
