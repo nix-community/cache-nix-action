@@ -6,3 +6,7 @@
 	path = deps/buildjet/toolkit
 	url = https://github.com/nix-community/cache-nix-action
 	branch = buildjet-toolkit
+[submodule "deps/warpbuild/toolkit"]
+	path = deps/warpbuild/toolkit
+	url = https://github.com/WarpBuilds/toolkit
+	branch = main
