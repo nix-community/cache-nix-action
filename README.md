@@ -170,7 +170,7 @@ See [Caching Approaches](#caching-approaches).
 ```
 
 - `nix-quick-install-action` writes the supplied [nix_conf](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/action.yml#L19) to [nix.conf](https://nix.dev/manual/nix/2.33/command-ref/conf-file.html) (see [action.yml](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/action.yml#L63), [script](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/nix-quick-install.sh#L99)).
-- `nix-quick-install-action` enables [flakes](https://nixos.wiki/wiki/Flakes) and accepts `nixConfig` from `flake.nix` (see [script](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/nix-quick-install.sh#L113)).
+- `nix-quick-install-action` enables [flakes](https://wiki.nixos.org/wiki/Flakes) and accepts `nixConfig` from `flake.nix` (see [script](https://github.com/nixbuild/nix-quick-install-action/blob/8505cd40ae3d4791ca658f2697c5767212e5ce71/nix-quick-install.sh#L113)).
 - Due to `gc-max-store-size-linux: 1G`, on `Linux` runners, garbage in the Nix store is collected until the store size reaches `1GB` or until there's no garbage to collect.
 - Since `gc-max-store-size-macos` isn't set to a number, on `macOS` runners, no garbage is collected in the Nix store.
 - At the end of the job, and before trying to save a new cache, the `cache-nix-action` purges caches:
