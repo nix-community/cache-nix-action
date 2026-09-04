@@ -33,7 +33,7 @@
     "@actions/io": "^2.0.0",
     "@buildjet/cache": "file:deps/buildjet/toolkit/packages/cache",
     "dedent": "^1.7.2",
-    "handlebars": "^4.7.8",
+    "handlebars": "^4.7.9",
     "temporal-polyfill": "^1.0.4"
   },
   "devDependencies": {
