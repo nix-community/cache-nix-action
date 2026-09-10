@@ -52427,7 +52427,7 @@ var require_helpers2 = __commonJS({
       if (instance.helpers[helperName]) {
         instance.hooks[helperName] = instance.helpers[helperName];
         if (!keepHelper) {
-          delete instance.helpers[helperName];
+          instance.helpers[helperName] = void 0;
         }
       }
     }
@@ -52519,22 +52519,6 @@ var require_logger = __commonJS({
   }
 });
 
-// node_modules/handlebars/dist/cjs/handlebars/internal/create-new-lookup-object.js
-var require_create_new_lookup_object = __commonJS({
-  "node_modules/handlebars/dist/cjs/handlebars/internal/create-new-lookup-object.js"(exports2) {
-    "use strict";
-    exports2.__esModule = true;
-    exports2.createNewLookupObject = createNewLookupObject;
-    var _utils = require_utils5();
-    function createNewLookupObject() {
-      for (var _len = arguments.length, sources = Array(_len), _key = 0; _key < _len; _key++) {
-        sources[_key] = arguments[_key];
-      }
-      return _utils.extend.apply(void 0, [/* @__PURE__ */ Object.create(null)].concat(sources));
-    }
-  }
-});
-
 // node_modules/handlebars/dist/cjs/handlebars/internal/proto-access.js
 var require_proto_access = __commonJS({
   "node_modules/handlebars/dist/cjs/handlebars/internal/proto-access.js"(exports2) {
@@ -52546,25 +52530,28 @@ var require_proto_access = __commonJS({
     function _interopRequireDefault(obj) {
       return obj && obj.__esModule ? obj : { "default": obj };
     }
-    var _createNewLookupObject = require_create_new_lookup_object();
+    var _utils = require_utils5();
     var _logger = require_logger();
     var _logger2 = _interopRequireDefault(_logger);
     var loggedProperties = /* @__PURE__ */ Object.create(null);
     function createProtoAccessControl(runtimeOptions) {
-      var defaultMethodWhiteList = /* @__PURE__ */ Object.create(null);
-      defaultMethodWhiteList["constructor"] = false;
-      defaultMethodWhiteList["__defineGetter__"] = false;
-      defaultMethodWhiteList["__defineSetter__"] = false;
-      defaultMethodWhiteList["__lookupGetter__"] = false;
-      var defaultPropertyWhiteList = /* @__PURE__ */ Object.create(null);
-      defaultPropertyWhiteList["__proto__"] = false;
+      var propertyWhiteList = /* @__PURE__ */ Object.create(null);
+      propertyWhiteList["__proto__"] = false;
+      _utils.extend(propertyWhiteList, runtimeOptions.allowedProtoProperties);
+      var methodWhiteList = /* @__PURE__ */ Object.create(null);
+      methodWhiteList["constructor"] = false;
+      methodWhiteList["__defineGetter__"] = false;
+      methodWhiteList["__defineSetter__"] = false;
+      methodWhiteList["__lookupGetter__"] = false;
+      methodWhiteList["__lookupSetter__"] = false;
+      _utils.extend(methodWhiteList, runtimeOptions.allowedProtoMethods);
       return {
         properties: {
-          whitelist: _createNewLookupObject.createNewLookupObject(defaultPropertyWhiteList, runtimeOptions.allowedProtoProperties),
+          whitelist: propertyWhiteList,
           defaultValue: runtimeOptions.allowProtoPropertiesByDefault
         },
         methods: {
-          whitelist: _createNewLookupObject.createNewLookupObject(defaultMethodWhiteList, runtimeOptions.allowedProtoMethods),
+          whitelist: methodWhiteList,
           defaultValue: runtimeOptions.allowProtoMethodsByDefault
         }
       };
@@ -52617,7 +52604,7 @@ var require_base = __commonJS({
     var _logger = require_logger();
     var _logger2 = _interopRequireDefault(_logger);
     var _internalProtoAccess = require_proto_access();
-    var VERSION7 = "4.7.8";
+    var VERSION7 = "4.7.9";
     exports2.VERSION = VERSION7;
     var COMPILER_REVISION = 8;
     exports2.COMPILER_REVISION = COMPILER_REVISION;
@@ -52803,14 +52790,12 @@ var require_runtime = __commonJS({
           }
         }
         partial = env.VM.resolvePartial.call(this, partial, context5, options);
-        var extendedOptions = Utils.extend({}, options, {
-          hooks: this.hooks,
-          protoAccessControl: this.protoAccessControl
-        });
-        var result = env.VM.invokePartial.call(this, partial, context5, extendedOptions);
+        options.hooks = this.hooks;
+        options.protoAccessControl = this.protoAccessControl;
+        var result = env.VM.invokePartial.call(this, partial, context5, options);
         if (result == null && env.compile) {
           options.partials[options.name] = env.compile(partial, templateSpec.compilerOptions, env);
-          result = options.partials[options.name](context5, extendedOptions);
+          result = options.partials[options.name](context5, options);
         }
         if (result != null) {
           if (options.indent) {
@@ -52855,7 +52840,7 @@ var require_runtime = __commonJS({
           for (var i = 0; i < len; i++) {
             var result = depths[i] && container.lookupProperty(depths[i], name);
             if (result != null) {
-              return depths[i][name];
+              return result;
             }
           }
         },
@@ -52921,8 +52906,9 @@ var require_runtime = __commonJS({
       ret.isTop = true;
       ret._setup = function(options) {
         if (!options.partial) {
-          var mergedHelpers = Utils.extend({}, env.helpers, options.helpers);
-          wrapHelpersToPassLookupProperty(mergedHelpers, container);
+          var mergedHelpers = {};
+          addHelpers(mergedHelpers, env.helpers, container);
+          addHelpers(mergedHelpers, options.helpers, container);
           container.helpers = mergedHelpers;
           if (templateSpec.usePartial) {
             container.partials = container.mergeIfNeeded(options.partials, env.partials);
@@ -52972,18 +52958,18 @@ var require_runtime = __commonJS({
     function resolvePartial(partial, context5, options) {
       if (!partial) {
         if (options.name === "@partial-block") {
-          partial = options.data["partial-block"];
+          partial = lookupOwnProperty(options.data, "partial-block");
         } else {
-          partial = options.partials[options.name];
+          partial = lookupOwnProperty(options.partials, options.name);
         }
       } else if (!partial.call && !options.name) {
         options.name = partial;
-        partial = options.partials[partial];
+        partial = lookupOwnProperty(options.partials, partial);
       }
       return partial;
     }
     function invokePartial(partial, context5, options) {
-      var currentPartialBlock = options.data && options.data["partial-block"];
+      var currentPartialBlock = lookupOwnProperty(options.data, "partial-block");
       options.partial = true;
       if (options.ids) {
         options.data.contextPath = options.ids[0] || options.data.contextPath;
@@ -53016,6 +53002,11 @@ var require_runtime = __commonJS({
     function noop4() {
       return "";
     }
+    function lookupOwnProperty(obj, name) {
+      if (obj && Object.prototype.hasOwnProperty.call(obj, name)) {
+        return obj[name];
+      }
+    }
     function initData(context5, data) {
       if (!data || !("root" in data)) {
         data = data ? _base.createFrame(data) : {};
@@ -53031,16 +53022,18 @@ var require_runtime = __commonJS({
       }
       return prog;
     }
-    function wrapHelpersToPassLookupProperty(mergedHelpers, container) {
-      Object.keys(mergedHelpers).forEach(function(helperName) {
-        var helper = mergedHelpers[helperName];
+    function addHelpers(mergedHelpers, helpers, container) {
+      if (!helpers) return;
+      Object.keys(helpers).forEach(function(helperName) {
+        var helper = helpers[helperName];
         mergedHelpers[helperName] = passLookupPropertyOption(helper, container);
       });
     }
     function passLookupPropertyOption(helper, container) {
       var lookupProperty = container.lookupProperty;
       return _internalWrapHelper.wrapHelper(helper, function(options) {
-        return Utils.extend({ lookupProperty }, options);
+        options.lookupProperty = lookupProperty;
+        return options;
       });
     }
   }
@@ -53850,7 +53843,7 @@ var require_parser = __commonJS({
               break;
           }
         };
-        lexer2.rules = [/^(?:[^\x00]*?(?=(\{\{)))/, /^(?:[^\x00]+)/, /^(?:[^\x00]{2,}?(?=(\{\{|\\\{\{|\\\\\{\{|$)))/, /^(?:\{\{\{\{(?=[^/]))/, /^(?:\{\{\{\{\/[^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=[=}\s\/.])\}\}\}\})/, /^(?:[^\x00]+?(?=(\{\{\{\{)))/, /^(?:[\s\S]*?--(~)?\}\})/, /^(?:\()/, /^(?:\))/, /^(?:\{\{\{\{)/, /^(?:\}\}\}\})/, /^(?:\{\{(~)?>)/, /^(?:\{\{(~)?#>)/, /^(?:\{\{(~)?#\*?)/, /^(?:\{\{(~)?\/)/, /^(?:\{\{(~)?\^\s*(~)?\}\})/, /^(?:\{\{(~)?\s*else\s*(~)?\}\})/, /^(?:\{\{(~)?\^)/, /^(?:\{\{(~)?\s*else\b)/, /^(?:\{\{(~)?\{)/, /^(?:\{\{(~)?&)/, /^(?:\{\{(~)?!--)/, /^(?:\{\{(~)?![\s\S]*?\}\})/, /^(?:\{\{(~)?\*?)/, /^(?:=)/, /^(?:\.\.)/, /^(?:\.(?=([=~}\s\/.)|])))/, /^(?:[\/.])/, /^(?:\s+)/, /^(?:\}(~)?\}\})/, /^(?:(~)?\}\})/, /^(?:"(\\["]|[^"])*")/, /^(?:'(\\[']|[^'])*')/, /^(?:@)/, /^(?:true(?=([~}\s)])))/, /^(?:false(?=([~}\s)])))/, /^(?:undefined(?=([~}\s)])))/, /^(?:null(?=([~}\s)])))/, /^(?:-?[0-9]+(?:\.[0-9]+)?(?=([~}\s)])))/, /^(?:as\s+\|)/, /^(?:\|)/, /^(?:([^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=([=~}\s\/.)|]))))/, /^(?:\[(\\\]|[^\]])*\])/, /^(?:.)/, /^(?:$)/];
+        lexer2.rules = [/^(?:[^\x00]*?(?=(\{\{)))/, /^(?:[^\x00]+)/, /^(?:[^\x00]{2,}?(?=(\{\{|\\\{\{|\\\\\{\{|$)))/, /^(?:\{\{\{\{(?=[^\/]))/, /^(?:\{\{\{\{\/[^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=[=}\s\/.])\}\}\}\})/, /^(?:[^\x00]+?(?=(\{\{\{\{)))/, /^(?:[\s\S]*?--(~)?\}\})/, /^(?:\()/, /^(?:\))/, /^(?:\{\{\{\{)/, /^(?:\}\}\}\})/, /^(?:\{\{(~)?>)/, /^(?:\{\{(~)?#>)/, /^(?:\{\{(~)?#\*?)/, /^(?:\{\{(~)?\/)/, /^(?:\{\{(~)?\^\s*(~)?\}\})/, /^(?:\{\{(~)?\s*else\s*(~)?\}\})/, /^(?:\{\{(~)?\^)/, /^(?:\{\{(~)?\s*else\b)/, /^(?:\{\{(~)?\{)/, /^(?:\{\{(~)?&)/, /^(?:\{\{(~)?!--)/, /^(?:\{\{(~)?![\s\S]*?\}\})/, /^(?:\{\{(~)?\*?)/, /^(?:=)/, /^(?:\.\.)/, /^(?:\.(?=([=~}\s\/.)|])))/, /^(?:[\/.])/, /^(?:\s+)/, /^(?:\}(~)?\}\})/, /^(?:(~)?\}\})/, /^(?:"(\\["]|[^"])*")/, /^(?:'(\\[']|[^'])*')/, /^(?:@)/, /^(?:true(?=([~}\s)])))/, /^(?:false(?=([~}\s)])))/, /^(?:undefined(?=([~}\s)])))/, /^(?:null(?=([~}\s)])))/, /^(?:-?[0-9]+(?:\.[0-9]+)?(?=([~}\s)])))/, /^(?:as\s+\|)/, /^(?:\|)/, /^(?:([^\s!"#%-,\.\/;->@\[-\^`\{-~]+(?=([=~}\s\/.)|]))))/, /^(?:\[(\\\]|[^\]])*\])/, /^(?:.)/, /^(?:$)/];
         lexer2.conditions = { "mu": { "rules": [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44], "inclusive": false }, "emu": { "rules": [2], "inclusive": false }, "com": { "rules": [6], "inclusive": false }, "raw": { "rules": [3, 4, 5], "inclusive": false }, "INITIAL": { "rules": [0, 1, 44], "inclusive": true } };
         return lexer2;
       })();
@@ -54357,12 +54350,15 @@ var require_base2 = __commonJS({
     var _whitespaceControl2 = _interopRequireDefault(_whitespaceControl);
     var _helpers = require_helpers3();
     var Helpers = _interopRequireWildcard(_helpers);
+    var _exception = require_exception();
+    var _exception2 = _interopRequireDefault(_exception);
     var _utils = require_utils5();
     exports2.parser = _parser2["default"];
     var yy = {};
     _utils.extend(yy, Helpers);
     function parseWithoutProcessing(input, options) {
       if (input.type === "Program") {
+        validateInputAst(input);
         return input;
       }
       _parser2["default"].yy = yy;
@@ -54376,6 +54372,51 @@ var require_base2 = __commonJS({
       var ast = parseWithoutProcessing(input, options);
       var strip = new _whitespaceControl2["default"](options);
       return strip.accept(ast);
+    }
+    function validateInputAst(ast) {
+      validateAstNode(ast);
+    }
+    function validateAstNode(node) {
+      if (node == null) {
+        return;
+      }
+      if (Array.isArray(node)) {
+        node.forEach(validateAstNode);
+        return;
+      }
+      if (typeof node !== "object") {
+        return;
+      }
+      if (node.type === "PathExpression") {
+        if (!isValidDepth(node.depth)) {
+          throw new _exception2["default"]("Invalid AST: PathExpression.depth must be an integer");
+        }
+        if (!Array.isArray(node.parts)) {
+          throw new _exception2["default"]("Invalid AST: PathExpression.parts must be an array");
+        }
+        for (var i = 0; i < node.parts.length; i++) {
+          if (typeof node.parts[i] !== "string") {
+            throw new _exception2["default"]("Invalid AST: PathExpression.parts must only contain strings");
+          }
+        }
+      } else if (node.type === "NumberLiteral") {
+        if (typeof node.value !== "number" || !isFinite(node.value)) {
+          throw new _exception2["default"]("Invalid AST: NumberLiteral.value must be a number");
+        }
+      } else if (node.type === "BooleanLiteral") {
+        if (typeof node.value !== "boolean") {
+          throw new _exception2["default"]("Invalid AST: BooleanLiteral.value must be a boolean");
+        }
+      }
+      Object.keys(node).forEach(function(propertyName) {
+        if (propertyName === "loc") {
+          return;
+        }
+        validateAstNode(node[propertyName]);
+      });
+    }
+    function isValidDepth(depth) {
+      return typeof depth === "number" && isFinite(depth) && Math.floor(depth) === depth && depth >= 0;
     }
   }
 });
@@ -56805,12 +56846,10 @@ var require_javascript_compiler = __commonJS({
           var programs = _context.programs;
           var decorators = _context.decorators;
           for (i = 0, l = programs.length; i < l; i++) {
-            if (programs[i]) {
-              ret[i] = programs[i];
-              if (decorators[i]) {
-                ret[i + "_d"] = decorators[i];
-                ret.useDecorators = true;
-              }
+            ret[i] = programs[i];
+            if (decorators[i]) {
+              ret[i + "_d"] = decorators[i];
+              ret.useDecorators = true;
             }
           }
           if (this.environment.usePartial) {
@@ -57071,22 +57110,25 @@ var require_javascript_compiler = __commonJS({
         }
         this.resolvePath("data", parts, 0, true, strict);
       },
-      resolvePath: function resolvePath(type, parts, i, falsy, strict) {
+      resolvePath: function resolvePath(type, parts, startPartIndex, falsy, strict) {
         var _this2 = this;
         if (this.options.strict || this.options.assumeObjects) {
-          this.push(strictLookup(this.options.strict && strict, this, parts, i, type));
+          this.push(strictLookup(this.options.strict && strict, this, parts, startPartIndex, type));
           return;
         }
         var len = parts.length;
-        for (; i < len; i++) {
-          this.replaceStack(function(current) {
-            var lookup = _this2.nameLookup(current, parts[i], type);
+        var _loop = function(i2) {
+          _this2.replaceStack(function(current) {
+            var lookup = _this2.nameLookup(current, parts[i2], type);
             if (!falsy) {
               return [" != null ? ", lookup, " : ", current];
             } else {
               return [" && ", lookup];
             }
           });
+        };
+        for (var i = startPartIndex; i < len; i++) {
+          _loop(i);
         }
       },
       // [resolvePossibleLambda]
@@ -57190,7 +57232,9 @@ var require_javascript_compiler = __commonJS({
       // and inserts the decorator into the decorators list.
       registerDecorator: function registerDecorator(paramSize, name) {
         var foundDecorator = this.nameLookup("decorators", name, "decorator"), options = this.setupHelperArgs(name, paramSize);
-        this.decorators.push(["fn = ", this.decorators.functionCall(foundDecorator, "", ["fn", "props", "container", options]), " || fn;"]);
+        this.decorators.push(["var decorator = ", foundDecorator, ";"]);
+        this.decorators.push(['if (typeof decorator !== "function") { throw new Error(', this.quotedString('Missing decorator: "' + name + '"'), "); }"]);
+        this.decorators.push(["fn = ", this.decorators.functionCall("decorator", "", ["fn", "props", "container", options]), " || fn;"]);
       },
       // [invokeHelper]
       //
@@ -57337,8 +57381,7 @@ var require_javascript_compiler = __commonJS({
           compiler = new this.compiler();
           var existing = this.matchExistingProgram(child2);
           if (existing == null) {
-            this.context.programs.push("");
-            var index = this.context.programs.length;
+            var index = this.context.programs.push("") - 1;
             child2.index = index;
             child2.name = "program" + index;
             this.context.programs[index] = compiler.compile(child2, options, this.context, !this.precompile);
@@ -57582,16 +57625,16 @@ var require_javascript_compiler = __commonJS({
     JavaScriptCompiler.isValidJavaScriptVariableName = function(name) {
       return !JavaScriptCompiler.RESERVED_WORDS[name] && /^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(name);
     };
-    function strictLookup(requireTerminal, compiler, parts, i, type) {
+    function strictLookup(requireTerminal, compiler, parts, startPartIndex, type) {
       var stack = compiler.popStack(), len = parts.length;
       if (requireTerminal) {
         len--;
       }
-      for (; i < len; i++) {
+      for (var i = startPartIndex; i < len; i++) {
         stack = compiler.nameLookup(stack, parts[i], type);
       }
       if (requireTerminal) {
-        return [compiler.aliasable("container.strict"), "(", stack, ", ", compiler.quotedString(parts[i]), ", ", JSON.stringify(compiler.source.currentLocation), " )"];
+        return [compiler.aliasable("container.strict"), "(", stack, ", ", compiler.quotedString(parts[len]), ", ", JSON.stringify(compiler.source.currentLocation), " )"];
       } else {
         return stack;
       }
