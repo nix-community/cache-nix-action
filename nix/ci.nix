@@ -62,6 +62,7 @@ in
       keep-outputs = true
       experimental-features = nix-command flakes
       accept-flake-config = true
+      auto-optimise-store = true
     nix_config_ca_derivations: |
       extra-experimental-features = ca-derivations
 
