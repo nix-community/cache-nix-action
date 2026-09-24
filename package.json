@@ -37,7 +37,7 @@
     "temporal-polyfill": "^1.0.4"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/jest": "^30.0.0",
     "@types/nock": "^11.1.0",
     "@types/node": "^24.1.0",
