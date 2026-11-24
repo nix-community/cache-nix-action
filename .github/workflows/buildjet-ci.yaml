@@ -22,7 +22,7 @@ jobs:
   # Commit and push the built code
   build:
     name: Build the action
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     permissions:
       contents: write
       actions: write
@@ -33,7 +33,7 @@ jobs:
           submodules: true
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.10.5
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           # We don't enable ca-derivations here
           # because we have later jobs where ca-derivations is enabled.
@@ -102,10 +102,10 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-14
+          - macos-26
           - macos-15
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
         id:
           - 1
           - 2
@@ -116,7 +116,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.10.5
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           # Make caches with ca-derivations enabled on some machines
           # to test merging stores where the feature is enabled for one store and disabled for another.
@@ -126,7 +126,7 @@ jobs:
             ${{ env.extra_nix_config }}
             ${{ (
                   (matrix.id == 1 && matrix.os == 'macos-15') || 
-                  (matrix.id == 2 && matrix.os == 'ubuntu-24.04-arm')
+                  (matrix.id == 2 && matrix.os == 'ubuntu-26.04-arm')
                 ) && env.nix_config_ca_derivations || ''
             }}
       - name: Restore Nix store - ${{ matrix.id }}
@@ -180,10 +180,10 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-14
+          - macos-26
           - macos-15
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo
@@ -191,7 +191,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.10.5
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           # We enable ca-derivations only on macos-15
           # to test more different cases.
@@ -257,10 +257,10 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-14
+          - macos-26
           - macos-15
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo
@@ -268,7 +268,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.10.5
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           # We enable ca-derivations only on macos-15
           # to test more different cases.
@@ -326,10 +326,10 @@ jobs:
           - true
           - false
         os:
-          - macos-14
+          - macos-26
           - macos-15
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo
@@ -350,7 +350,7 @@ jobs:
           df -h
           echo "::endgroup::"
 
-      - uses: cachix/install-nix-action@v31.10.5
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           extra_nix_config: |
             ${{ env.extra_nix_config }}
@@ -436,10 +436,10 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-14
+          - macos-26
           - macos-15
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
         nix-installer:
           - DeterminateSystems/determinate-nix-action
           - nixbuild/nix-quick-install-action
@@ -451,7 +451,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
-        uses: DeterminateSystems/determinate-nix-action@v3.18.1
+        uses: DeterminateSystems/determinate-nix-action@v3.15.2
         with:
           extra-conf: |
             ${{ env.extra_nix_config }}
@@ -501,10 +501,10 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-14
+          - macos-26
           - macos-15
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
         nix-installer:
           - DeterminateSystems/determinate-nix-action
           - nixbuild/nix-quick-install-action
@@ -516,7 +516,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - if: matrix.nix-installer == 'DeterminateSystems/determinate-nix-action'
-        uses: DeterminateSystems/determinate-nix-action@v3.18.1
+        uses: DeterminateSystems/determinate-nix-action@v3.15.2
         with:
           extra-conf: |
             ${{ env.extra_nix_config }}
@@ -552,10 +552,10 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-14
+          - macos-26
           - macos-15
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo
@@ -563,7 +563,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: cachix/install-nix-action@v31.10.5
+      - uses: cachix/install-nix-action@v31.9.0
         with:
           install_url: https://releases.nixos.org/nix/nix-2.32.5/install
           extra_nix_config: |
