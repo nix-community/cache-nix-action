@@ -34,9 +34,9 @@ let
     schedule:
       - cron: 0 0 * * *'') "";
 
-  name = choose "" ''with BuildJet backend'';
+  name = choose "" "with BuildJet backend";
 
-  install-nix-action = ''- uses: cachix/install-nix-action@v31.9.0'';
+  install-nix-action = "- uses: cachix/install-nix-action@v31.9.0";
   os = {
     ubuntu-26 = "ubuntu-26.04";
     ubuntu-26-arm = "ubuntu-26.04-arm";
