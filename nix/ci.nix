@@ -40,7 +40,7 @@ let
   os = {
     ubuntu-26 = "ubuntu-26.04";
     ubuntu-26-arm = "ubuntu-26.04-arm";
-    macos-14 = "macos-14";
+    macos-26 = "macos-26";
     macos-15 = "macos-15";
   };
 in
@@ -149,7 +149,7 @@ in
         fail-fast: false
         matrix:
           os:
-            - ${os.macos-14}
+            - ${os.macos-26}
             - ${os.macos-15}
             - ${os.ubuntu-26}
             - ${os.ubuntu-26-arm}
@@ -236,7 +236,7 @@ in
             fail-fast: false
             matrix:
               os:
-                - ${os.macos-14}
+                - ${os.macos-26}
                 - ${os.macos-15}
                 - ${os.ubuntu-26}
                 - ${os.ubuntu-26-arm}
@@ -327,7 +327,7 @@ in
             - true
             - false
           os:
-            - ${os.macos-14}
+            - ${os.macos-26}
             - ${os.macos-15}
             - ${os.ubuntu-26}
             - ${os.ubuntu-26-arm}
@@ -436,7 +436,7 @@ in
         fail-fast: false
         matrix:
           os:
-            - ${os.macos-14}
+            - ${os.macos-26}
             - ${os.macos-15}
             - ${os.ubuntu-26}
             - ${os.ubuntu-26-arm}
@@ -501,7 +501,7 @@ in
         fail-fast: false
         matrix:
           os:
-            - ${os.macos-14}
+            - ${os.macos-26}
             - ${os.macos-15}
             - ${os.ubuntu-26}
             - ${os.ubuntu-26-arm}
@@ -552,8 +552,8 @@ in
         fail-fast: false
         matrix:
           os:
-            - macos-14
-            - macos-15
+            - ${os.macos-26}
+            - ${os.macos-15}
             - ${os.ubuntu-26}
             - ${os.ubuntu-26-arm}
       runs-on: ''${{ matrix.os }}
