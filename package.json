@@ -34,7 +34,7 @@
     "@buildjet/cache": "file:deps/buildjet/toolkit/packages/cache",
     "dedent": "^1.7.2",
     "handlebars": "^4.7.8",
-    "temporal-polyfill": "^1.0.4"
+    "temporal-polyfill": "^1.0.8"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
