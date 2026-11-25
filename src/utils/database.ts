@@ -7,14 +7,12 @@ export const dbStandardPath = `${dbStandardDir}/db.sqlite`;
 export const dbWalStandardPath = `${dbStandardPath}-wal`;
 export const dbShmStandardPath = `${dbStandardPath}-shm`;
 
-const user = "runner";
-const group = inputs.choose("runner", "staff", "");
-
 export async function updateDbPermissions() {
     utils.info("Updating the database files' permissions.");
 
+    // Resolve the invoking user before sudo, including on self-hosted runners.
     await utils.run(
-        `sudo chown -R ${user}:${group} ${dbStandardDir} && sudo chmod -R u+rw ${dbStandardDir}`
+        `sudo chown -R "$(id -u):$(id -g)" ${dbStandardDir} && sudo chmod -R u+rw ${dbStandardDir}`
     );
 }
 

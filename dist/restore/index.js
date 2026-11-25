@@ -21546,7 +21546,7 @@ var require_core = __commonJS({
     exports2.info = info7;
     exports2.startGroup = startGroup;
     exports2.endGroup = endGroup;
-    exports2.group = group2;
+    exports2.group = group;
     exports2.saveState = saveState2;
     exports2.getState = getState2;
     exports2.getIDToken = getIDToken;
@@ -21649,7 +21649,7 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
     function endGroup() {
       (0, command_1.issue)("endgroup");
     }
-    function group2(name, fn) {
+    function group(name, fn) {
       return __awaiter11(this, void 0, void 0, function* () {
         startGroup(name);
         let result;
@@ -27339,15 +27339,15 @@ var require_reflection_type_check = __commonJS({
           return true;
         }
         for (const name of data.oneofs) {
-          const group2 = message[name];
-          if (!oneof_1.isOneofGroup(group2))
+          const group = message[name];
+          if (!oneof_1.isOneofGroup(group))
             return false;
-          if (group2.oneofKind === void 0)
+          if (group.oneofKind === void 0)
             continue;
-          const field = this.fields.find((f) => f.localName === group2.oneofKind);
+          const field = this.fields.find((f) => f.localName === group.oneofKind);
           if (!field)
             return false;
-          if (!this.field(group2[group2.oneofKind], field, allowExcessProperties, depth))
+          if (!this.field(group[group.oneofKind], field, allowExcessProperties, depth))
             return false;
         }
         for (const field of this.fields) {
@@ -27828,11 +27828,11 @@ var require_reflection_json_writer = __commonJS({
               json[options.useProtoFieldName ? field.name : field.jsonName] = jsonValue2;
             continue;
           }
-          const group2 = source[field.oneof];
-          if (group2.oneofKind !== field.localName)
+          const group = source[field.oneof];
+          if (group.oneofKind !== field.localName)
             continue;
           const opt = field.kind == "scalar" || field.kind == "enum" ? Object.assign(Object.assign({}, options), { emitDefaultValues: true }) : options;
-          let jsonValue = this.field(field, group2[field.localName], opt);
+          let jsonValue = this.field(field, group[field.localName], opt);
           assert_1.assert(jsonValue !== void 0);
           json[options.useProtoFieldName ? field.name : field.jsonName] = jsonValue;
         }
@@ -28258,10 +28258,10 @@ var require_reflection_binary_writer = __commonJS({
         for (const field of this.fields) {
           let value, emitDefault, repeated = field.repeat, localName = field.localName;
           if (field.oneof) {
-            const group2 = message[field.oneof];
-            if (group2.oneofKind !== localName)
+            const group = message[field.oneof];
+            if (group.oneofKind !== localName)
               continue;
-            value = group2[localName];
+            value = group[localName];
             emitDefault = true;
           } else {
             value = message[localName];
@@ -28497,13 +28497,13 @@ var require_reflection_merge_partial = __commonJS({
       for (let field of info7.fields) {
         let name = field.localName;
         if (field.oneof) {
-          const group2 = input[field.oneof];
-          if ((group2 === null || group2 === void 0 ? void 0 : group2.oneofKind) == void 0) {
+          const group = input[field.oneof];
+          if ((group === null || group === void 0 ? void 0 : group.oneofKind) == void 0) {
             continue;
           }
-          fieldValue = group2[name];
+          fieldValue = group[name];
           output = target[field.oneof];
-          output.oneofKind = group2.oneofKind;
+          output.oneofKind = group.oneofKind;
           if (fieldValue == void 0) {
             delete output[name];
             continue;
@@ -49709,7 +49709,7 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issue)("endgroup");
     }
     exports2.endGroup = endGroup;
-    function group2(name, fn) {
+    function group(name, fn) {
       return __awaiter11(this, void 0, void 0, function* () {
         startGroup(name);
         let result;
@@ -49721,7 +49721,7 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
         return result;
       });
     }
-    exports2.group = group2;
+    exports2.group = group;
     function saveState2(name, value) {
       const filePath = process.env["GITHUB_STATE"] || "";
       if (filePath) {
@@ -102214,12 +102214,10 @@ var dbStandardDir = "/nix/var/nix/db";
 var dbStandardPath = `${dbStandardDir}/db.sqlite`;
 var dbWalStandardPath = `${dbStandardPath}-wal`;
 var dbShmStandardPath = `${dbStandardPath}-shm`;
-var user = "runner";
-var group = choose("runner", "staff", "");
 async function updateDbPermissions() {
   info2("Updating the database files' permissions.");
   await run(
-    `sudo chown -R ${user}:${group} ${dbStandardDir} && sudo chmod -R u+rw ${dbStandardDir}`
+    `sudo chown -R "$(id -u):$(id -g)" ${dbStandardDir} && sudo chmod -R u+rw ${dbStandardDir}`
   );
 }
 async function checkpointDb() {
